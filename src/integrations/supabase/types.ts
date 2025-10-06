@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email: string | null
+          email_enabled: boolean | null
+          hours_before_shabbat: number | null
+          id: string
+          morning_time: string | null
+          phone: string | null
+          push_enabled: boolean | null
+          sms_enabled: boolean | null
+          updated_at: string
+          user_id: string
+          whatsapp_enabled: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          email_enabled?: boolean | null
+          hours_before_shabbat?: number | null
+          id?: string
+          morning_time?: string | null
+          phone?: string | null
+          push_enabled?: boolean | null
+          sms_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+          whatsapp_enabled?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          email_enabled?: boolean | null
+          hours_before_shabbat?: number | null
+          id?: string
+          morning_time?: string | null
+          phone?: string | null
+          push_enabled?: boolean | null
+          sms_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+          whatsapp_enabled?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

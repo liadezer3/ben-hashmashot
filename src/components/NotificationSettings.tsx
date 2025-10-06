@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, MessageCircle, Smartphone } from "lucide-react";
-import { useState } from "react";
+import { Bell, Mail, MessageCircle, Smartphone, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const NotificationSettings = () => {
   const { toast } = useToast();
@@ -13,7 +14,7 @@ export const NotificationSettings = () => {
     sms: false,
     email: false,
     whatsapp: false,
-    push: false,
+    push: true,
   });
 
   const [contactInfo, setContactInfo] = useState({
@@ -21,15 +22,93 @@ export const NotificationSettings = () => {
     email: "",
   });
 
+  const [timeSettings, setTimeSettings] = useState({
+    morningTime: "08:00",
+    hoursBeforeShabbat: 2,
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  const loadPreferences = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('notification_preferences')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data && !error) {
+      setSettings({
+        sms: data.sms_enabled,
+        email: data.email_enabled,
+        whatsapp: data.whatsapp_enabled,
+        push: data.push_enabled,
+      });
+      setContactInfo({
+        phone: data.phone || "",
+        email: data.email || "",
+      });
+      setTimeSettings({
+        morningTime: data.morning_time || "08:00",
+        hoursBeforeShabbat: data.hours_before_shabbat || 2,
+      });
+    }
+  };
+
   const handleToggle = (type: keyof typeof settings) => {
     setSettings((prev) => ({ ...prev, [type]: !prev[type] }));
   };
 
-  const handleSave = () => {
-    toast({
-      title: "ההגדרות נשמרו בהצלחה",
-      description: "תקבלו התראות בהתאם להגדרות שבחרתם",
-    });
+  const handleSave = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "שגיאה",
+        description: "יש להתחבר כדי לשמור הגדרות",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('notification_preferences')
+      .upsert({
+        user_id: user.id,
+        phone: contactInfo.phone,
+        email: contactInfo.email,
+        sms_enabled: settings.sms,
+        email_enabled: settings.email,
+        whatsapp_enabled: settings.whatsapp,
+        push_enabled: settings.push,
+        morning_time: timeSettings.morningTime,
+        hours_before_shabbat: timeSettings.hoursBeforeShabbat,
+      }, {
+        onConflict: 'user_id'
+      });
+
+    setLoading(false);
+
+    if (error) {
+      toast({
+        title: "שגיאה בשמירת ההגדרות",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "ההגדרות נשמרו בהצלחה",
+        description: "תקבלו התראות בהתאם להגדרות שבחרתם",
+      });
+    }
   };
 
   return (
@@ -71,6 +150,45 @@ export const NotificationSettings = () => {
               }
               className="mt-2"
             />
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-6">
+          <h3 className="font-semibold mb-4 text-foreground">
+            זמני התראות
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="morningTime" className="text-foreground">
+                שעת התראה בוקר
+              </Label>
+              <Input
+                id="morningTime"
+                type="time"
+                value={timeSettings.morningTime}
+                onChange={(e) =>
+                  setTimeSettings({ ...timeSettings, morningTime: e.target.value })
+                }
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="hoursBeforeShabbat" className="text-foreground flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                שעות לפני כניסת שבת/חג
+              </Label>
+              <Input
+                id="hoursBeforeShabbat"
+                type="number"
+                min="1"
+                max="6"
+                value={timeSettings.hoursBeforeShabbat}
+                onChange={(e) =>
+                  setTimeSettings({ ...timeSettings, hoursBeforeShabbat: parseInt(e.target.value) })
+                }
+                className="mt-2"
+              />
+            </div>
           </div>
         </div>
 
@@ -140,13 +258,14 @@ export const NotificationSettings = () => {
         <div className="pt-4">
           <Button
             onClick={handleSave}
+            disabled={loading}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
             size="lg"
           >
-            שמור הגדרות
+            {loading ? "שומר..." : "שמור הגדרות"}
           </Button>
           <p className="text-xs text-muted-foreground text-center mt-3">
-            כדי שההתראות יעבדו, נדרש חיבור למערכת ניהול התראות
+            תקבלו התראות פעמיים: בבוקר בשעה {timeSettings.morningTime} ו-{timeSettings.hoursBeforeShabbat} שעות לפני כניסת שבת/חג
           </p>
         </div>
       </div>
