@@ -1,12 +1,55 @@
-import { Sparkles } from "lucide-react";
+import { Sparkles, User } from "lucide-react";
+import { Button } from "./ui/button";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 export const Header = () => {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <header className="bg-gradient-shabbat text-primary-foreground shadow-soft">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center gap-3">
-          <Sparkles className="w-8 h-8" />
-          <h1 className="text-3xl md:text-4xl font-bold">זמני שבת וחגים</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            <Sparkles className="w-8 h-8" />
+            <h1 className="text-3xl md:text-4xl font-bold cursor-pointer" onClick={() => navigate("/")}>
+              זמני שבת וחגים
+            </h1>
+          </div>
+          <div className="absolute left-4">
+            {isAuthenticated ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/profile")}
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                <User className="h-6 w-6" />
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => navigate("/auth")}
+                className="font-semibold"
+              >
+                התחבר
+              </Button>
+            )}
+          </div>
         </div>
         <p className="text-center mt-3 text-primary-foreground/90 text-lg">
           קבלו התראות אוטומטיות לפני כל שבת וחג
