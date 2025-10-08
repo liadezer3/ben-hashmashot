@@ -13,6 +13,7 @@ const signupSchema = z.object({
   email: z.string().email("כתובת אימייל לא תקינה"),
   password: z.string().min(6, "הסיסמה צריכה להכיל לפחות 6 תווים"),
   fullName: z.string().min(2, "נא להזין שם מלא"),
+  phone: z.string().min(9, "נא להזין מספר טלפון תקין"),
 });
 
 const loginSchema = z.object({
@@ -24,7 +25,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [signupData, setSignupData] = useState({ email: "", password: "", fullName: "" });
+  const [signupData, setSignupData] = useState({ email: "", password: "", fullName: "", phone: "" });
   const [loginData, setLoginData] = useState({ email: "", password: "" });
 
   useEffect(() => {
@@ -59,6 +60,7 @@ const Auth = () => {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: validated.fullName,
+            phone: validated.phone,
           }
         }
       });
@@ -190,6 +192,17 @@ const Auth = () => {
                     type="email"
                     value={signupData.email}
                     onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                    required
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">טלפון נייד</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    value={signupData.phone}
+                    onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
                     required
                     dir="ltr"
                   />

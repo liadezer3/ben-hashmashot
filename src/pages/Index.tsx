@@ -1,9 +1,39 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { ShabbatTimes } from "@/components/ShabbatTimes";
 import { UpcomingHolidays } from "@/components/UpcomingHolidays";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { Header } from "@/components/Header";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  if (loading) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
