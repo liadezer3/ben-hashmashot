@@ -1,4 +1,4 @@
-import { Sparkles, User } from "lucide-react";
+import { Sparkles, User, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,14 +7,45 @@ import { useEffect, useState } from "react";
 export const Header = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
-    });
+      
+      if (session) {
+        // Check admin status
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .single();
+        
+        setIsAdmin(!!roles);
+      }
+    };
+
+    checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
+      
+      if (session) {
+        setTimeout(async () => {
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .eq("role", "admin")
+            .single();
+          
+          setIsAdmin(!!roles);
+        }, 0);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -30,16 +61,29 @@ export const Header = () => {
               זמני שבת וחגים
             </h1>
           </div>
-          <div className="absolute left-4">
+          <div className="absolute left-4 flex gap-2">
             {isAuthenticated ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/profile")}
-                className="text-primary-foreground hover:bg-primary-foreground/10"
-              >
-                <User className="h-6 w-6" />
-              </Button>
+              <>
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate("/admin")}
+                    className="text-primary-foreground hover:bg-primary-foreground/10"
+                    title="ניהול משתמשים"
+                  >
+                    <Shield className="h-6 w-6" />
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/profile")}
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                >
+                  <User className="h-6 w-6" />
+                </Button>
+              </>
             ) : (
               <Button
                 variant="secondary"

@@ -65,7 +65,18 @@ const Auth = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if the error is due to user already existing
+        if (error.message.includes("already registered") || error.message.includes("User already registered")) {
+          toast({
+            title: "המשתמש כבר קיים",
+            description: "כתובת האימייל כבר רשומה במערכת. אנא התחבר במקום זאת.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
       toast({
         title: "נרשמת בהצלחה!",
