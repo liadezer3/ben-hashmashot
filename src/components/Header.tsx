@@ -1,8 +1,9 @@
-import { Sparkles, User, Shield } from "lucide-react";
+import { User, Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import logo from "@/assets/logo.jpg";
 
 export const Header = () => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ export const Header = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 justify-center">
-            <Sparkles className="w-8 h-8" />
+            <img src={logo} alt="בין השמשות" className="w-12 h-12 rounded-lg" />
             <h1 className="text-3xl md:text-4xl font-bold cursor-pointer" onClick={() => navigate("/")}>
               זמני שבת וחגים
             </h1>
