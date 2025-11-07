@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      notification_history: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          notification_type: string
+          sent_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          notification_type: string
+          sent_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          notification_type?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -61,6 +91,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          city: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -69,6 +100,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          city?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -77,12 +109,40 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          city?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_locations: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

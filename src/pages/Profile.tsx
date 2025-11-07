@@ -14,6 +14,7 @@ interface Profile {
   email: string | null;
   full_name: string | null;
   phone: string | null;
+  city: string | null;
 }
 
 const Profile = () => {
@@ -27,6 +28,7 @@ const Profile = () => {
     fullName: "",
     email: "",
     phone: "",
+    city: "",
   });
 
   useEffect(() => {
@@ -58,6 +60,7 @@ const Profile = () => {
           fullName: data.full_name || "",
           email: data.email || "",
           phone: data.phone || "",
+          city: data.city || "Jerusalem",
         });
       }
 
@@ -85,6 +88,7 @@ const Profile = () => {
         .update({
           full_name: formData.fullName,
           phone: formData.phone,
+          city: formData.city,
         })
         .eq("id", user?.id);
 
@@ -161,6 +165,17 @@ const Profile = () => {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   dir="ltr"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city">עיר</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  dir="rtl"
+                  placeholder="ירושלים"
                 />
               </div>
 

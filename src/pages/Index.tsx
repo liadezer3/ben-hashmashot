@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShabbatTimes } from "@/components/ShabbatTimes";
 import { UpcomingHolidays } from "@/components/UpcomingHolidays";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { NotificationHistory } from "@/components/NotificationHistory";
+import { SavedLocations } from "@/components/SavedLocations";
 import { Header } from "@/components/Header";
 
 const Index = () => {
@@ -40,8 +42,10 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-8 space-y-8">
         <ShabbatTimes />
+        <SavedLocations />
         <UpcomingHolidays />
         <NotificationSettings />
+        <NotificationHistory />
       </main>
 
       <footer className="border-t border-border mt-16 py-8">
