@@ -168,6 +168,34 @@ serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}));
+    
+    // Handle test email request
+    if (body.testEmail && body.email) {
+      console.log('Sending test email to:', body.email);
+      
+      const testEmailHtml = `
+        <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: #f7fafc; border-radius: 8px;">
+          <h1 style="color: #2D3748;">🕯️ מייל בדיקה - זמני שבת</h1>
+          <p style="font-size: 16px; color: #4A5568;">מייל הבדיקה נשלח בהצלחה!</p>
+          <p style="font-size: 14px; color: #718096;">המערכת מוגדרת כראוי ותשלח לך התראות על זמני שבת וחג.</p>
+          <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #A0AEC0;">זמני שבת וחג</p>
+        </div>
+      `;
+      
+      const emailSent = await sendEmail(body.email, 'בדיקת התראות - זמני שבת', testEmailHtml);
+      
+      if (emailSent) {
+        return new Response(
+          JSON.stringify({ success: true, message: 'Test email sent' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        throw new Error('Failed to send test email');
+      }
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);

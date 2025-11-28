@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, MessageCircle, Smartphone, Clock } from "lucide-react";
+import { Bell, Mail, MessageCircle, Smartphone, Clock, Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ export const NotificationSettings = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
 
   useEffect(() => {
     loadPreferences();
@@ -111,6 +112,44 @@ export const NotificationSettings = () => {
     }
   };
 
+  const handleTestEmail = async () => {
+    if (!contactInfo.email) {
+      toast({
+        title: "שגיאה",
+        description: "יש להזין כתובת אימייל לפני שליחת בדיקה",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingEmail(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-notifications', {
+        body: { 
+          testEmail: true,
+          email: contactInfo.email 
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "מייל בדיקה נשלח!",
+        description: `נשלח מייל לכתובת ${contactInfo.email}`,
+      });
+    } catch (error: any) {
+      console.error('Test email error:', error);
+      toast({
+        title: "שגיאה בשליחת מייל",
+        description: error.message || "אירעה שגיאה בשליחת המייל",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
   return (
     <Card className="p-6 bg-gradient-card shadow-card border-border/50">
       <h2 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2">
@@ -140,16 +179,26 @@ export const NotificationSettings = () => {
             <Label htmlFor="email" className="text-foreground">
               כתובת אימייל
             </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="example@email.com"
-              value={contactInfo.email}
-              onChange={(e) =>
-                setContactInfo({ ...contactInfo, email: e.target.value })
-              }
-              className="mt-2"
-            />
+            <div className="flex gap-2 mt-2">
+              <Input
+                id="email"
+                type="email"
+                placeholder="example@email.com"
+                value={contactInfo.email}
+                onChange={(e) =>
+                  setContactInfo({ ...contactInfo, email: e.target.value })
+                }
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleTestEmail}
+                disabled={testingEmail || !contactInfo.email}
+                title="שלח מייל בדיקה"
+              >
+                <Send className={`w-4 h-4 ${testingEmail ? 'animate-pulse' : ''}`} />
+              </Button>
+            </div>
           </div>
         </div>
 
