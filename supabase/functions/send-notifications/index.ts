@@ -20,9 +20,18 @@ interface NotificationPreference {
 
 interface ShabbatTimes {
   candle_lighting: string;
+  candle_lighting_time: string;
   havdalah: string;
+  havdalah_time: string;
   date: string;
+  parasha: string;
 }
+
+// Extract time from Hebcal title (e.g., "הַדְלָקַת נֵרוֹת: 15:54" -> "15:54")
+const extractTimeFromTitle = (title: string): string => {
+  const match = title.match(/(\d{1,2}:\d{2})/);
+  return match ? match[1] : '';
+};
 
 const getShabbatTimes = async (location: string = "Jerusalem"): Promise<ShabbatTimes | null> => {
   try {
@@ -31,15 +40,28 @@ const getShabbatTimes = async (location: string = "Jerusalem"): Promise<ShabbatT
     );
     const data = await response.json();
     
+    console.log('Hebcal API response:', JSON.stringify(data, null, 2));
+    
     const candleLighting = data.items?.find((item: any) => item.category === 'candles');
     const havdalah = data.items?.find((item: any) => item.category === 'havdalah');
+    const parasha = data.items?.find((item: any) => item.category === 'parashat');
     
     if (!candleLighting || !havdalah) return null;
     
+    // Extract times directly from titles which are already formatted correctly
+    const candleTime = extractTimeFromTitle(candleLighting.title);
+    const havdalahTime = extractTimeFromTitle(havdalah.title);
+    
+    console.log('Extracted candle time:', candleTime);
+    console.log('Extracted havdalah time:', havdalahTime);
+    
     return {
       candle_lighting: candleLighting.date,
+      candle_lighting_time: candleTime,
       havdalah: havdalah.date,
-      date: candleLighting.hebrew
+      havdalah_time: havdalahTime,
+      date: candleLighting.memo || parasha?.hebrew || '',
+      parasha: parasha?.hebrew || ''
     };
   } catch (error) {
     console.error('Error fetching Shabbat times:', error);
@@ -235,13 +257,15 @@ serve(async (req) => {
       const shouldSend = isFriday && now >= notificationTime && now < candleLightingTime;
 
       if (shouldSend) {
-        const message = `שבת שלום! זמן הדלקת נרות: ${new Date(shabbatTimes.candle_lighting).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}, ${shabbatTimes.date}`;
+        const message = `שבת שלום! 🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
         const emailHtml = `
-          <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
-            <h1 style="color: #4A5568;">שבת שלום!</h1>
-            <p style="font-size: 16px;">זמן הדלקת נרות: <strong>${new Date(shabbatTimes.candle_lighting).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</strong></p>
-            <p style="font-size: 16px;">מוצאי שבת: <strong>${new Date(shabbatTimes.havdalah).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</strong></p>
-            <p style="font-size: 14px; color: #718096;">${shabbatTimes.date}</p>
+          <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+            <h1 style="margin: 0 0 20px 0;">🕯️ שבת שלום!</h1>
+            <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+              <p style="font-size: 18px; margin: 5px 0;">הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
+              <p style="font-size: 18px; margin: 5px 0;">מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
+            </div>
+            <p style="font-size: 16px; opacity: 0.9;">${shabbatTimes.parasha}</p>
           </div>
         `;
 
