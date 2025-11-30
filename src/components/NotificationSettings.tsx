@@ -29,6 +29,7 @@ export const NotificationSettings = () => {
 
   const [loading, setLoading] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [testingWhatsApp, setTestingWhatsApp] = useState(false);
 
   useEffect(() => {
     loadPreferences();
@@ -150,6 +151,44 @@ export const NotificationSettings = () => {
     }
   };
 
+  const handleTestWhatsApp = async () => {
+    if (!contactInfo.phone) {
+      toast({
+        title: "שגיאה",
+        description: "יש להזין מספר טלפון לפני שליחת בדיקה",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingWhatsApp(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-notifications', {
+        body: { 
+          testWhatsApp: true,
+          phone: contactInfo.phone 
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "הודעת WhatsApp נשלחה!",
+        description: `נשלחה הודעה למספר ${contactInfo.phone}`,
+      });
+    } catch (error: any) {
+      console.error('Test WhatsApp error:', error);
+      toast({
+        title: "שגיאה בשליחת WhatsApp",
+        description: error.message || "אירעה שגיאה בשליחת ההודעה",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingWhatsApp(false);
+    }
+  };
+
   return (
     <Card className="p-6 bg-gradient-card shadow-card border-border/50">
       <h2 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2">
@@ -161,18 +200,28 @@ export const NotificationSettings = () => {
         <div className="space-y-4">
           <div>
             <Label htmlFor="phone" className="text-foreground">
-              מספר טלפון
+              מספר טלפון (בפורמט בינלאומי: +972...)
             </Label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="05X-XXX-XXXX"
-              value={contactInfo.phone}
-              onChange={(e) =>
-                setContactInfo({ ...contactInfo, phone: e.target.value })
-              }
-              className="mt-2"
-            />
+            <div className="flex gap-2 mt-2">
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+972501234567"
+                value={contactInfo.phone}
+                onChange={(e) =>
+                  setContactInfo({ ...contactInfo, phone: e.target.value })
+                }
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleTestWhatsApp}
+                disabled={testingWhatsApp || !contactInfo.phone}
+                title="שלח הודעת WhatsApp בדיקה"
+              >
+                <MessageCircle className={`w-4 h-4 ${testingWhatsApp ? 'animate-pulse' : ''}`} />
+              </Button>
+            </div>
           </div>
 
           <div>

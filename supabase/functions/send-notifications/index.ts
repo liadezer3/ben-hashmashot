@@ -196,13 +196,25 @@ serve(async (req) => {
     if (body.testEmail && body.email) {
       console.log('Sending test email to:', body.email);
       
-      const testEmailHtml = `
+      // Fetch real Shabbat times for test email
+      const shabbatTimes = await getShabbatTimes();
+      
+      const testEmailHtml = shabbatTimes ? `
+        <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+          <h1 style="margin: 0 0 20px 0;">🕯️ מייל בדיקה - זמני שבת</h1>
+          <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <p style="font-size: 18px; margin: 5px 0;">הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
+          </div>
+          <p style="font-size: 16px; opacity: 0.9;">${shabbatTimes.parasha}</p>
+          <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;" />
+          <p style="font-size: 12px; opacity: 0.7;">זו הודעת בדיקה - המערכת מוגדרת כראוי</p>
+        </div>
+      ` : `
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: #f7fafc; border-radius: 8px;">
           <h1 style="color: #2D3748;">🕯️ מייל בדיקה - זמני שבת</h1>
           <p style="font-size: 16px; color: #4A5568;">מייל הבדיקה נשלח בהצלחה!</p>
           <p style="font-size: 14px; color: #718096;">המערכת מוגדרת כראוי ותשלח לך התראות על זמני שבת וחג.</p>
-          <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #A0AEC0;">זמני שבת וחג</p>
         </div>
       `;
       
@@ -210,11 +222,34 @@ serve(async (req) => {
       
       if (emailSent) {
         return new Response(
-          JSON.stringify({ success: true, message: 'Test email sent' }),
+          JSON.stringify({ success: true, message: 'Test email sent', shabbatTimes }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } else {
         throw new Error('Failed to send test email');
+      }
+    }
+
+    // Handle test WhatsApp request
+    if (body.testWhatsApp && body.phone) {
+      console.log('Sending test WhatsApp to:', body.phone);
+      
+      // Fetch real Shabbat times for test message
+      const shabbatTimes = await getShabbatTimes();
+      
+      const testMessage = shabbatTimes 
+        ? `🕯️ הודעת בדיקה - זמני שבת\n\nהדלקת נרות: ${shabbatTimes.candle_lighting_time}\nמוצאי שבת: ${shabbatTimes.havdalah_time}\n${shabbatTimes.parasha}\n\n✅ המערכת מוגדרת כראוי!`
+        : `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי ותשלח לך התראות על זמני שבת וחג.`;
+      
+      const whatsappSent = await sendWhatsApp(body.phone, testMessage);
+      
+      if (whatsappSent) {
+        return new Response(
+          JSON.stringify({ success: true, message: 'Test WhatsApp sent', shabbatTimes }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        throw new Error('Failed to send test WhatsApp');
       }
     }
 
