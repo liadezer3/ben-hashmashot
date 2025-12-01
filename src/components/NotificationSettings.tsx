@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, MessageCircle, Smartphone, Clock, Send } from "lucide-react";
+import { Bell, Mail, Smartphone, Clock, Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ import {
   requestNotificationPermission,
   isNativeApp 
 } from "@/lib/localNotifications";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 
 export const NotificationSettings = () => {
   const { toast } = useToast();
@@ -272,7 +273,11 @@ export const NotificationSettings = () => {
                 title="שלח הודעת WhatsApp בדיקה"
                 className="border-[#25D366] hover:bg-[#25D366]/10"
               >
-                <MessageCircle className={`w-4 h-4 text-[#25D366] ${testingWhatsApp ? 'animate-pulse' : ''}`} />
+                <img 
+                  src={whatsappIcon} 
+                  alt="WhatsApp" 
+                  className={`w-5 h-5 ${testingWhatsApp ? 'animate-pulse' : ''}`}
+                />
               </Button>
             </div>
           </div>
@@ -378,7 +383,11 @@ export const NotificationSettings = () => {
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
               <div className="flex items-center gap-3">
-                <MessageCircle className="w-5 h-5 text-[#25D366]" />
+                <img 
+                  src={whatsappIcon} 
+                  alt="WhatsApp" 
+                  className="w-5 h-5"
+                />
                 <Label htmlFor="whatsapp" className="text-foreground cursor-pointer">
                   הודעת WhatsApp
                 </Label>
