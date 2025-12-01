@@ -7,6 +7,11 @@ import { Bell, Mail, MessageCircle, Smartphone, Clock, Send } from "lucide-react
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  sendImmediateNotification, 
+  requestNotificationPermission,
+  isNativeApp 
+} from "@/lib/localNotifications";
 
 export const NotificationSettings = () => {
   const { toast } = useToast();
@@ -30,6 +35,7 @@ export const NotificationSettings = () => {
   const [loading, setLoading] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingWhatsApp, setTestingWhatsApp] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
 
   useEffect(() => {
     loadPreferences();
@@ -189,6 +195,52 @@ export const NotificationSettings = () => {
     }
   };
 
+  const handleTestPushNotification = async () => {
+    if (!isNativeApp()) {
+      toast({
+        title: "התראות מקומיות",
+        description: "התראות מקומיות זמינות רק באפליקציה המותקנת",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingPush(true);
+    
+    try {
+      const granted = await requestNotificationPermission();
+      
+      if (!granted) {
+        toast({
+          title: "הרשאה נדרשת",
+          description: "יש לאפשר התראות כדי לקבל התראות מקומיות",
+          variant: "destructive",
+        });
+        setTestingPush(false);
+        return;
+      }
+
+      await sendImmediateNotification(
+        "🕯️ בדיקת התראה",
+        "התראות מקומיות פועלות כראוי! תקבלו התראות על זמני שבת וחג."
+      );
+
+      toast({
+        title: "התראה נשלחה!",
+        description: "בדקו את מגש ההתראות של המכשיר",
+      });
+    } catch (error: any) {
+      console.error('Test push notification error:', error);
+      toast({
+        title: "שגיאה בשליחת התראה",
+        description: error.message || "אירעה שגיאה בשליחת ההתראה",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingPush(false);
+    }
+  };
+
   return (
     <Card className="p-6 bg-gradient-card shadow-card border-border/50">
       <h2 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2">
@@ -218,8 +270,9 @@ export const NotificationSettings = () => {
                 onClick={handleTestWhatsApp}
                 disabled={testingWhatsApp || !contactInfo.phone}
                 title="שלח הודעת WhatsApp בדיקה"
+                className="border-[#25D366] hover:bg-[#25D366]/10"
               >
-                <MessageCircle className={`w-4 h-4 ${testingWhatsApp ? 'animate-pulse' : ''}`} />
+                <MessageCircle className={`w-4 h-4 text-[#25D366] ${testingWhatsApp ? 'animate-pulse' : ''}`} />
               </Button>
             </div>
           </div>
@@ -325,7 +378,7 @@ export const NotificationSettings = () => {
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
               <div className="flex items-center gap-3">
-                <MessageCircle className="w-5 h-5 text-primary" />
+                <MessageCircle className="w-5 h-5 text-[#25D366]" />
                 <Label htmlFor="whatsapp" className="text-foreground cursor-pointer">
                   הודעת WhatsApp
                 </Label>
@@ -340,15 +393,41 @@ export const NotificationSettings = () => {
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
               <div className="flex items-center gap-3">
                 <Bell className="w-5 h-5 text-primary" />
-                <Label htmlFor="push" className="text-foreground cursor-pointer">
-                  התראה צפה
-                </Label>
+                <div className="flex-1">
+                  <Label htmlFor="push" className="text-foreground cursor-pointer">
+                    התראות מקומיות (מהמכשיר)
+                  </Label>
+                  {isNativeApp() && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      התראות ישירות ממכשיר הנייד
+                    </p>
+                  )}
+                  {!isNativeApp() && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      זמין רק באפליקציה המותקנת
+                    </p>
+                  )}
+                </div>
               </div>
-              <Switch
-                id="push"
-                checked={settings.push}
-                onCheckedChange={() => handleToggle("push")}
-              />
+              <div className="flex items-center gap-2">
+                {isNativeApp() && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleTestPushNotification}
+                    disabled={testingPush}
+                    title="בדוק התראה מקומית"
+                  >
+                    <Bell className={`w-4 h-4 ${testingPush ? 'animate-pulse' : ''}`} />
+                  </Button>
+                )}
+                <Switch
+                  id="push"
+                  checked={settings.push}
+                  onCheckedChange={() => handleToggle("push")}
+                  disabled={!isNativeApp()}
+                />
+              </div>
             </div>
           </div>
         </div>
