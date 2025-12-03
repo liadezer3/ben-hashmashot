@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, Smartphone, Clock, Send } from "lucide-react";
+import { Bell, Mail, Smartphone, Clock } from "lucide-react";
+import gmailIcon from "@/assets/gmail-icon.png";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -303,7 +304,11 @@ export const NotificationSettings = () => {
                 disabled={testingEmail || !contactInfo.email}
                 title="שלח מייל בדיקה"
               >
-                <Send className={`w-4 h-4 ${testingEmail ? 'animate-pulse' : ''}`} />
+                <img 
+                  src={gmailIcon} 
+                  alt="Gmail" 
+                  className={`w-5 h-5 ${testingEmail ? 'animate-pulse' : ''}`}
+                />
               </Button>
             </div>
           </div>
