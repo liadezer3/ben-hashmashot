@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import logo from "@/assets/logo.jpg";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const Header = () => {
   const navigate = useNavigate();
@@ -63,6 +64,7 @@ export const Header = () => {
             </h1>
           </div>
           <div className="absolute left-4 flex gap-2">
+            <ThemeToggle />
             {isAuthenticated ? (
               <>
                 {isAdmin && (

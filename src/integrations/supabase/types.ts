@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      family_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notify_email: boolean | null
+          notify_sms: boolean | null
+          notify_whatsapp: boolean | null
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notify_email?: boolean | null
+          notify_sms?: boolean | null
+          notify_whatsapp?: boolean | null
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notify_email?: boolean | null
+          notify_sms?: boolean | null
+          notify_whatsapp?: boolean | null
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_history: {
         Row: {
           created_at: string
@@ -47,6 +86,7 @@ export type Database = {
       notification_preferences: {
         Row: {
           created_at: string
+          custom_message: string | null
           email: string | null
           email_enabled: boolean | null
           hours_before_shabbat: number | null
@@ -61,6 +101,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_message?: string | null
           email?: string | null
           email_enabled?: boolean | null
           hours_before_shabbat?: number | null
@@ -75,6 +116,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_message?: string | null
           email?: string | null
           email_enabled?: boolean | null
           hours_before_shabbat?: number | null

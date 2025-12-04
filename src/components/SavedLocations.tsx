@@ -4,8 +4,9 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Plus, Trash2, Star } from "lucide-react";
+import { MapPin, Plus, Trash2, Star, Navigation, Loader2 } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
+import { detectUserCity, isGeolocationSupported } from "@/lib/geoLocation";
 
 interface SavedLocation {
   id: string;
@@ -18,7 +19,38 @@ export const SavedLocations = () => {
   const [newCity, setNewCity] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [detecting, setDetecting] = useState(false);
   const { toast } = useToast();
+
+  const detectLocation = async () => {
+    if (!isGeolocationSupported()) {
+      toast({
+        title: "לא נתמך",
+        description: "הדפדפן שלך לא תומך בזיהוי מיקום",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDetecting(true);
+    try {
+      const city = await detectUserCity();
+      setNewCity(city);
+      toast({
+        title: "מיקום זוהה!",
+        description: `זוהית ב${city}`,
+      });
+    } catch (error) {
+      console.error("Error detecting location:", error);
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו לזהות את המיקום. נסה לאשר גישה למיקום",
+        variant: "destructive",
+      });
+    } finally {
+      setDetecting(false);
+    }
+  };
 
   useEffect(() => {
     loadLocations();
@@ -165,6 +197,18 @@ export const SavedLocations = () => {
           placeholder="הוסף עיר חדשה"
           onKeyPress={(e) => e.key === "Enter" && addLocation()}
         />
+        <Button 
+          variant="outline" 
+          onClick={detectLocation} 
+          disabled={detecting}
+          title="זהה מיקום אוטומטית"
+        >
+          {detecting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Navigation className="w-4 h-4" />
+          )}
+        </Button>
         <Button onClick={addLocation} disabled={saving}>
           <Plus className="w-4 h-4" />
         </Button>

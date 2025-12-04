@@ -6,6 +6,7 @@ import { UpcomingHolidays } from "@/components/UpcomingHolidays";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { NotificationHistory } from "@/components/NotificationHistory";
 import { SavedLocations } from "@/components/SavedLocations";
+import { FamilyMembers } from "@/components/FamilyMembers";
 import { Header } from "@/components/Header";
 
 const Index = () => {
@@ -45,6 +46,7 @@ const Index = () => {
         <SavedLocations />
         <UpcomingHolidays />
         <NotificationSettings />
+        <FamilyMembers />
         <NotificationHistory />
       </main>
 
