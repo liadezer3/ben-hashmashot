@@ -1,7 +1,10 @@
 import { Card } from "@/components/ui/card";
-import { Sunset, Sunrise, Sun, Moon, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sunset, Sunrise, Sun, Moon, Clock, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { shareShabbatTimes } from "@/lib/shareUtils";
+import { useToast } from "@/hooks/use-toast";
 
 interface ShabbatTime {
   candleLighting: string;
@@ -26,6 +29,31 @@ export const ShabbatTimes = () => {
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("Jerusalem");
   const [countdown, setCountdown] = useState<CountdownTime | null>(null);
+  const { toast } = useToast();
+
+  const handleShare = async () => {
+    if (!shabbatTimes) return;
+    
+    const result = await shareShabbatTimes(
+      city,
+      shabbatTimes.candleLighting,
+      shabbatTimes.havdalah,
+      shabbatTimes.parashat
+    );
+
+    if (result.success) {
+      toast({
+        title: result.method === 'native' ? "שותף בהצלחה!" : "הועתק!",
+        description: result.method === 'clipboard' ? "הזמנים הועתקו ללוח" : undefined,
+      });
+    } else {
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו לשתף",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     loadUserCity();
@@ -171,6 +199,15 @@ export const ShabbatTimes = () => {
         <div className="flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-primary" />
           <h2 className="text-2xl font-bold">זמני השבת ב{city}</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleShare}
+            title="שתף זמני שבת"
+            className="mr-2"
+          >
+            <Share2 className="w-5 h-5" />
+          </Button>
         </div>
         
         {countdown && (
