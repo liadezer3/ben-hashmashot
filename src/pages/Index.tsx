@@ -8,16 +8,21 @@ import { NotificationHistory } from "@/components/NotificationHistory";
 import { SavedLocations } from "@/components/SavedLocations";
 import { FamilyMembers } from "@/components/FamilyMembers";
 import { Header } from "@/components/Header";
+import ParshaContent from "@/components/ParshaContent";
+import ShabbatTaskList from "@/components/ShabbatTaskList";
+import FamilyMemories from "@/components/FamilyMemories";
 
 const Index = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate("/auth");
       } else {
+        setUserId(session.user.id);
         setLoading(false);
       }
     });
@@ -26,6 +31,7 @@ const Index = () => {
       if (!session) {
         navigate("/auth");
       } else {
+        setUserId(session.user.id);
         setLoading(false);
       }
     });
@@ -33,7 +39,7 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (loading) {
+  if (loading || !userId) {
     return null;
   }
 
@@ -43,6 +49,16 @@ const Index = () => {
       
       <main className="container mx-auto px-4 py-8 space-y-8">
         <ShabbatTimes />
+        
+        {/* New Featured Section - Torah Content & Preparation */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <ParshaContent />
+          <ShabbatTaskList userId={userId} />
+        </div>
+        
+        {/* Family Memories - Central Feature */}
+        <FamilyMemories userId={userId} />
+        
         <SavedLocations />
         <UpcomingHolidays />
         <NotificationSettings />

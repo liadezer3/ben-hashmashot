@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      family_memories: {
+        Row: {
+          content: string | null
+          created_at: string
+          date: string | null
+          id: string
+          image_url: string | null
+          parsha: string | null
+          tags: string[] | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          date?: string | null
+          id?: string
+          image_url?: string | null
+          parsha?: string | null
+          tags?: string[] | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          date?: string | null
+          id?: string
+          image_url?: string | null
+          parsha?: string | null
+          tags?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_history: {
         Row: {
           created_at: string
@@ -213,6 +255,39 @@ export type Database = {
           created_at?: string
           id?: string
           is_primary?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shabbat_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          is_completed: boolean | null
+          is_default: boolean | null
+          sort_order: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean | null
+          is_default?: boolean | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_completed?: boolean | null
+          is_default?: boolean | null
+          sort_order?: number | null
+          title?: string
           updated_at?: string
           user_id?: string
         }
