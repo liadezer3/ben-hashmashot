@@ -17,7 +17,7 @@ export const UpcomingHolidays = () => {
     const fetchHolidays = async () => {
       try {
         const response = await fetch(
-          'https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=on&nx=on&year=now&month=x&ss=on&mf=on&c=on&geo=geoname&geonameid=293397&M=on&s=on&lg=h'
+          'https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=on&nx=on&year=2026&month=x&ss=on&mf=on&c=on&geo=geoname&geonameid=293397&M=on&s=on&lg=h'
         );
         const data = await response.json();
         

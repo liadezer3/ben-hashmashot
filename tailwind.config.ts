@@ -39,6 +39,10 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        warm: {
+          DEFAULT: "hsl(var(--warm))",
+          foreground: "hsl(var(--warm-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -61,6 +65,7 @@ export default {
       backgroundImage: {
         'gradient-shabbat': 'var(--gradient-shabbat)',
         'gradient-card': 'var(--gradient-card)',
+        'gradient-warm': 'var(--gradient-warm)',
       },
       boxShadow: {
         'soft': 'var(--shadow-soft)',
