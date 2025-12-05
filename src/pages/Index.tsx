@@ -11,6 +11,7 @@ import { Header } from "@/components/Header";
 import ParshaContent from "@/components/ParshaContent";
 import ShabbatTaskList from "@/components/ShabbatTaskList";
 import FamilyMemories from "@/components/FamilyMemories";
+import { AppReviews } from "@/components/AppReviews";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -64,6 +65,7 @@ const Index = () => {
         <NotificationSettings />
         <FamilyMembers />
         <NotificationHistory />
+        <AppReviews />
       </main>
 
       <footer className="border-t border-border mt-16 py-8">
