@@ -1,16 +1,25 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sunset, Sunrise, Sun, Moon, Clock, Share2 } from "lucide-react";
+import { Sunset, Sunrise, Sun, Moon, Clock, Share2, Calendar, MessageCircle, Mail, Copy, Link } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { shareShabbatTimes } from "@/lib/shareUtils";
+import { shareShabbatTimes, shareViaWhatsApp, shareViaEmail, copyToClipboard, formatShabbatTimesForShare } from "@/lib/shareUtils";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
+import gmailIcon from "@/assets/gmail-icon.png";
 
 interface ShabbatTime {
   candleLighting: string;
   havdalah: string;
   parashat: string;
   date: string;
+  shabbatEntry: string; // כניסת שבת - התאריך המפורמט
   sunrise?: string;
   sunset?: string;
   tzeit?: string;
@@ -31,7 +40,22 @@ export const ShabbatTimes = () => {
   const [countdown, setCountdown] = useState<CountdownTime | null>(null);
   const { toast } = useToast();
 
-  const handleShare = async () => {
+  const getShareText = () => {
+    if (!shabbatTimes) return '';
+    return `🕯️ זמני שבת ב${city}
+
+📅 כניסת שבת: ${shabbatTimes.shabbatEntry}
+📖 ${shabbatTimes.parashat}
+
+🌅 הדלקת נרות: ${shabbatTimes.candleLighting}
+🌃 הבדלה: ${shabbatTimes.havdalah}
+
+🔗 הורד את האפליקציה: ${window.location.origin}
+
+שבת שלום! ✨`;
+  };
+
+  const handleShareNative = async () => {
     if (!shabbatTimes) return;
     
     const result = await shareShabbatTimes(
@@ -51,6 +75,39 @@ export const ShabbatTimes = () => {
         title: "שגיאה",
         description: "לא הצלחנו לשתף",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = getShareText();
+    shareViaWhatsApp(text);
+  };
+
+  const handleShareEmail = () => {
+    if (!shabbatTimes) return;
+    const subject = `זמני שבת - ${shabbatTimes.parashat}`;
+    const body = getShareText();
+    shareViaEmail(subject, body);
+  };
+
+  const handleCopyLink = async () => {
+    const copied = await copyToClipboard(window.location.origin);
+    if (copied) {
+      toast({
+        title: "הקישור הועתק!",
+        description: "כעת ניתן לשתף את הקישור",
+      });
+    }
+  };
+
+  const handleCopyTimes = async () => {
+    const text = getShareText();
+    const copied = await copyToClipboard(text);
+    if (copied) {
+      toast({
+        title: "הועתק!",
+        description: "זמני השבת הועתקו ללוח",
       });
     }
   };
@@ -164,11 +221,25 @@ export const ShabbatTimes = () => {
       const parashat = data.items.find((item: any) => item.category === 'parashat');
       const zmanim = data.items.filter((item: any) => item.category === 'zmanim');
 
+      // Format Shabbat entry date
+      let shabbatEntryDate = '';
+      if (candleLighting?.date) {
+        const candleDate = new Date(candleLighting.date);
+        const hebrewDateFormatter = new Intl.DateTimeFormat('he-IL', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+        shabbatEntryDate = hebrewDateFormatter.format(candleDate);
+      }
+
       setShabbatTimes({
         candleLighting: candleLighting?.title || '',
         havdalah: havdalah?.title || '',
         parashat: parashat?.hebrew || parashat?.title || '',
         date: data.date || '',
+        shabbatEntry: shabbatEntryDate,
         sunrise: zmanim.find((z: any) => z.title.includes('זריחה') || z.title.includes('Sunrise'))?.title,
         sunset: zmanim.find((z: any) => z.title.includes('שקיעה') || z.title.includes('Sunset'))?.title,
         tzeit: zmanim.find((z: any) => z.title.includes('צאת') || z.title.includes('Nightfall'))?.title,
@@ -199,15 +270,42 @@ export const ShabbatTimes = () => {
         <div className="flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-primary" />
           <h2 className="text-2xl font-bold">זמני השבת ב{city}</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleShare}
-            title="שתף זמני שבת"
-            className="mr-2"
-          >
-            <Share2 className="w-5 h-5" />
-          </Button>
+          
+          {/* Share dropdown menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="שתף זמני שבת"
+                className="mr-2"
+              >
+                <Share2 className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleShareWhatsApp} className="gap-2 cursor-pointer">
+                <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+                <span>שתף בוואטסאפ</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleShareEmail} className="gap-2 cursor-pointer">
+                <img src={gmailIcon} alt="Email" className="w-5 h-5" />
+                <span>שלח במייל</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyTimes} className="gap-2 cursor-pointer">
+                <Copy className="w-5 h-5" />
+                <span>העתק זמנים</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleCopyLink} className="gap-2 cursor-pointer">
+                <Link className="w-5 h-5" />
+                <span>העתק קישור לאפליקציה</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleShareNative} className="gap-2 cursor-pointer">
+                <Share2 className="w-5 h-5" />
+                <span>שיתוף מתקדם</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         {countdown && (
@@ -225,6 +323,21 @@ export const ShabbatTimes = () => {
           </Card>
         )}
       </div>
+
+      {/* Shabbat Entry Date Card - NEW */}
+      {shabbatTimes?.shabbatEntry && (
+        <Card className="p-6 bg-gradient-to-r from-primary/20 to-secondary/20 shadow-card border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">כניסת שבת</p>
+              <p className="text-xl font-bold">{shabbatTimes.shabbatEntry}</p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-6 bg-gradient-card shadow-card border-border/50 hover:shadow-soft transition-shadow">
