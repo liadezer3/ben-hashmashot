@@ -12,6 +12,7 @@ import ParshaContent from "@/components/ParshaContent";
 import ShabbatTaskList from "@/components/ShabbatTaskList";
 import FamilyMemories from "@/components/FamilyMemories";
 import { AppReviews } from "@/components/AppReviews";
+import { AppPromotion } from "@/components/AppPromotion";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -66,6 +67,7 @@ const Index = () => {
         <FamilyMembers />
         <NotificationHistory />
         <AppReviews />
+        <AppPromotion />
       </main>
 
       <footer className="border-t border-border mt-16 py-8">
