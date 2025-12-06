@@ -209,16 +209,16 @@ serve(async (req) => {
       const shabbatTimes = await getShabbatTimes();
       
       const testEmailHtml = shabbatTimes ? `
-        <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+        <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-radius: 12px; color: white;">
           <h1 style="margin: 0 0 20px 0;">🕯️ מייל בדיקה - זמני שבת</h1>
           <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-            <p style="font-size: 18px; margin: 5px 0;">כניסת שבת: <strong>${shabbatTimes.date}</strong></p>
-            <p style="font-size: 18px; margin: 5px 0;">הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
-            <p style="font-size: 18px; margin: 5px 0;">מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">📅 כניסת שבת: <strong>${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">🕯️ הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">🌙 מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
           </div>
-          <p style="font-size: 16px; opacity: 0.9;">${shabbatTimes.parasha}</p>
+          <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
           <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;" />
-          <p style="font-size: 12px; opacity: 0.7;">זו הודעת בדיקה - המערכת מוגדרת כראוי</p>
+          <p style="font-size: 12px; opacity: 0.7;">זו הודעת בדיקה - המערכת מוגדרת כראוי ✅</p>
         </div>
       ` : `
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: #f7fafc; border-radius: 8px;">
@@ -302,16 +302,16 @@ serve(async (req) => {
       const shouldSend = isFriday && now >= notificationTime && now < candleLightingTime;
 
       if (shouldSend) {
-        const message = `שבת שלום! 🕯️ כניסת שבת: ${shabbatTimes.date} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
+        const message = `שבת שלום! 🕯️ כניסת שבת: ${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
         const emailHtml = `
-          <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+          <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-radius: 12px; color: white;">
             <h1 style="margin: 0 0 20px 0;">🕯️ שבת שלום!</h1>
             <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-              <p style="font-size: 18px; margin: 5px 0;">כניסת שבת: <strong>${shabbatTimes.date}</strong></p>
-              <p style="font-size: 18px; margin: 5px 0;">הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
-              <p style="font-size: 18px; margin: 5px 0;">מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
+              <p style="font-size: 18px; margin: 5px 0;">📅 כניסת שבת: <strong>${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time}</strong></p>
+              <p style="font-size: 18px; margin: 5px 0;">🕯️ הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
+              <p style="font-size: 18px; margin: 5px 0;">🌙 מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
             </div>
-            <p style="font-size: 16px; opacity: 0.9;">${shabbatTimes.parasha}</p>
+            <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
           </div>
         `;
 
