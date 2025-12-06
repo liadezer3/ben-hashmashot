@@ -55,12 +55,21 @@ const getShabbatTimes = async (location: string = "Jerusalem"): Promise<ShabbatT
     console.log('Extracted candle time:', candleTime);
     console.log('Extracted havdalah time:', havdalahTime);
     
+    // Format the Shabbat entry date (e.g., "יום שישי, 6 בדצמבר")
+    const candleDate = new Date(candleLighting.date);
+    const hebrewDateFormatter = new Intl.DateTimeFormat('he-IL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+    const formattedDate = hebrewDateFormatter.format(candleDate);
+    
     return {
       candle_lighting: candleLighting.date,
       candle_lighting_time: candleTime,
       havdalah: havdalah.date,
       havdalah_time: havdalahTime,
-      date: candleLighting.memo || parasha?.hebrew || '',
+      date: formattedDate,
       parasha: parasha?.hebrew || ''
     };
   } catch (error) {
@@ -203,6 +212,7 @@ serve(async (req) => {
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
           <h1 style="margin: 0 0 20px 0;">🕯️ מייל בדיקה - זמני שבת</h1>
           <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <p style="font-size: 18px; margin: 5px 0;">כניסת שבת: <strong>${shabbatTimes.date}</strong></p>
             <p style="font-size: 18px; margin: 5px 0;">הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
             <p style="font-size: 18px; margin: 5px 0;">מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
           </div>
@@ -238,7 +248,7 @@ serve(async (req) => {
       const shabbatTimes = await getShabbatTimes();
       
       const testMessage = shabbatTimes 
-        ? `🕯️ הודעת בדיקה - זמני שבת\n\nהדלקת נרות: ${shabbatTimes.candle_lighting_time}\nמוצאי שבת: ${shabbatTimes.havdalah_time}\n${shabbatTimes.parasha}\n\n✅ המערכת מוגדרת כראוי!`
+        ? `🕯️ הודעת בדיקה - זמני שבת\n\nכניסת שבת: ${shabbatTimes.date}\nהדלקת נרות: ${shabbatTimes.candle_lighting_time}\nמוצאי שבת: ${shabbatTimes.havdalah_time}\n${shabbatTimes.parasha}\n\n✅ המערכת מוגדרת כראוי!`
         : `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי ותשלח לך התראות על זמני שבת וחג.`;
       
       const whatsappSent = await sendWhatsApp(body.phone, testMessage);
@@ -292,11 +302,12 @@ serve(async (req) => {
       const shouldSend = isFriday && now >= notificationTime && now < candleLightingTime;
 
       if (shouldSend) {
-        const message = `שבת שלום! 🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
+        const message = `שבת שלום! 🕯️ כניסת שבת: ${shabbatTimes.date} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
         const emailHtml = `
           <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
             <h1 style="margin: 0 0 20px 0;">🕯️ שבת שלום!</h1>
             <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+              <p style="font-size: 18px; margin: 5px 0;">כניסת שבת: <strong>${shabbatTimes.date}</strong></p>
               <p style="font-size: 18px; margin: 5px 0;">הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
               <p style="font-size: 18px; margin: 5px 0;">מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
             </div>
