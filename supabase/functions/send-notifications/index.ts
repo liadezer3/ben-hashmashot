@@ -193,6 +193,34 @@ const sendWhatsApp = async (to: string, message: string) => {
   }
 };
 
+// Logo URL for email branding
+const APP_LOGO_URL = 'https://bein-hashmashut.lovable.app/icon-512.png';
+const APP_URL = 'https://bein-hashmashut.lovable.app';
+
+// Promotional footer for emails
+const getEmailPromoFooter = () => `
+  <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.3);">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+      <tr>
+        <td align="center">
+          <img src="${APP_LOGO_URL}" alt="בין השמשות" width="80" height="80" style="border-radius: 50%; border: 3px solid rgba(255,255,255,0.5);" />
+        </td>
+      </tr>
+    </table>
+    <div style="text-align: center; color: rgba(255,255,255,0.95);">
+      <h3 style="margin: 10px 0 5px 0; font-size: 18px;">✨ בין השמשות - זמני שבת וחג ✨</h3>
+      <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">האפליקציה המשפחתית שלך לזמני שבת</p>
+      <div style="margin: 15px 0; padding: 12px; background: rgba(255,255,255,0.15); border-radius: 8px;">
+        <p style="margin: 3px 0; font-size: 13px;">📅 זמני שבת מדויקים לפי המיקום שלך</p>
+        <p style="margin: 3px 0; font-size: 13px;">🔔 התראות אוטומטיות במייל, SMS ווואטסאפ</p>
+        <p style="margin: 3px 0; font-size: 13px;">📖 דבר תורה שבועי מעודכן</p>
+        <p style="margin: 3px 0; font-size: 13px;">💝 יומן זיכרונות משפחתי</p>
+      </div>
+      <a href="${APP_URL}" style="display: inline-block; padding: 10px 25px; background: rgba(255,255,255,0.25); color: white; text-decoration: none; border-radius: 25px; font-weight: bold; margin-top: 10px;">הצטרפו עכשיו 🚀</a>
+    </div>
+  </div>
+`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -219,6 +247,7 @@ serve(async (req) => {
           <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
           <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;" />
           <p style="font-size: 12px; opacity: 0.7;">זו הודעת בדיקה - המערכת מוגדרת כראוי ✅</p>
+          ${getEmailPromoFooter()}
         </div>
       ` : `
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: #f7fafc; border-radius: 8px;">
@@ -312,6 +341,7 @@ serve(async (req) => {
               <p style="font-size: 18px; margin: 5px 0;">🌙 מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
             </div>
             <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
+            ${getEmailPromoFooter()}
           </div>
         `;
 
