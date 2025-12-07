@@ -1,11 +1,23 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Share2, MessageCircle, Mail, Copy, Clock, Calendar, BookOpen, Heart, Users, Bell, Sparkles } from "lucide-react";
+import { Share2, Copy, Clock, Calendar, BookOpen, Heart, Users, Bell, Sparkles, Send, Facebook } from "lucide-react";
 import { shareViaWhatsApp, shareViaEmail, copyToClipboard } from "@/lib/shareUtils";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.jpg";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import gmailIcon from "@/assets/gmail-icon.png";
+
+// Share via Telegram
+const shareViaTelegram = (text: string): void => {
+  const encodedText = encodeURIComponent(text);
+  window.open(`https://t.me/share/url?text=${encodedText}`, '_blank');
+};
+
+// Share via Facebook
+const shareViaFacebook = (url: string): void => {
+  const encodedUrl = encodeURIComponent(url);
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank');
+};
 
 export const AppPromotion = () => {
   const { toast } = useToast();
@@ -107,6 +119,23 @@ export const AppPromotion = () => {
             שתף בוואטסאפ
           </Button>
           <Button 
+            onClick={() => shareViaTelegram(promotionText)}
+            className="flex items-center gap-2 bg-[#0088cc] hover:bg-[#006699] text-white"
+          >
+            <Send className="w-4 h-4" />
+            שתף בטלגרם
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            onClick={() => shareViaFacebook(appUrl)}
+            className="flex items-center gap-2 bg-[#1877F2] hover:bg-[#0d5cc7] text-white"
+          >
+            <Facebook className="w-4 h-4" />
+            שתף בפייסבוק
+          </Button>
+          <Button 
             onClick={handleShareEmail}
             variant="outline"
             className="flex items-center gap-2"
@@ -115,7 +144,7 @@ export const AppPromotion = () => {
             שלח במייל
           </Button>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-3">
           <Button 
             onClick={handleCopyLink}
