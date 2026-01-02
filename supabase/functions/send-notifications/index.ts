@@ -81,36 +81,30 @@ const getShabbatTimes = async (location: string = "Jerusalem"): Promise<ShabbatT
 const sendEmail = async (to: string, subject: string, html: string) => {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
   if (!resendApiKey) {
-    console.error('RESEND_API_KEY not configured');
-    return false;
+    throw new Error('RESEND_API_KEY not configured');
   }
 
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'זמני שבת <onboarding@resend.dev>',
-        to: [to],
-        subject,
-        html,
-      }),
-    });
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'זמני שבת <onboarding@resend.dev>',
+      to: [to],
+      subject,
+      html,
+    }),
+  });
 
-    if (!response.ok) {
-      console.error('Resend error:', await response.text());
-      return false;
-    }
-
-    console.log(`Email sent to ${to}`);
-    return true;
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return false;
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    console.error('Resend error:', text);
+    throw new Error(`RESEND_ERROR: ${text || response.status}`);
   }
+
+  console.log(`Email sent to ${to}`);
 };
 
 const sendSMS = async (to: string, message: string) => {
@@ -119,38 +113,32 @@ const sendSMS = async (to: string, message: string) => {
   const fromPhone = Deno.env.get('TWILIO_PHONE_FROM');
 
   if (!accountSid || !authToken || !fromPhone) {
-    console.error('Twilio credentials not configured');
-    return false;
+    throw new Error('Twilio SMS credentials not configured');
   }
 
-  try {
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: to,
-          From: fromPhone,
-          Body: message,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      console.error('Twilio error:', await response.text());
-      return false;
+  const response = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        To: to,
+        From: fromPhone,
+        Body: message,
+      }),
     }
+  );
 
-    console.log(`SMS sent to ${to}`);
-    return true;
-  } catch (error) {
-    console.error('Error sending SMS:', error);
-    return false;
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    console.error('Twilio SMS error:', text);
+    throw new Error(`TWILIO_SMS_ERROR: ${text || response.status}`);
   }
+
+  console.log(`SMS sent to ${to}`);
 };
 
 const sendWhatsApp = async (to: string, message: string) => {
@@ -159,38 +147,32 @@ const sendWhatsApp = async (to: string, message: string) => {
   const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
 
   if (!accountSid || !authToken || !fromWhatsApp) {
-    console.error('Twilio WhatsApp credentials not configured');
-    return false;
+    throw new Error('Twilio WhatsApp credentials not configured');
   }
 
-  try {
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: `whatsapp:${to}`,
-          From: `whatsapp:${fromWhatsApp}`,
-          Body: message,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      console.error('Twilio WhatsApp error:', await response.text());
-      return false;
+  const response = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        To: `whatsapp:${to}`,
+        From: `whatsapp:${fromWhatsApp}`,
+        Body: message,
+      }),
     }
+  );
 
-    console.log(`WhatsApp sent to ${to}`);
-    return true;
-  } catch (error) {
-    console.error('Error sending WhatsApp:', error);
-    return false;
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    console.error('Twilio WhatsApp error:', text);
+    throw new Error(`TWILIO_WHATSAPP_ERROR: ${text || response.status}`);
   }
+
+  console.log(`WhatsApp sent to ${to}`);
 };
 
 // Logo URL for email branding
@@ -228,14 +210,14 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    
+
     // Handle test email request
     if (body.testEmail && body.email) {
       console.log('Sending test email to:', body.email);
-      
+
       // Fetch real Shabbat times for test email
       const shabbatTimes = await getShabbatTimes();
-      
+
       const testEmailHtml = shabbatTimes ? `
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-radius: 12px; color: white;">
           <h1 style="margin: 0 0 20px 0;">🕯️ מייל בדיקה - זמני שבת</h1>
@@ -256,40 +238,32 @@ serve(async (req) => {
           <p style="font-size: 14px; color: #718096;">המערכת מוגדרת כראוי ותשלח לך התראות על זמני שבת וחג.</p>
         </div>
       `;
-      
-      const emailSent = await sendEmail(body.email, 'בדיקת התראות - זמני שבת', testEmailHtml);
-      
-      if (emailSent) {
-        return new Response(
-          JSON.stringify({ success: true, message: 'Test email sent', shabbatTimes }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      } else {
-        throw new Error('Failed to send test email');
-      }
+
+      await sendEmail(body.email, 'בדיקת התראות - זמני שבת', testEmailHtml);
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Test email sent', shabbatTimes }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Handle test WhatsApp request
     if (body.testWhatsApp && body.phone) {
       console.log('Sending test WhatsApp to:', body.phone);
-      
+
       // Fetch real Shabbat times for test message
       const shabbatTimes = await getShabbatTimes();
-      
-      const testMessage = shabbatTimes 
+
+      const testMessage = shabbatTimes
         ? `🕯️ הודעת בדיקה - זמני שבת\n\nכניסת שבת: ${shabbatTimes.date}\nהדלקת נרות: ${shabbatTimes.candle_lighting_time}\nמוצאי שבת: ${shabbatTimes.havdalah_time}\n${shabbatTimes.parasha}\n\n✅ המערכת מוגדרת כראוי!`
         : `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי ותשלח לך התראות על זמני שבת וחג.`;
-      
-      const whatsappSent = await sendWhatsApp(body.phone, testMessage);
-      
-      if (whatsappSent) {
-        return new Response(
-          JSON.stringify({ success: true, message: 'Test WhatsApp sent', shabbatTimes }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      } else {
-        throw new Error('Failed to send test WhatsApp');
-      }
+
+      await sendWhatsApp(body.phone, testMessage);
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Test WhatsApp sent', shabbatTimes }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -316,62 +290,101 @@ serve(async (req) => {
 
     console.log(`Found ${preferences?.length || 0} notification preferences`);
 
+    // Scheduling mode
+    const timing = typeof body?.timing === 'string' ? body.timing : undefined; // 'morning' | 'afternoon' | undefined
+
     // Check if we should send notifications (Friday before Shabbat)
     const now = new Date();
     const candleLightingTime = new Date(shabbatTimes.candle_lighting);
     const isFriday = now.getDay() === 5;
-    
+
+    const jerusalemClock = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(now);
+
     let notificationsSent = 0;
+    let notificationsAttempted = 0;
 
     for (const pref of preferences || []) {
       const notificationTime = new Date(candleLightingTime);
       notificationTime.setHours(notificationTime.getHours() - pref.hours_before_shabbat);
 
-      // Check if it's time to send notifications
-      const shouldSend = isFriday && now >= notificationTime && now < candleLightingTime;
+      // Default behavior: only send in the "hours_before_shabbat" window
+      const shouldSendWindow = isFriday && now >= notificationTime && now < candleLightingTime;
 
-      if (shouldSend) {
-        const message = `שבת שלום! 🕯️ כניסת שבת: ${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
-        const emailHtml = `
-          <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-radius: 12px; color: white;">
-            <h1 style="margin: 0 0 20px 0;">🕯️ שבת שלום!</h1>
-            <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-              <p style="font-size: 18px; margin: 5px 0;">📅 כניסת שבת: <strong>${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time}</strong></p>
-              <p style="font-size: 18px; margin: 5px 0;">🕯️ הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
-              <p style="font-size: 18px; margin: 5px 0;">🌙 מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
-            </div>
-            <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
-            ${getEmailPromoFooter()}
+      // Cron-triggered modes:
+      // - morning: send only when user's morning_time matches Jerusalem clock
+      // - afternoon: send once for everyone on Friday (acts as "before Shabbat" batch)
+      const shouldSendMorning = timing === 'morning' && isFriday && !!pref.morning_time && jerusalemClock === pref.morning_time;
+      const shouldSendAfternoon = timing === 'afternoon' && isFriday;
+
+      const shouldSend = shouldSendMorning || shouldSendAfternoon || shouldSendWindow;
+
+      if (!shouldSend) {
+        continue;
+      }
+
+      const message = `שבת שלום! 🕯️ כניסת שבת: ${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
+      const emailHtml = `
+        <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-radius: 12px; color: white;">
+          <h1 style="margin: 0 0 20px 0;">🕯️ שבת שלום!</h1>
+          <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <p style="font-size: 18px; margin: 5px 0;">📅 כניסת שבת: <strong>${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">🕯️ הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">🌙 מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
           </div>
-        `;
+          <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
+          ${getEmailPromoFooter()}
+        </div>
+      `;
 
-        // Send email if enabled
-        if (pref.email_enabled && pref.email) {
+      // Send email if enabled
+      if (pref.email_enabled && pref.email) {
+        notificationsAttempted++;
+        try {
           await sendEmail(pref.email, 'זמני שבת', emailHtml);
           notificationsSent++;
+        } catch (e) {
+          console.error(`Email failed for ${pref.email}:`, e);
         }
+      }
 
-        // Send SMS if enabled
-        if (pref.sms_enabled && pref.phone) {
+      // Send SMS if enabled
+      if (pref.sms_enabled && pref.phone) {
+        notificationsAttempted++;
+        try {
           await sendSMS(pref.phone, message);
           notificationsSent++;
+        } catch (e) {
+          console.error(`SMS failed for ${pref.phone}:`, e);
         }
+      }
 
-        // Send WhatsApp if enabled
-        if (pref.whatsapp_enabled && pref.phone) {
+      // Send WhatsApp if enabled
+      if (pref.whatsapp_enabled && pref.phone) {
+        notificationsAttempted++;
+        try {
           await sendWhatsApp(pref.phone, message);
           notificationsSent++;
+        } catch (e) {
+          console.error(`WhatsApp failed for ${pref.phone}:`, e);
         }
       }
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'Notifications processed',
+        timing: timing || 'window',
+        jerusalemClock,
         shabbatTimes,
+        notificationsAttempted,
         notificationsSent,
-        totalPreferences: preferences?.length || 0 
+        totalPreferences: preferences?.length || 0,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -389,3 +402,4 @@ serve(async (req) => {
     );
   }
 });
+
