@@ -34,7 +34,11 @@ interface CountdownTime {
   seconds: number;
 }
 
-export const ShabbatTimes = () => {
+interface ShabbatTimesProps {
+  onParshaLoaded?: (parsha: string) => void;
+}
+
+export const ShabbatTimes = ({ onParshaLoaded }: ShabbatTimesProps = {}) => {
   const [shabbatTimes, setShabbatTimes] = useState<ShabbatTime | null>(null);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("Jerusalem");
@@ -235,10 +239,12 @@ export const ShabbatTimes = () => {
         shabbatEntryDate = hebrewDateFormatter.format(candleDate);
       }
 
+      const parshaName = parashat?.hebrew || parashat?.title || '';
+      
       setShabbatTimes({
         candleLighting: candleLighting?.title || '',
         havdalah: havdalah?.title || '',
-        parashat: parashat?.hebrew || parashat?.title || '',
+        parashat: parshaName,
         date: data.date || '',
         shabbatEntry: shabbatEntryDate,
         sunrise: zmanim.find((z: any) => z.title.includes('זריחה') || z.title.includes('Sunrise'))?.title,
@@ -246,6 +252,11 @@ export const ShabbatTimes = () => {
         tzeit: zmanim.find((z: any) => z.title.includes('צאת') || z.title.includes('Nightfall'))?.title,
         alot: zmanim.find((z: any) => z.title.includes('עלות') || z.title.includes('Dawn'))?.title,
       });
+
+      // Notify parent about the parsha
+      if (parshaName && onParshaLoaded) {
+        onParshaLoaded(parshaName);
+      }
     } catch (error) {
       console.error('Error fetching Shabbat times:', error);
     } finally {
