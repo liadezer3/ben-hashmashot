@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import gmailIcon from "@/assets/gmail-icon.png";
+import { CalendarAddButton } from "./CalendarAddButton";
 
 interface ShabbatTime {
   candleLighting: string;
@@ -271,6 +272,17 @@ export const ShabbatTimes = () => {
           <Sparkles className="w-6 h-6 text-primary" />
           <h2 className="text-2xl font-bold">זמני השבת ב{city}</h2>
           
+          {/* Calendar Add Button */}
+          {shabbatTimes && (
+            <CalendarAddButton
+              candleLighting={shabbatTimes.candleLighting}
+              havdalah={shabbatTimes.havdalah}
+              parsha={shabbatTimes.parashat}
+              city={city}
+              shabbatDate={shabbatTimes.shabbatEntry}
+            />
+          )}
+
           {/* Share dropdown menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
