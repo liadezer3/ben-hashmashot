@@ -13,11 +13,14 @@ import ShabbatTaskList from "@/components/ShabbatTaskList";
 import FamilyMemories from "@/components/FamilyMemories";
 import { AppReviews } from "@/components/AppReviews";
 import { AppPromotion } from "@/components/AppPromotion";
+import SefariaContent from "@/components/SefariaContent";
+import SmartHomeSettings from "@/components/SmartHomeSettings";
 
 const Index = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [currentParsha, setCurrentParsha] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -50,16 +53,22 @@ const Index = () => {
       <Header />
       
       <main className="container mx-auto px-4 py-8 space-y-8">
-        <ShabbatTimes />
+        <ShabbatTimes onParshaLoaded={setCurrentParsha} />
         
-        {/* New Featured Section - Torah Content & Preparation */}
+        {/* Torah Content & Preparation */}
         <div className="grid gap-6 md:grid-cols-2">
           <ParshaContent />
           <ShabbatTaskList userId={userId} />
         </div>
+
+        {/* Sefaria - Torah Sources & Commentary */}
+        <SefariaContent currentParsha={currentParsha} />
         
         {/* Family Memories - Central Feature */}
         <FamilyMemories userId={userId} />
+
+        {/* Smart Home Settings */}
+        <SmartHomeSettings />
         
         <SavedLocations />
         <UpcomingHolidays />
