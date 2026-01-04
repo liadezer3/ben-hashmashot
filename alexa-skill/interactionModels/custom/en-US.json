@@ -1,0 +1,103 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "shabbat times",
+      "intents": [
+        {
+          "name": "GetShabbatTimesIntent",
+          "slots": [
+            {
+              "name": "city",
+              "type": "AMAZON.City"
+            }
+          ],
+          "samples": [
+            "when is shabbat",
+            "when is candle lighting",
+            "when is havdalah",
+            "shabbat times",
+            "shabbat times in {city}",
+            "when is candle lighting in {city}",
+            "when is havdalah in {city}",
+            "what are the shabbat times",
+            "what are the shabbat times in {city}",
+            "tell me shabbat times",
+            "tell me shabbat times in {city}"
+          ]
+        },
+        {
+          "name": "GetParshaIntent",
+          "slots": [],
+          "samples": [
+            "what is the parsha",
+            "what is this week's parsha",
+            "what is the weekly portion",
+            "which parsha is this week",
+            "tell me the parsha",
+            "what are we reading this week"
+          ]
+        },
+        {
+          "name": "GetHolidaysIntent",
+          "slots": [],
+          "samples": [
+            "what are the upcoming holidays",
+            "when is the next holiday",
+            "what holidays are coming up",
+            "tell me about the holidays",
+            "what is the next holiday"
+          ]
+        },
+        {
+          "name": "GetCandleLightingIntent",
+          "slots": [
+            {
+              "name": "city",
+              "type": "AMAZON.City"
+            }
+          ],
+          "samples": [
+            "when is candle lighting",
+            "what time is candle lighting",
+            "when should I light candles",
+            "candle lighting in {city}",
+            "when is candle lighting in {city}"
+          ]
+        },
+        {
+          "name": "GetHavdalahIntent",
+          "slots": [
+            {
+              "name": "city",
+              "type": "AMAZON.City"
+            }
+          ],
+          "samples": [
+            "when is havdalah",
+            "what time is havdalah",
+            "when does shabbat end",
+            "havdalah in {city}",
+            "when is havdalah in {city}"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
+      ],
+      "types": []
+    }
+  }
+}
