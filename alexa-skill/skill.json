@@ -1,0 +1,81 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "he-IL": {
+          "summary": "קבל זמני שבת, פרשת השבוע וחגים יהודיים",
+          "examplePhrases": [
+            "אלקסה, פתח זמני שבת",
+            "אלקסה, שאל את זמני שבת מתי הדלקת נרות",
+            "אלקסה, שאל את זמני שבת מה הפרשה השבוע"
+          ],
+          "keywords": [
+            "שבת",
+            "יהדות",
+            "זמנים",
+            "הדלקת נרות",
+            "הבדלה",
+            "פרשה",
+            "חגים"
+          ],
+          "name": "זמני שבת",
+          "description": "עוזר קולי לזמני שבת וחגים יהודיים. קבל מידע על זמני הדלקת נרות, הבדלה, פרשת השבוע והחגים הקרובים. האפליקציה תומכת בערים רבות בישראל ובעולם.",
+          "smallIconUri": "https://your-domain.com/icon-108.png",
+          "largeIconUri": "https://your-domain.com/icon-512.png"
+        },
+        "en-US": {
+          "summary": "Get Shabbat times, weekly Torah portion and Jewish holidays",
+          "examplePhrases": [
+            "Alexa, open Shabbat Times",
+            "Alexa, ask Shabbat Times when is candle lighting",
+            "Alexa, ask Shabbat Times what is this week's parsha"
+          ],
+          "keywords": [
+            "shabbat",
+            "jewish",
+            "times",
+            "candle lighting",
+            "havdalah",
+            "parsha",
+            "holidays"
+          ],
+          "name": "Shabbat Times",
+          "description": "Voice assistant for Shabbat and Jewish holiday times. Get information about candle lighting times, havdalah, weekly Torah portion and upcoming holidays. Supports many cities in Israel and worldwide.",
+          "smallIconUri": "https://your-domain.com/icon-108.png",
+          "largeIconUri": "https://your-domain.com/icon-512.png"
+        }
+      },
+      "isAvailableWorldwide": true,
+      "testingInstructions": "Say 'Alexa, open Shabbat Times' to start. Then ask about candle lighting times, havdalah, or the weekly Torah portion.",
+      "category": "RELIGION_AND_SPIRITUALITY",
+      "distributionCountries": []
+    },
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:shabbat-times-alexa"
+        },
+        "interfaces": []
+      }
+    },
+    "manifestVersion": "1.0",
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "usesPersonalInfo": false,
+      "isChildDirected": false,
+      "isExportCompliant": true,
+      "containsAds": false,
+      "locales": {
+        "he-IL": {
+          "privacyPolicyUrl": "https://your-domain.com/privacy",
+          "termsOfUseUrl": "https://your-domain.com/terms"
+        },
+        "en-US": {
+          "privacyPolicyUrl": "https://your-domain.com/privacy",
+          "termsOfUseUrl": "https://your-domain.com/terms"
+        }
+      }
+    },
+    "permissions": []
+  }
+}

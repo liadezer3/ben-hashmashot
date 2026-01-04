@@ -1,0 +1,103 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "זמני שבת",
+      "intents": [
+        {
+          "name": "GetShabbatTimesIntent",
+          "slots": [
+            {
+              "name": "city",
+              "type": "AMAZON.City"
+            }
+          ],
+          "samples": [
+            "מתי שבת",
+            "מתי הדלקת נרות",
+            "מתי הבדלה",
+            "זמני שבת",
+            "זמני שבת ב{city}",
+            "מתי הדלקת נרות ב{city}",
+            "מתי הבדלה ב{city}",
+            "מה הזמנים לשבת",
+            "מה הזמנים לשבת ב{city}",
+            "תגיד לי זמני שבת",
+            "תגיד לי זמני שבת ב{city}"
+          ]
+        },
+        {
+          "name": "GetParshaIntent",
+          "slots": [],
+          "samples": [
+            "מה הפרשה",
+            "מה הפרשה השבוע",
+            "מה פרשת השבוע",
+            "איזו פרשה השבוע",
+            "תגיד לי את הפרשה",
+            "מה קוראים השבוע"
+          ]
+        },
+        {
+          "name": "GetHolidaysIntent",
+          "slots": [],
+          "samples": [
+            "מה החגים הקרובים",
+            "מתי החג הבא",
+            "איזה חגים יש בקרוב",
+            "תגיד לי על החגים",
+            "מה החג הקרוב"
+          ]
+        },
+        {
+          "name": "GetCandleLightingIntent",
+          "slots": [
+            {
+              "name": "city",
+              "type": "AMAZON.City"
+            }
+          ],
+          "samples": [
+            "מתי הדלקת נרות",
+            "באיזו שעה הדלקת נרות",
+            "מתי להדליק נרות",
+            "הדלקת נרות ב{city}",
+            "מתי הדלקת נרות ב{city}"
+          ]
+        },
+        {
+          "name": "GetHavdalahIntent",
+          "slots": [
+            {
+              "name": "city",
+              "type": "AMAZON.City"
+            }
+          ],
+          "samples": [
+            "מתי הבדלה",
+            "באיזו שעה הבדלה",
+            "מתי יוצאת שבת",
+            "הבדלה ב{city}",
+            "מתי הבדלה ב{city}"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
+      ],
+      "types": []
+    }
+  }
+}
