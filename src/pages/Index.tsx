@@ -15,6 +15,7 @@ import { AppReviews } from "@/components/AppReviews";
 import { AppPromotion } from "@/components/AppPromotion";
 import SefariaContent from "@/components/SefariaContent";
 import SmartHomeSettings from "@/components/SmartHomeSettings";
+import VoiceAssistant from "@/components/VoiceAssistant";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -66,6 +67,9 @@ const Index = () => {
         
         {/* Family Memories - Central Feature */}
         <FamilyMemories userId={userId} />
+
+        {/* Voice Assistant */}
+        <VoiceAssistant city="Jerusalem" />
 
         {/* Smart Home Settings */}
         <SmartHomeSettings />
