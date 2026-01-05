@@ -4,6 +4,7 @@ export interface ShabbatTimeData {
   candleLighting: string;
   candleLightingDate: Date | null;
   havdalah: string;
+  havdalahDate: Date | null;
   parashat: string;
   city: string;
 }
@@ -63,10 +64,17 @@ export const useShabbatTimes = (city: string = "Jerusalem") => {
         candleLightingDate = new Date(candleLighting.date);
       }
 
+      // Parse the havdalah date
+      let havdalahDate: Date | null = null;
+      if (havdalah?.date) {
+        havdalahDate = new Date(havdalah.date);
+      }
+
       setShabbatTimes({
         candleLighting: candleLighting?.title || '',
         candleLightingDate,
         havdalah: havdalah?.title || '',
+        havdalahDate,
         parashat: parashat?.hebrew || parashat?.title || '',
         city,
       });
@@ -96,11 +104,26 @@ export const useShabbatTimes = (city: string = "Jerusalem") => {
     return Math.floor(diffMs / (1000 * 60));
   }, [shabbatTimes]);
 
+  // Calculate minutes until havdalah
+  const getMinutesUntilHavdalah = useCallback((): number | null => {
+    if (!shabbatTimes?.havdalahDate) return null;
+    
+    const now = new Date();
+    const havdalahTime = shabbatTimes.havdalahDate;
+    
+    // If havdalah already passed, return null
+    if (havdalahTime.getTime() < now.getTime()) return null;
+    
+    const diffMs = havdalahTime.getTime() - now.getTime();
+    return Math.floor(diffMs / (1000 * 60));
+  }, [shabbatTimes]);
+
   return {
     shabbatTimes,
     loading,
     error,
     refetch: fetchShabbatTimes,
     getMinutesUntilCandleLighting,
+    getMinutesUntilHavdalah,
   };
 };

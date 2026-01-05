@@ -57,6 +57,7 @@ import {
   prepareForShabbat,
   dimAllLightsForShabbat,
   closeAllCovers,
+  openAllCovers,
   turnOffAllClimate,
   type HomeAssistantConfig,
   type HAEntity,
@@ -73,6 +74,10 @@ interface HueSettings {
   bridge: HueBridge | null;
   dimBrightness: number;
   dimMinutesBefore: number;
+  // Motzei Shabbat settings
+  motzeiEnabled: boolean;
+  motzeiMinutesAfter: number;
+  motzeiBrightness: number;
 }
 
 interface HASettings {
@@ -82,6 +87,11 @@ interface HASettings {
   dimMinutesBefore: number;
   closeCovers: boolean;
   turnOffClimate: boolean;
+  // Motzei Shabbat settings
+  motzeiEnabled: boolean;
+  motzeiMinutesAfter: number;
+  motzeiBrightness: number;
+  motzeiOpenCovers: boolean;
 }
 
 type SmartHomePlatform = 'philips_hue' | 'home_assistant';
@@ -97,6 +107,9 @@ const SmartHomeSettings = () => {
     bridge: null,
     dimBrightness: 40,
     dimMinutesBefore: 30,
+    motzeiEnabled: false,
+    motzeiMinutesAfter: 5,
+    motzeiBrightness: 80,
   });
   const [hueConnecting, setHueConnecting] = useState(false);
   const [hueSearching, setHueSearching] = useState(false);
@@ -116,6 +129,10 @@ const SmartHomeSettings = () => {
     dimMinutesBefore: 30,
     closeCovers: false,
     turnOffClimate: false,
+    motzeiEnabled: false,
+    motzeiMinutesAfter: 5,
+    motzeiBrightness: 80,
+    motzeiOpenCovers: false,
   });
   const [haStatus, setHAStatus] = useState<'connected' | 'disconnected' | 'checking'>('disconnected');
   const [haSetupDialog, setHASetupDialog] = useState(false);
@@ -131,7 +148,7 @@ const SmartHomeSettings = () => {
 
   const { toast } = useToast();
 
-  // Home Assistant automation trigger
+  // Home Assistant Erev Shabbat automation trigger
   const handleHAShabbatAutomation = useCallback(async () => {
     if (!haSettings.config) return;
     
@@ -143,12 +160,29 @@ const SmartHomeSettings = () => {
       turnOffClimate: haSettings.turnOffClimate,
     });
 
-    // Refresh summary after automation
     const summary = await getHomeSummary(haSettings.config);
     setHASummary(summary);
   }, [haSettings]);
 
-  // Philips Hue automation trigger
+  // Home Assistant Motzei Shabbat automation trigger
+  const handleHAMotzeiAutomation = useCallback(async () => {
+    if (!haSettings.config) return;
+    
+    const brightness = Math.round((haSettings.motzeiBrightness / 100) * 255);
+    
+    // Turn on lights
+    await dimAllLightsForShabbat(haSettings.config, brightness);
+    
+    // Open covers if enabled
+    if (haSettings.motzeiOpenCovers) {
+      await openAllCovers(haSettings.config);
+    }
+
+    const summary = await getHomeSummary(haSettings.config);
+    setHASummary(summary);
+  }, [haSettings]);
+
+  // Philips Hue Erev Shabbat automation trigger
   const handleHueShabbatAutomation = useCallback(async () => {
     if (!hueSettings.bridge) return;
     
@@ -156,21 +190,47 @@ const SmartHomeSettings = () => {
     await dimForShabbat(hueSettings.bridge, brightness, 100);
   }, [hueSettings]);
 
+  // Philips Hue Motzei Shabbat automation trigger
+  const handleHueMotzeiAutomation = useCallback(async () => {
+    if (!hueSettings.bridge) return;
+    
+    const brightness = Math.round((hueSettings.motzeiBrightness / 100) * 254);
+    await dimForShabbat(hueSettings.bridge, brightness, 30); // Quick transition
+  }, [hueSettings]);
+
   // Home Assistant automation hook
-  const haAutomation = useShabbatAutomation(userCity, {
-    enabled: haSettings.enabled && !!haSettings.config && haStatus === 'connected',
-    minutesBefore: haSettings.dimMinutesBefore,
-    onTrigger: handleHAShabbatAutomation,
-    platformName: 'Home Assistant',
-  });
+  const haAutomation = useShabbatAutomation(
+    userCity,
+    {
+      enabled: haSettings.enabled && !!haSettings.config && haStatus === 'connected',
+      minutesBefore: haSettings.dimMinutesBefore,
+      onTrigger: handleHAShabbatAutomation,
+      platformName: 'Home Assistant',
+    },
+    {
+      enabled: haSettings.motzeiEnabled && !!haSettings.config && haStatus === 'connected',
+      minutesAfter: haSettings.motzeiMinutesAfter,
+      onTrigger: handleHAMotzeiAutomation,
+      platformName: 'Home Assistant',
+    }
+  );
 
   // Philips Hue automation hook
-  const hueAutomation = useShabbatAutomation(userCity, {
-    enabled: hueSettings.enabled && !!hueSettings.bridge && hueStatus === 'connected',
-    minutesBefore: hueSettings.dimMinutesBefore,
-    onTrigger: handleHueShabbatAutomation,
-    platformName: 'Philips Hue',
-  });
+  const hueAutomation = useShabbatAutomation(
+    userCity,
+    {
+      enabled: hueSettings.enabled && !!hueSettings.bridge && hueStatus === 'connected',
+      minutesBefore: hueSettings.dimMinutesBefore,
+      onTrigger: handleHueShabbatAutomation,
+      platformName: 'Philips Hue',
+    },
+    {
+      enabled: hueSettings.motzeiEnabled && !!hueSettings.bridge && hueStatus === 'connected',
+      minutesAfter: hueSettings.motzeiMinutesAfter,
+      onTrigger: handleHueMotzeiAutomation,
+      platformName: 'Philips Hue',
+    }
+  );
 
   useEffect(() => {
     loadAllSettings();
@@ -671,6 +731,84 @@ const SmartHomeSettings = () => {
                 </div>
               </div>
 
+              {/* Motzei Shabbat Section */}
+              <div className="space-y-3 pt-4 border-t border-primary/20">
+                <div className="flex items-center gap-2 text-primary">
+                  <Moon className="w-4 h-4" />
+                  <span className="font-medium text-sm">מוצאי שבת</span>
+                </div>
+                
+                {/* Motzei Schedule Status */}
+                {haSettings.motzeiEnabled && haAutomation.isMotzeiScheduled && haAutomation.motzeiScheduledTime && (
+                  <Card className="p-3 bg-purple-500/10 border-purple-500/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="w-4 h-4 text-purple-600" />
+                        <div>
+                          <p className="text-xs font-medium text-purple-700 dark:text-purple-400">תזמון מוצ״ש פעיל</p>
+                          <p className="text-xs text-muted-foreground">
+                            יופעל ב-{haAutomation.motzeiScheduledTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={haAutomation.cancelMotzeiSchedule}>
+                        <Pause className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </Card>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="motzei-enabled" className="text-sm">הפעל אורות אחרי הבדלה</Label>
+                  <Switch
+                    id="motzei-enabled"
+                    checked={haSettings.motzeiEnabled}
+                    onCheckedChange={(checked) => saveHASettings({ ...haSettings, motzeiEnabled: checked })}
+                  />
+                </div>
+
+                {haSettings.motzeiEnabled && (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">עוצמת אור מוצ״ש</Label>
+                        <span className="text-sm font-medium">{haSettings.motzeiBrightness}%</span>
+                      </div>
+                      <Slider
+                        value={[haSettings.motzeiBrightness]}
+                        onValueChange={([value]) => saveHASettings({ ...haSettings, motzeiBrightness: value })}
+                        min={5}
+                        max={100}
+                        step={5}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm">דקות אחרי הבדלה</Label>
+                      <Input
+                        type="number"
+                        value={haSettings.motzeiMinutesAfter}
+                        onChange={(e) => saveHASettings({ ...haSettings, motzeiMinutesAfter: parseInt(e.target.value) || 5 })}
+                        min={0}
+                        max={60}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="motzei-open-covers" className="text-sm flex items-center gap-2">
+                        <ArrowUpDown className="w-4 h-4" />
+                        פתח תריסים במוצ״ש
+                      </Label>
+                      <Switch
+                        id="motzei-open-covers"
+                        checked={haSettings.motzeiOpenCovers}
+                        onCheckedChange={(checked) => saveHASettings({ ...haSettings, motzeiOpenCovers: checked })}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
               {/* Quick Actions */}
               <div className="grid grid-cols-3 gap-2 pt-2">
                 <Button variant="outline" size="sm" onClick={() => handleQuickAction('dim_lights')}>
@@ -703,9 +841,9 @@ const SmartHomeSettings = () => {
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                {haAutomation.isScheduled ? 
-                  `התזמון פעיל - יופעל ${haSettings.dimMinutesBefore} דקות לפני הדלקת נרות` :
-                  `הפעולות יבוצעו ${haSettings.dimMinutesBefore} דקות לפני הדלקת נרות`}
+                {haAutomation.isScheduled || haAutomation.isMotzeiScheduled ? 
+                  'התזמונים פעילים' :
+                  `פעולות יבוצעו אוטומטית לפי ההגדרות`}
               </p>
             </div>
           )}
@@ -880,6 +1018,72 @@ const SmartHomeSettings = () => {
                 />
               </div>
 
+              {/* Motzei Shabbat Section */}
+              <div className="space-y-3 pt-4 border-t border-primary/20">
+                <div className="flex items-center gap-2 text-primary">
+                  <Moon className="w-4 h-4" />
+                  <span className="font-medium text-sm">מוצאי שבת</span>
+                </div>
+                
+                {/* Motzei Schedule Status */}
+                {hueSettings.motzeiEnabled && hueAutomation.isMotzeiScheduled && hueAutomation.motzeiScheduledTime && (
+                  <Card className="p-3 bg-purple-500/10 border-purple-500/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="w-4 h-4 text-purple-600" />
+                        <div>
+                          <p className="text-xs font-medium text-purple-700 dark:text-purple-400">תזמון מוצ״ש פעיל</p>
+                          <p className="text-xs text-muted-foreground">
+                            יופעל ב-{hueAutomation.motzeiScheduledTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={hueAutomation.cancelMotzeiSchedule}>
+                        <Pause className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </Card>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="hue-motzei-enabled" className="text-sm">הדלק אורות אחרי הבדלה</Label>
+                  <Switch
+                    id="hue-motzei-enabled"
+                    checked={hueSettings.motzeiEnabled}
+                    onCheckedChange={(checked) => saveHueSettings({ ...hueSettings, motzeiEnabled: checked })}
+                  />
+                </div>
+
+                {hueSettings.motzeiEnabled && (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">עוצמת אור מוצ״ש</Label>
+                        <span className="text-sm font-medium">{hueSettings.motzeiBrightness}%</span>
+                      </div>
+                      <Slider
+                        value={[hueSettings.motzeiBrightness]}
+                        onValueChange={([value]) => saveHueSettings({ ...hueSettings, motzeiBrightness: value })}
+                        min={5}
+                        max={100}
+                        step={5}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm">דקות אחרי הבדלה</Label>
+                      <Input
+                        type="number"
+                        value={hueSettings.motzeiMinutesAfter}
+                        onChange={(e) => saveHueSettings({ ...hueSettings, motzeiMinutesAfter: parseInt(e.target.value) || 5 })}
+                        min={0}
+                        max={60}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
               {hueLights.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm">אורות מחוברים ({hueLights.length})</Label>
@@ -910,9 +1114,9 @@ const SmartHomeSettings = () => {
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                {hueAutomation.isScheduled ? 
-                  `התזמון פעיל - יופעל ${hueSettings.dimMinutesBefore} דקות לפני הדלקת נרות` :
-                  `העמעום יופעל ${hueSettings.dimMinutesBefore} דקות לפני הדלקת נרות`}
+                {hueAutomation.isScheduled || hueAutomation.isMotzeiScheduled ? 
+                  'התזמונים פעילים' :
+                  'פעולות יבוצעו אוטומטית לפי ההגדרות'}
               </p>
             </div>
           )}
