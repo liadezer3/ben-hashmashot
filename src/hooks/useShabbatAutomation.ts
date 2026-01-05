@@ -9,18 +9,35 @@ export interface AutomationConfig {
   platformName: string;
 }
 
+export interface MotzeiShabbatConfig {
+  enabled: boolean;
+  minutesAfter: number;
+  onTrigger: () => Promise<void>;
+  platformName: string;
+}
+
 const AUTOMATION_TRIGGERED_KEY = 'shabbat_automation_last_triggered';
+const MOTZEI_AUTOMATION_TRIGGERED_KEY = 'motzei_shabbat_automation_last_triggered';
 
 export const useShabbatAutomation = (
   city: string,
-  config: AutomationConfig
+  config: AutomationConfig,
+  motzeiConfig?: MotzeiShabbatConfig
 ) => {
-  const { shabbatTimes, loading, getMinutesUntilCandleLighting } = useShabbatTimes(city);
+  const { shabbatTimes, loading, getMinutesUntilCandleLighting, getMinutesUntilHavdalah } = useShabbatTimes(city);
   const { toast } = useToast();
+  
+  // Erev Shabbat state
   const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
   const [isScheduled, setIsScheduled] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Motzei Shabbat state
+  const [motzeiScheduledTime, setMotzeiScheduledTime] = useState<Date | null>(null);
+  const [isMotzeiScheduled, setIsMotzeiScheduled] = useState(false);
+  const motzeiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Clear Erev Shabbat automation
   const clearScheduledAutomation = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -30,15 +47,25 @@ export const useShabbatAutomation = (
     setScheduledTime(null);
   }, []);
 
-  const wasTriggeredThisWeek = useCallback((): boolean => {
+  // Clear Motzei Shabbat automation
+  const clearMotzeiAutomation = useCallback(() => {
+    if (motzeiTimeoutRef.current) {
+      clearTimeout(motzeiTimeoutRef.current);
+      motzeiTimeoutRef.current = null;
+    }
+    setIsMotzeiScheduled(false);
+    setMotzeiScheduledTime(null);
+  }, []);
+
+  const wasTriggeredThisWeek = useCallback((key: string): boolean => {
     try {
-      const lastTriggered = localStorage.getItem(AUTOMATION_TRIGGERED_KEY);
+      const lastTriggered = localStorage.getItem(key);
       if (!lastTriggered) return false;
 
       const lastDate = new Date(lastTriggered);
       const now = new Date();
       
-      // Check if last triggered was within the last 6 days (to avoid triggering twice for same Shabbat)
+      // Check if last triggered was within the last 6 days
       const diffDays = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
       return diffDays < 6;
     } catch {
@@ -46,18 +73,18 @@ export const useShabbatAutomation = (
     }
   }, []);
 
-  const markAsTriggered = useCallback(() => {
-    localStorage.setItem(AUTOMATION_TRIGGERED_KEY, new Date().toISOString());
+  const markAsTriggered = useCallback((key: string) => {
+    localStorage.setItem(key, new Date().toISOString());
   }, []);
 
+  // Schedule Erev Shabbat automation
   const scheduleAutomation = useCallback(() => {
     if (!config.enabled || !shabbatTimes?.candleLightingDate) {
       clearScheduledAutomation();
       return;
     }
 
-    // Check if already triggered this week
-    if (wasTriggeredThisWeek()) {
+    if (wasTriggeredThisWeek(AUTOMATION_TRIGGERED_KEY)) {
       console.log('Shabbat automation already triggered this week');
       return;
     }
@@ -66,7 +93,6 @@ export const useShabbatAutomation = (
     const triggerTime = new Date(candleTime.getTime() - config.minutesBefore * 60 * 1000);
     const now = new Date();
 
-    // If trigger time already passed, don't schedule
     if (triggerTime.getTime() < now.getTime()) {
       console.log('Shabbat automation trigger time already passed');
       clearScheduledAutomation();
@@ -74,8 +100,6 @@ export const useShabbatAutomation = (
     }
 
     const delayMs = triggerTime.getTime() - now.getTime();
-
-    // Clear any existing timeout
     clearScheduledAutomation();
 
     console.log(`Scheduling Shabbat automation for ${triggerTime.toLocaleString()} (in ${Math.round(delayMs / 60000)} minutes)`);
@@ -88,7 +112,7 @@ export const useShabbatAutomation = (
         });
 
         await config.onTrigger();
-        markAsTriggered();
+        markAsTriggered(AUTOMATION_TRIGGERED_KEY);
 
         toast({
           title: '✨ הבית מוכן לשבת!',
@@ -111,31 +135,99 @@ export const useShabbatAutomation = (
     setScheduledTime(triggerTime);
   }, [config, shabbatTimes, clearScheduledAutomation, wasTriggeredThisWeek, markAsTriggered, toast]);
 
-  // Schedule automation when config or shabbat times change
+  // Schedule Motzei Shabbat automation
+  const scheduleMotzeiAutomation = useCallback(() => {
+    if (!motzeiConfig?.enabled || !shabbatTimes?.havdalahDate) {
+      clearMotzeiAutomation();
+      return;
+    }
+
+    if (wasTriggeredThisWeek(MOTZEI_AUTOMATION_TRIGGERED_KEY)) {
+      console.log('Motzei Shabbat automation already triggered this week');
+      return;
+    }
+
+    const havdalahTime = shabbatTimes.havdalahDate;
+    const triggerTime = new Date(havdalahTime.getTime() + motzeiConfig.minutesAfter * 60 * 1000);
+    const now = new Date();
+
+    if (triggerTime.getTime() < now.getTime()) {
+      console.log('Motzei Shabbat automation trigger time already passed');
+      clearMotzeiAutomation();
+      return;
+    }
+
+    const delayMs = triggerTime.getTime() - now.getTime();
+    clearMotzeiAutomation();
+
+    console.log(`Scheduling Motzei Shabbat automation for ${triggerTime.toLocaleString()} (in ${Math.round(delayMs / 60000)} minutes)`);
+
+    motzeiTimeoutRef.current = setTimeout(async () => {
+      try {
+        toast({
+          title: `🌙 ${motzeiConfig.platformName} - מוצאי שבת`,
+          description: `מפעיל אוטומציה ${motzeiConfig.minutesAfter} דקות אחרי הבדלה`,
+        });
+
+        await motzeiConfig.onTrigger();
+        markAsTriggered(MOTZEI_AUTOMATION_TRIGGERED_KEY);
+
+        toast({
+          title: '✨ שבוע טוב!',
+          description: 'האורות הודלקו בהצלחה',
+        });
+      } catch (error) {
+        console.error('Motzei Shabbat automation failed:', error);
+        toast({
+          title: 'שגיאה באוטומציה',
+          description: 'חלק מהפעולות נכשלו',
+          variant: 'destructive',
+        });
+      }
+
+      setIsMotzeiScheduled(false);
+      setMotzeiScheduledTime(null);
+    }, delayMs);
+
+    setIsMotzeiScheduled(true);
+    setMotzeiScheduledTime(triggerTime);
+  }, [motzeiConfig, shabbatTimes, clearMotzeiAutomation, wasTriggeredThisWeek, markAsTriggered, toast]);
+
+  // Schedule both automations when config or shabbat times change
   useEffect(() => {
     scheduleAutomation();
+    scheduleMotzeiAutomation();
 
     return () => {
       clearScheduledAutomation();
+      clearMotzeiAutomation();
     };
-  }, [scheduleAutomation, clearScheduledAutomation]);
+  }, [scheduleAutomation, scheduleMotzeiAutomation, clearScheduledAutomation, clearMotzeiAutomation]);
 
   // Refresh every hour to keep schedule up to date
   useEffect(() => {
     const interval = setInterval(() => {
       scheduleAutomation();
-    }, 60 * 60 * 1000); // Every hour
+      scheduleMotzeiAutomation();
+    }, 60 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [scheduleAutomation]);
+  }, [scheduleAutomation, scheduleMotzeiAutomation]);
 
   return {
     shabbatTimes,
     loading,
+    // Erev Shabbat
     isScheduled,
     scheduledTime,
     minutesUntilCandleLighting: getMinutesUntilCandleLighting(),
     reschedule: scheduleAutomation,
     cancelSchedule: clearScheduledAutomation,
+    // Motzei Shabbat
+    isMotzeiScheduled,
+    motzeiScheduledTime,
+    minutesUntilHavdalah: getMinutesUntilHavdalah(),
+    rescheduleMotzei: scheduleMotzeiAutomation,
+    cancelMotzeiSchedule: clearMotzeiAutomation,
   };
 };

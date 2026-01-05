@@ -301,6 +301,17 @@ export const closeAllCovers = async (config: HomeAssistantConfig): Promise<boole
   return results.every(r => r);
 };
 
+/**
+ * Open all covers for Motzei Shabbat
+ */
+export const openAllCovers = async (config: HomeAssistantConfig): Promise<boolean> => {
+  const covers = await getEntitiesByDomain(config, 'cover');
+  const results = await Promise.all(
+    covers.map(c => openCover(config, c.entity_id))
+  );
+  return results.every(r => r);
+};
+
 // ============ Switch Controls ============
 
 /**
