@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +31,14 @@ import {
   Settings2,
   CheckCircle2,
   XCircle,
+  Clock,
+  CalendarClock,
+  Play,
+  Pause,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useShabbatAutomation } from "@/hooks/useShabbatAutomation";
+import { supabase } from "@/integrations/supabase/client";
 import {
   discoverBridges,
   createBridgeUser,
@@ -83,6 +89,7 @@ type SmartHomePlatform = 'philips_hue' | 'home_assistant';
 const SmartHomeSettings = () => {
   // Platform selection
   const [activePlatform, setActivePlatform] = useState<SmartHomePlatform>('home_assistant');
+  const [userCity, setUserCity] = useState("Jerusalem");
   
   // Philips Hue state
   const [hueSettings, setHueSettings] = useState<HueSettings>({
@@ -124,9 +131,70 @@ const SmartHomeSettings = () => {
 
   const { toast } = useToast();
 
+  // Home Assistant automation trigger
+  const handleHAShabbatAutomation = useCallback(async () => {
+    if (!haSettings.config) return;
+    
+    const brightness = Math.round((haSettings.dimBrightness / 100) * 255);
+    await prepareForShabbat(haSettings.config, {
+      dimLights: true,
+      lightBrightness: brightness,
+      closeCovers: haSettings.closeCovers,
+      turnOffClimate: haSettings.turnOffClimate,
+    });
+
+    // Refresh summary after automation
+    const summary = await getHomeSummary(haSettings.config);
+    setHASummary(summary);
+  }, [haSettings]);
+
+  // Philips Hue automation trigger
+  const handleHueShabbatAutomation = useCallback(async () => {
+    if (!hueSettings.bridge) return;
+    
+    const brightness = Math.round((hueSettings.dimBrightness / 100) * 254);
+    await dimForShabbat(hueSettings.bridge, brightness, 100);
+  }, [hueSettings]);
+
+  // Home Assistant automation hook
+  const haAutomation = useShabbatAutomation(userCity, {
+    enabled: haSettings.enabled && !!haSettings.config && haStatus === 'connected',
+    minutesBefore: haSettings.dimMinutesBefore,
+    onTrigger: handleHAShabbatAutomation,
+    platformName: 'Home Assistant',
+  });
+
+  // Philips Hue automation hook
+  const hueAutomation = useShabbatAutomation(userCity, {
+    enabled: hueSettings.enabled && !!hueSettings.bridge && hueStatus === 'connected',
+    minutesBefore: hueSettings.dimMinutesBefore,
+    onTrigger: handleHueShabbatAutomation,
+    platformName: 'Philips Hue',
+  });
+
   useEffect(() => {
     loadAllSettings();
+    loadUserCity();
   }, []);
+
+  const loadUserCity = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("city")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!error && data?.city) {
+        setUserCity(data.city);
+      }
+    } catch (error) {
+      console.error("Error loading user city:", error);
+    }
+  };
 
   useEffect(() => {
     if (hueSettings.bridge) {
@@ -493,6 +561,47 @@ const SmartHomeSettings = () => {
                 </div>
               )}
 
+              {/* Automation Schedule Status */}
+              {haSettings.enabled && haAutomation.isScheduled && haAutomation.scheduledTime && (
+                <Card className="p-4 bg-green-500/10 border-green-500/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CalendarClock className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-green-700 dark:text-green-400">אוטומציה מתוזמנת</p>
+                        <p className="text-xs text-muted-foreground">
+                          יופעל ב-{haAutomation.scheduledTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={haAutomation.cancelSchedule} title="בטל תזמון">
+                      <Pause className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {haSettings.enabled && !haAutomation.isScheduled && haAutomation.shabbatTimes && (
+                <Card className="p-4 bg-muted/50 border-muted">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">אוטומציה לא מתוזמנת</p>
+                        <p className="text-xs text-muted-foreground">
+                          {haAutomation.shabbatTimes.candleLighting ? 
+                            `הדלקת נרות: ${haAutomation.shabbatTimes.candleLighting}` : 
+                            'לא נמצאו זמני שבת'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={haAutomation.reschedule} title="תזמן מחדש">
+                      <Play className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
               {/* Enable/Disable */}
               <div className="flex items-center justify-between">
                 <Label htmlFor="ha-enabled" className="text-sm">הפעלה אוטומטית לפני שבת</Label>
@@ -594,7 +703,9 @@ const SmartHomeSettings = () => {
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                הפעולות יבוצעו {haSettings.dimMinutesBefore} דקות לפני הדלקת נרות
+                {haAutomation.isScheduled ? 
+                  `התזמון פעיל - יופעל ${haSettings.dimMinutesBefore} דקות לפני הדלקת נרות` :
+                  `הפעולות יבוצעו ${haSettings.dimMinutesBefore} דקות לפני הדלקת נרות`}
               </p>
             </div>
           )}
@@ -688,6 +799,47 @@ const SmartHomeSettings = () => {
             </Dialog>
           ) : (
             <div className="space-y-6">
+              {/* Automation Schedule Status */}
+              {hueSettings.enabled && hueAutomation.isScheduled && hueAutomation.scheduledTime && (
+                <Card className="p-4 bg-green-500/10 border-green-500/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CalendarClock className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-green-700 dark:text-green-400">אוטומציה מתוזמנת</p>
+                        <p className="text-xs text-muted-foreground">
+                          יופעל ב-{hueAutomation.scheduledTime.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={hueAutomation.cancelSchedule} title="בטל תזמון">
+                      <Pause className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {hueSettings.enabled && !hueAutomation.isScheduled && hueAutomation.shabbatTimes && (
+                <Card className="p-4 bg-muted/50 border-muted">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">אוטומציה לא מתוזמנת</p>
+                        <p className="text-xs text-muted-foreground">
+                          {hueAutomation.shabbatTimes.candleLighting ? 
+                            `הדלקת נרות: ${hueAutomation.shabbatTimes.candleLighting}` : 
+                            'לא נמצאו זמני שבת'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={hueAutomation.reschedule} title="תזמן מחדש">
+                      <Play className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
               <div className="flex items-center justify-between">
                 <Label htmlFor="hue-enabled" className="text-sm">עמעום אוטומטי לפני שבת</Label>
                 <Switch
@@ -758,7 +910,9 @@ const SmartHomeSettings = () => {
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
-                העמעום יופעל {hueSettings.dimMinutesBefore} דקות לפני הדלקת נרות
+                {hueAutomation.isScheduled ? 
+                  `התזמון פעיל - יופעל ${hueSettings.dimMinutesBefore} דקות לפני הדלקת נרות` :
+                  `העמעום יופעל ${hueSettings.dimMinutesBefore} דקות לפני הדלקת נרות`}
               </p>
             </div>
           )}
