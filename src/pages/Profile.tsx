@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@supabase/supabase-js";
 import { Header } from "@/components/Header";
+import { CitySelector } from "@/components/CitySelector";
+import { WebPushSettings } from "@/components/WebPushSettings";
 
 interface Profile {
   id: string;
@@ -28,7 +30,7 @@ const Profile = () => {
     fullName: "",
     email: "",
     phone: "",
-    city: "",
+    city: "Jerusalem",
   });
 
   useEffect(() => {
@@ -124,7 +126,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       <Header />
-      <div className="container mx-auto p-4 pt-24">
+      <div className="container mx-auto p-4 pt-24 space-y-6">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>הפרופיל שלי</CardTitle>
@@ -168,16 +170,12 @@ const Profile = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">עיר</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  dir="rtl"
-                  placeholder="ירושלים"
-                />
-              </div>
+              <CitySelector
+                value={formData.city}
+                onChange={(city) => setFormData({ ...formData, city })}
+                label="עיר"
+                showGpsButton={true}
+              />
 
               <div className="flex gap-2">
                 <Button type="submit" disabled={saving}>
@@ -190,6 +188,11 @@ const Profile = () => {
             </form>
           </CardContent>
         </Card>
+
+        {/* Web Push Settings */}
+        <div className="max-w-2xl mx-auto">
+          <WebPushSettings />
+        </div>
       </div>
     </div>
   );
