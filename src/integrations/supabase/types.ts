@@ -47,8 +47,49 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_history: {
+        Row: {
+          action: string
+          automation_type: string
+          created_at: string
+          details: string | null
+          executed_at: string
+          id: string
+          platform: string
+          scheduled_time: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          automation_type: string
+          created_at?: string
+          details?: string | null
+          executed_at?: string
+          id?: string
+          platform: string
+          scheduled_time?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          automation_type?: string
+          created_at?: string
+          details?: string | null
+          executed_at?: string
+          id?: string
+          platform?: string
+          scheduled_time?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       family_members: {
         Row: {
+          auto_send_shabbat_times: boolean | null
+          city: string | null
           created_at: string
           email: string | null
           id: string
@@ -61,6 +102,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_send_shabbat_times?: boolean | null
+          city?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -73,6 +116,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_send_shabbat_times?: boolean | null
+          city?: string | null
           created_at?: string
           email?: string | null
           id?: string

@@ -6,17 +6,21 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Plus, Trash2, Mail, Phone, MessageCircle } from "lucide-react";
+import { Users, Plus, Trash2, Mail, Phone, MessageCircle, Send, Loader2, Calendar } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
+import { CitySelector } from "./CitySelector";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 
 interface FamilyMember {
   id: string;
   name: string;
   phone: string | null;
   email: string | null;
+  city: string;
   notify_sms: boolean;
   notify_email: boolean;
   notify_whatsapp: boolean;
+  auto_send_shabbat_times: boolean;
 }
 
 export const FamilyMembers = () => {
@@ -24,13 +28,16 @@ export const FamilyMembers = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [sendingTo, setSendingTo] = useState<string | null>(null);
   const [newMember, setNewMember] = useState({
     name: "",
     phone: "",
     email: "",
+    city: "Jerusalem",
     notify_sms: false,
     notify_email: false,
     notify_whatsapp: false,
+    auto_send_shabbat_times: false,
   });
   const { toast } = useToast();
 
@@ -80,9 +87,11 @@ export const FamilyMembers = () => {
           name: newMember.name,
           phone: newMember.phone || null,
           email: newMember.email || null,
+          city: newMember.city,
           notify_sms: newMember.notify_sms,
           notify_email: newMember.notify_email,
           notify_whatsapp: newMember.notify_whatsapp,
+          auto_send_shabbat_times: newMember.auto_send_shabbat_times,
         });
 
       if (error) throw error;
@@ -91,9 +100,11 @@ export const FamilyMembers = () => {
         name: "",
         phone: "",
         email: "",
+        city: "Jerusalem",
         notify_sms: false,
         notify_email: false,
         notify_whatsapp: false,
+        auto_send_shabbat_times: false,
       });
       setShowForm(false);
       loadMembers();
@@ -138,7 +149,7 @@ export const FamilyMembers = () => {
     }
   };
 
-  const toggleNotification = async (id: string, field: 'notify_sms' | 'notify_email' | 'notify_whatsapp', value: boolean) => {
+  const toggleField = async (id: string, field: string, value: boolean) => {
     try {
       const { error } = await supabase
         .from("family_members")
@@ -148,7 +159,32 @@ export const FamilyMembers = () => {
       if (error) throw error;
       loadMembers();
     } catch (error) {
-      console.error("Error updating notification:", error);
+      console.error("Error updating field:", error);
+    }
+  };
+
+  const sendNow = async (memberId: string, memberName: string) => {
+    setSendingTo(memberId);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-family-notifications", {
+        body: { memberId },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ נשלח בהצלחה!",
+        description: `זמני השבת נשלחו ל${memberName}`,
+      });
+    } catch (error: any) {
+      console.error("Error sending to family member:", error);
+      toast({
+        title: "שגיאה בשליחה",
+        description: error.message || "לא הצלחנו לשלוח את ההודעה",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingTo(null);
     }
   };
 
@@ -175,7 +211,7 @@ export const FamilyMembers = () => {
       </div>
 
       <p className="text-sm text-muted-foreground mb-4">
-        הוסף בני משפחה כדי לשלוח להם גם התראות על זמני שבת
+        הוסף בני משפחה כדי לשלוח להם זמני שבת - ידנית או אוטומטית בכל יום שישי
       </p>
 
       {showForm && (
@@ -189,7 +225,7 @@ export const FamilyMembers = () => {
             <Input
               value={newMember.phone}
               onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
-              placeholder="טלפון"
+              placeholder="טלפון (+972...)"
               type="tel"
               dir="ltr"
             />
@@ -201,15 +237,15 @@ export const FamilyMembers = () => {
               dir="ltr"
             />
           </div>
+
+          <CitySelector
+            value={newMember.city}
+            onChange={(city) => setNewMember({ ...newMember, city })}
+            label="עיר (לזמנים מותאמים)"
+            showGpsButton={false}
+          />
           
           <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={newMember.notify_sms}
-                onCheckedChange={(v) => setNewMember({ ...newMember, notify_sms: v })}
-              />
-              <Label>SMS</Label>
-            </div>
             <div className="flex items-center gap-2">
               <Switch
                 checked={newMember.notify_email}
@@ -223,6 +259,16 @@ export const FamilyMembers = () => {
                 onCheckedChange={(v) => setNewMember({ ...newMember, notify_whatsapp: v })}
               />
               <Label>וואטסאפ</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={newMember.auto_send_shabbat_times}
+                onCheckedChange={(v) => setNewMember({ ...newMember, auto_send_shabbat_times: v })}
+              />
+              <Label className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                שליחה אוטומטית בשישי
+              </Label>
             </div>
           </div>
 
@@ -244,14 +290,37 @@ export const FamilyMembers = () => {
             className="border rounded-lg p-4 hover:bg-muted/30 transition-colors"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-semibold">{member.name}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => deleteMember(member.id)}
-              >
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{member.name}</span>
+                {member.auto_send_shabbat_times && (
+                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    אוטומטי
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => sendNow(member.id, member.name)}
+                  disabled={sendingTo === member.id}
+                  title="שלח זמני שבת עכשיו"
+                >
+                  {sendingTo === member.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 text-primary" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteMember(member.id)}
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
             </div>
             
             <div className="text-sm text-muted-foreground mb-3 space-y-1">
@@ -267,29 +336,37 @@ export const FamilyMembers = () => {
                   <span dir="ltr">{member.email}</span>
                 </div>
               )}
+              {member.city && (
+                <div className="flex items-center gap-1 text-xs">
+                  📍 {member.city}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-1">
                 <Switch
-                  checked={member.notify_sms}
-                  onCheckedChange={(v) => toggleNotification(member.id, 'notify_sms', v)}
-                />
-                <Label className="text-xs">SMS</Label>
-              </div>
-              <div className="flex items-center gap-1">
-                <Switch
                   checked={member.notify_email}
-                  onCheckedChange={(v) => toggleNotification(member.id, 'notify_email', v)}
+                  onCheckedChange={(v) => toggleField(member.id, 'notify_email', v)}
                 />
                 <Label className="text-xs">אימייל</Label>
               </div>
               <div className="flex items-center gap-1">
                 <Switch
                   checked={member.notify_whatsapp}
-                  onCheckedChange={(v) => toggleNotification(member.id, 'notify_whatsapp', v)}
+                  onCheckedChange={(v) => toggleField(member.id, 'notify_whatsapp', v)}
                 />
-                <Label className="text-xs">וואטסאפ</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  <img src={whatsappIcon} alt="" className="w-3 h-3" />
+                  וואטסאפ
+                </Label>
+              </div>
+              <div className="flex items-center gap-1">
+                <Switch
+                  checked={member.auto_send_shabbat_times}
+                  onCheckedChange={(v) => toggleField(member.id, 'auto_send_shabbat_times', v)}
+                />
+                <Label className="text-xs">אוטומטי</Label>
               </div>
             </div>
           </div>
