@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useShabbatTimes } from './useShabbatTimes';
 import { useToast } from './use-toast';
+import { sendTestWebPushNotification, checkWebPushSubscription } from '@/lib/webPushNotifications';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface AutomationConfig {
   enabled: boolean;
@@ -18,6 +20,27 @@ export interface MotzeiShabbatConfig {
 
 const AUTOMATION_TRIGGERED_KEY = 'shabbat_automation_last_triggered';
 const MOTZEI_AUTOMATION_TRIGGERED_KEY = 'motzei_shabbat_automation_last_triggered';
+
+// Helper function to send push notification for automation events
+const sendAutomationPushNotification = async (title: string, body: string) => {
+  try {
+    const isSubscribed = await checkWebPushSubscription();
+    if (!isSubscribed) {
+      console.log('User not subscribed to push notifications');
+      return;
+    }
+
+    await supabase.functions.invoke('send-web-push', {
+      body: { 
+        test: true,
+        title,
+        body
+      }
+    });
+  } catch (error) {
+    console.error('Failed to send automation push notification:', error);
+  }
+};
 
 export const useShabbatAutomation = (
   city: string,
@@ -106,10 +129,17 @@ export const useShabbatAutomation = (
 
     timeoutRef.current = setTimeout(async () => {
       try {
+        // Show toast notification
         toast({
           title: `🕯️ ${config.platformName} - הכנה לשבת`,
           description: `מפעיל אוטומציה ${config.minutesBefore} דקות לפני הדלקת נרות`,
         });
+
+        // Send push notification
+        sendAutomationPushNotification(
+          `🕯️ ${config.platformName} - הכנה לשבת`,
+          `מפעיל אוטומציה ${config.minutesBefore} דקות לפני הדלקת נרות`
+        );
 
         await config.onTrigger();
         markAsTriggered(AUTOMATION_TRIGGERED_KEY);
@@ -118,6 +148,12 @@ export const useShabbatAutomation = (
           title: '✨ הבית מוכן לשבת!',
           description: 'הפעולות האוטומטיות בוצעו בהצלחה',
         });
+
+        // Send success push notification
+        sendAutomationPushNotification(
+          '✨ הבית מוכן לשבת!',
+          'הפעולות האוטומטיות בוצעו בהצלחה'
+        );
       } catch (error) {
         console.error('Shabbat automation failed:', error);
         toast({
@@ -164,10 +200,17 @@ export const useShabbatAutomation = (
 
     motzeiTimeoutRef.current = setTimeout(async () => {
       try {
+        // Show toast notification
         toast({
           title: `🌙 ${motzeiConfig.platformName} - מוצאי שבת`,
           description: `מפעיל אוטומציה ${motzeiConfig.minutesAfter} דקות אחרי הבדלה`,
         });
+
+        // Send push notification
+        sendAutomationPushNotification(
+          `🌙 ${motzeiConfig.platformName} - מוצאי שבת`,
+          `מפעיל אוטומציה ${motzeiConfig.minutesAfter} דקות אחרי הבדלה`
+        );
 
         await motzeiConfig.onTrigger();
         markAsTriggered(MOTZEI_AUTOMATION_TRIGGERED_KEY);
@@ -176,6 +219,12 @@ export const useShabbatAutomation = (
           title: '✨ שבוע טוב!',
           description: 'האורות הודלקו בהצלחה',
         });
+
+        // Send success push notification
+        sendAutomationPushNotification(
+          '✨ שבוע טוב!',
+          'האורות הודלקו בהצלחה'
+        );
       } catch (error) {
         console.error('Motzei Shabbat automation failed:', error);
         toast({
