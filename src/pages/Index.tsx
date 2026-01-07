@@ -16,19 +16,31 @@ import { AppPromotion } from "@/components/AppPromotion";
 import SefariaContent from "@/components/SefariaContent";
 import SmartHomeSettings from "@/components/SmartHomeSettings";
 import VoiceAssistant from "@/components/VoiceAssistant";
+import { AutomationHistory } from "@/components/AutomationHistory";
+import { WebPushSettings } from "@/components/WebPushSettings";
 
 const Index = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userCity, setUserCity] = useState<string>("Jerusalem");
   const [currentParsha, setCurrentParsha] = useState<string>("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate("/auth");
       } else {
         setUserId(session.user.id);
+        // Load user's city from profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('city')
+          .eq('id', session.user.id)
+          .single();
+        if (profile?.city) {
+          setUserCity(profile.city);
+        }
         setLoading(false);
       }
     });
@@ -69,10 +81,14 @@ const Index = () => {
         <FamilyMemories userId={userId} />
 
         {/* Voice Assistant */}
-        <VoiceAssistant city="Jerusalem" />
+        <VoiceAssistant city={userCity} />
 
-        {/* Smart Home Settings */}
+        {/* Smart Home Settings with Automation History */}
         <SmartHomeSettings />
+        <AutomationHistory userId={userId} />
+
+        {/* Web Push Notifications */}
+        <WebPushSettings />
         
         <SavedLocations />
         <UpcomingHolidays />
