@@ -141,38 +141,11 @@ const sendSMS = async (to: string, message: string) => {
   console.log(`SMS sent to ${to}`);
 };
 
-const sendWhatsApp = async (to: string, message: string) => {
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
-
-  if (!accountSid || !authToken || !fromWhatsApp) {
-    throw new Error('Twilio WhatsApp credentials not configured');
-  }
-
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        To: `whatsapp:${to}`,
-        From: `whatsapp:${fromWhatsApp}`,
-        Body: message,
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    console.error('Twilio WhatsApp error:', text);
-    throw new Error(`TWILIO_WHATSAPP_ERROR: ${text || response.status}`);
-  }
-
-  console.log(`WhatsApp sent to ${to}`);
+// WhatsApp is handled via Click-to-Chat on the frontend (free, no API needed)
+// This function is kept as a placeholder for future Twilio integration if needed
+const sendWhatsApp = async (_to: string, _message: string) => {
+  console.log('WhatsApp notifications are handled via Click-to-Chat on the frontend');
+  // No-op: WhatsApp is sent via Click-to-Chat link in the browser
 };
 
 // Logo URL for email branding
@@ -247,24 +220,8 @@ serve(async (req) => {
       );
     }
 
-    // Handle test WhatsApp request
-    if (body.testWhatsApp && body.phone) {
-      console.log('Sending test WhatsApp to:', body.phone);
-
-      // Fetch real Shabbat times for test message
-      const shabbatTimes = await getShabbatTimes();
-
-      const testMessage = shabbatTimes
-        ? `🕯️ הודעת בדיקה - זמני שבת\n\nכניסת שבת: ${shabbatTimes.date}\nהדלקת נרות: ${shabbatTimes.candle_lighting_time}\nמוצאי שבת: ${shabbatTimes.havdalah_time}\n${shabbatTimes.parasha}\n\n✅ המערכת מוגדרת כראוי!`
-        : `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי ותשלח לך התראות על זמני שבת וחג.`;
-
-      await sendWhatsApp(body.phone, testMessage);
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Test WhatsApp sent', shabbatTimes }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // WhatsApp test is handled via Click-to-Chat on the frontend
+    // No backend API needed for WhatsApp - it's free!
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
