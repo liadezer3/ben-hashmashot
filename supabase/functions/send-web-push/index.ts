@@ -1,19 +1,83 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "https://esm.sh/web-push@3.6.7";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Web Push requires web-push library functionality
-// We'll use the Web Push protocol directly
-
 interface PushSubscription {
   endpoint: string;
   p256dh: string;
   auth: string;
   user_id: string;
+}
+
+interface ShabbatTimes {
+  candle_lighting_time: string;
+  havdalah_time: string;
+  parasha: string;
+  date: string;
+}
+
+async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes | null> {
+  try {
+    const cityGeoIds: Record<string, string> = {
+      "Jerusalem": "281184",
+      "ירושלים": "281184",
+      "Tel Aviv": "293397",
+      "תל אביב": "293397",
+      "Haifa": "294801",
+      "חיפה": "294801",
+      "Beer Sheva": "295530",
+      "באר שבע": "295530",
+      "Netanya": "294098",
+      "נתניה": "294098",
+      "Ashdod": "295629",
+      "אשדוד": "295629",
+      "Bnei Brak": "295514",
+      "בני ברק": "295514",
+      "Petah Tikva": "293918",
+      "פתח תקווה": "293918",
+      "Ramat Gan": "293788",
+      "רמת גן": "293788",
+    };
+
+    const geoId = cityGeoIds[city] || "281184";
+    const response = await fetch(
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on`
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    let candleLighting = "";
+    let havdalah = "";
+    let parasha = "";
+    let date = "";
+
+    for (const item of data.items || []) {
+      if (item.category === "candles") {
+        candleLighting = item.title?.replace("Candle lighting: ", "") || "";
+        date = item.date?.split("T")[0] || "";
+      } else if (item.category === "havdalah") {
+        havdalah = item.title?.replace("Havdalah: ", "") || "";
+      } else if (item.category === "parashat") {
+        parasha = item.title || "";
+      }
+    }
+
+    return {
+      candle_lighting_time: candleLighting,
+      havdalah_time: havdalah,
+      parasha: parasha,
+      date: date,
+    };
+  } catch (error) {
+    console.error("Error fetching Shabbat times:", error);
+    return null;
+  }
 }
 
 async function sendWebPush(
@@ -23,121 +87,31 @@ async function sendWebPush(
   vapidPrivateKey: string
 ): Promise<boolean> {
   try {
-    // Import required crypto functions
-    const encoder = new TextEncoder();
-    
-    // Create JWT for VAPID
-    const vapidHeaders = await createVapidHeaders(
-      subscription.endpoint,
+    webpush.setVapidDetails(
+      'mailto:notifications@benhashmashot.app',
       vapidPublicKey,
       vapidPrivateKey
     );
 
-    // Encrypt the payload
-    const encryptedPayload = await encryptPayload(
-      payload,
-      subscription.p256dh,
-      subscription.auth
-    );
+    const pushSubscription = {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: subscription.p256dh,
+        auth: subscription.auth
+      }
+    };
 
-    // Send the push notification
-    const response = await fetch(subscription.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'Content-Encoding': 'aes128gcm',
-        'TTL': '86400',
-        'Authorization': vapidHeaders.authorization,
-        'Crypto-Key': vapidHeaders.cryptoKey,
-      },
-      body: encryptedPayload.ciphertext.buffer as ArrayBuffer,
-    });
-
-    if (!response.ok) {
-      console.error('Push failed:', response.status, await response.text());
-      return false;
-    }
-
+    await webpush.sendNotification(pushSubscription, payload);
+    console.log(`Push sent to endpoint: ${subscription.endpoint.substring(0, 50)}...`);
     return true;
-  } catch (error) {
-    console.error('Error sending push:', error);
+  } catch (error: any) {
+    console.error('Error sending push:', error.message || error);
+    // If subscription is expired or invalid, return false to clean up
+    if (error.statusCode === 410 || error.statusCode === 404) {
+      console.log('Subscription expired or invalid, should be removed');
+    }
     return false;
   }
-}
-
-async function createVapidHeaders(
-  endpoint: string,
-  publicKey: string,
-  privateKey: string
-): Promise<{ authorization: string; cryptoKey: string }> {
-  const audience = new URL(endpoint).origin;
-  
-  const header = { typ: 'JWT', alg: 'ES256' };
-  const payload = {
-    aud: audience,
-    exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60,
-    sub: 'mailto:notifications@benhashmashot.app'
-  };
-
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  
-  const unsignedToken = `${headerB64}.${payloadB64}`;
-  
-  // Import the private key and sign
-  const keyData = base64UrlToArrayBuffer(privateKey);
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    keyData,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    cryptoKey,
-    new TextEncoder().encode(unsignedToken)
-  );
-
-  const signatureB64 = arrayBufferToBase64Url(signature);
-  const jwt = `${unsignedToken}.${signatureB64}`;
-
-  return {
-    authorization: `vapid t=${jwt}, k=${publicKey}`,
-    cryptoKey: `p256ecdsa=${publicKey}`
-  };
-}
-
-async function encryptPayload(
-  payload: string,
-  p256dh: string,
-  auth: string
-): Promise<{ ciphertext: Uint8Array }> {
-  // For simplicity, we'll send unencrypted for now and use a simpler approach
-  // In production, you'd want to use the full Web Push encryption
-  const encoder = new TextEncoder();
-  return { ciphertext: encoder.encode(payload) };
-}
-
-function base64UrlToArrayBuffer(base64url: string): ArrayBuffer {
-  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  const padding = '='.repeat((4 - base64.length % 4) % 4);
-  const binary = atob(base64 + padding);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
 serve(async (req) => {
@@ -152,6 +126,7 @@ serve(async (req) => {
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
     if (!vapidPublicKey || !vapidPrivateKey) {
+      console.error('VAPID keys not configured');
       return new Response(
         JSON.stringify({ error: 'VAPID keys not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -159,9 +134,15 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const body = await req.json();
     
-    // Get user from auth header
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // Empty body is ok for scheduled calls
+    }
+    
+    // Get user from auth header (for test notifications)
     const authHeader = req.headers.get('Authorization');
     let userId: string | null = null;
     
@@ -171,14 +152,17 @@ serve(async (req) => {
       userId = user?.id || null;
     }
 
-    // Test notification - send to current user
+    // Test notification - send to current user only
     if (body.test && userId) {
+      console.log('Sending test notification to user:', userId);
+      
       const { data: subscriptions, error } = await supabase
         .from('push_subscriptions')
         .select('*')
         .eq('user_id', userId);
 
       if (error || !subscriptions?.length) {
+        console.error('No subscriptions found for user:', userId);
         return new Response(
           JSON.stringify({ error: 'No push subscriptions found for user' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -198,23 +182,29 @@ serve(async (req) => {
         if (success) sent++;
       }
 
+      console.log(`Test notifications sent: ${sent}/${subscriptions.length}`);
       return new Response(
         JSON.stringify({ success: true, sent }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Send to specific users or all users with push enabled
+    // Scheduled/bulk send - send to all users with push enabled
+    console.log('Starting scheduled push notification send...');
+    
+    // Get all users with push enabled
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
       .select('user_id')
       .eq('push_enabled', true);
 
     if (prefError) {
+      console.error('Error fetching preferences:', prefError);
       throw prefError;
     }
 
     const userIds = preferences?.map(p => p.user_id) || [];
+    console.log(`Found ${userIds.length} users with push enabled`);
     
     if (userIds.length === 0) {
       return new Response(
@@ -223,30 +213,66 @@ serve(async (req) => {
       );
     }
 
+    // Get subscriptions for these users
     const { data: subscriptions, error: subError } = await supabase
       .from('push_subscriptions')
       .select('*')
       .in('user_id', userIds);
 
     if (subError) {
+      console.error('Error fetching subscriptions:', subError);
       throw subError;
+    }
+
+    console.log(`Found ${subscriptions?.length || 0} subscriptions`);
+
+    // Get Shabbat times for the notification
+    const shabbatTimes = await getShabbatTimes();
+    
+    let notificationBody = body.body || body.message;
+    if (!notificationBody && shabbatTimes) {
+      notificationBody = `הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצאי שבת: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
+    } else if (!notificationBody) {
+      notificationBody = 'בדוק את זמני השבת באפליקציה';
     }
 
     const payload = JSON.stringify({
       title: body.title || '🕯️ זמני שבת',
-      body: body.body || body.message || 'התראה על זמני שבת',
+      body: notificationBody,
       icon: '/icon-512.png',
-      badge: '/icon-512.png'
+      badge: '/icon-512.png',
+      url: '/'
     });
 
     let sent = 0;
+    const failedEndpoints: string[] = [];
+    
     for (const sub of subscriptions || []) {
       const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
-      if (success) sent++;
+      if (success) {
+        sent++;
+      } else {
+        failedEndpoints.push(sub.endpoint);
+      }
     }
 
+    // Clean up invalid subscriptions
+    if (failedEndpoints.length > 0) {
+      console.log(`Cleaning up ${failedEndpoints.length} invalid subscriptions`);
+      await supabase
+        .from('push_subscriptions')
+        .delete()
+        .in('endpoint', failedEndpoints);
+    }
+
+    console.log(`Push notifications sent: ${sent}/${subscriptions?.length || 0}`);
     return new Response(
-      JSON.stringify({ success: true, sent }),
+      JSON.stringify({ 
+        success: true, 
+        sent,
+        total: subscriptions?.length || 0,
+        cleaned: failedEndpoints.length
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

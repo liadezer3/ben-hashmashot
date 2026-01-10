@@ -15,8 +15,8 @@ import {
   sendTestWebPushNotification,
 } from "@/lib/webPushNotifications";
 
-// VAPID public key - should match the one in edge function secrets
-const VAPID_PUBLIC_KEY = "BEl62iUYgUivxIkv69yViEuiBIa40HI9X5jzP_PGaXg_T0z2PXQQQ9WNhT5n7zP1bGPGfWTqW7FGDwKr4qmE4jk";
+// VAPID public key - matches the one in Supabase secrets
+const VAPID_PUBLIC_KEY = "BIXklk4iVQgE4UUVB5eM5PrxpdvM2M_W6xKqg91b1HjF2PsnhbetNNVaxJdpgYp9uRhvu491o6HVdDZIkeWby8I";
 
 export const WebPushSettings = () => {
   const [isSupported, setIsSupported] = useState(false);
