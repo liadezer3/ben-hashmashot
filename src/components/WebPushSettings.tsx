@@ -3,8 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Bell, BellOff, Loader2, Check, AlertCircle } from "lucide-react";
+import { Bell, BellOff, Loader2, Check, AlertCircle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 import {
   isWebPushSupported,
   requestWebPushPermission,
@@ -18,12 +26,24 @@ import {
 // VAPID public key - matches the one in Supabase secrets
 const VAPID_PUBLIC_KEY = "BIXklk4iVQgE4UUVB5eM5PrxpdvM2M_W6xKqg91b1HjF2PsnhbetNNVaxJdpgYp9uRhvu491o6HVdDZIkeWby8I";
 
+// Generate hours for select
+const generateTimeOptions = () => {
+  const options = [];
+  for (let hour = 0; hour < 24; hour++) {
+    const formatted = `${hour.toString().padStart(2, '0')}:00`;
+    options.push(formatted);
+  }
+  return options;
+};
+
 export const WebPushSettings = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [notificationTime, setNotificationTime] = useState("08:00");
+  const [savingTime, setSavingTime] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,11 +56,76 @@ export const WebPushSettings = () => {
         setIsSubscribed(subscribed);
       }
       
+      // Load saved notification time
+      await loadNotificationTime();
+      
       setLoading(false);
     };
 
     checkSupport();
   }, []);
+
+  const loadNotificationTime = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('notification_preferences')
+        .select('morning_time')
+        .eq('user_id', user.id)
+        .single();
+
+      if (data?.morning_time) {
+        setNotificationTime(data.morning_time);
+      }
+    } catch (error) {
+      console.error('Error loading notification time:', error);
+    }
+  };
+
+  const handleTimeChange = async (time: string) => {
+    setNotificationTime(time);
+    setSavingTime(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "יש להתחבר",
+          description: "התחבר כדי לשמור את השעה המועדפת",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('notification_preferences')
+        .upsert({
+          user_id: user.id,
+          morning_time: time,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ השעה נשמרה",
+        description: `תקבל התראות בשעה ${time}`,
+      });
+    } catch (error: any) {
+      console.error('Error saving notification time:', error);
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו לשמור את השעה",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingTime(false);
+    }
+  };
 
   const handleToggleSubscription = async () => {
     setSubscribing(true);
@@ -160,7 +245,8 @@ export const WebPushSettings = () => {
   }
 
   return (
-    <Card className="p-4">
+    <Card className="p-4 space-y-4">
+      {/* Main Toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {isSubscribed ? (
@@ -200,8 +286,41 @@ export const WebPushSettings = () => {
           />
         </div>
       </div>
+
+      {/* Time Selector - Only show when subscribed */}
       {isSubscribed && (
-        <div className="mt-3 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+        <div className="border-t pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Clock className="w-5 h-5 text-primary" />
+              <div>
+                <Label className="text-base">שעת קבלת התראות</Label>
+                <p className="text-sm text-muted-foreground">
+                  בחר את השעה המועדפת לקבלת התראות יומיות
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {savingTime && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+              <Select value={notificationTime} onValueChange={handleTimeChange} disabled={savingTime}>
+                <SelectTrigger className="w-24">
+                  <SelectValue placeholder="בחר שעה" />
+                </SelectTrigger>
+                <SelectContent>
+                  {generateTimeOptions().map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSubscribed && (
+        <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
           <Check className="w-4 h-4" />
           <span>התראות Push מופעלות</span>
         </div>
