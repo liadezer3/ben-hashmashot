@@ -19,3 +19,7 @@ verify_jwt = false
 [functions.voice-assistant]
 enabled = true
 verify_jwt = false
+
+[functions.scheduled-push]
+enabled = true
+verify_jwt = false
