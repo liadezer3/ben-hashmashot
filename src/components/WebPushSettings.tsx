@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Bell, BellOff, Loader2, Check, AlertCircle, Clock, Timer } from "lucide-react";
+import { Bell, BellOff, Loader2, Check, AlertCircle, Clock, Timer, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -42,6 +42,7 @@ export const WebPushSettings = () => {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testingShabbat, setTestingShabbat] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
   const [hoursBeforeShabbat, setHoursBeforeShabbat] = useState(2);
   const [savingTime, setSavingTime] = useState(false);
@@ -266,6 +267,58 @@ export const WebPushSettings = () => {
     }
   };
 
+  const handleTestShabbatNotification = async () => {
+    if (!isSubscribed) {
+      toast({
+        title: "יש להירשם קודם",
+        description: "הפעל את התראות Push לפני שליחת בדיקה",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingShabbat(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("יש להתחבר");
+
+      // Get user's city
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('city')
+        .eq('id', user.id)
+        .single();
+
+      const city = profile?.city || 'Jerusalem';
+
+      // Call the scheduled-push function with test mode for shabbat
+      const { data, error } = await supabase.functions.invoke('scheduled-push', {
+        body: { 
+          test: true,
+          testType: 'shabbat',
+          city
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ התראת שבת נשלחה",
+        description: "בדוק את הודעות הדפדפן",
+      });
+    } catch (error: any) {
+      console.error("Test Shabbat notification error:", error);
+      toast({
+        title: "שגיאה בשליחת בדיקה",
+        description: error.message || "לא הצלחנו לשלוח התראת שבת לבדיקה",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingShabbat(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card className="p-4">
@@ -392,6 +445,21 @@ export const WebPushSettings = () => {
                   <SelectItem value="6">6 שעות</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestShabbatNotification}
+                disabled={testingShabbat}
+              >
+                {testingShabbat ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Calendar className="w-4 h-4 mr-1" />
+                    בדיקה
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>

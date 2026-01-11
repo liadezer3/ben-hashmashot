@@ -176,6 +176,90 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Check if this is a test request
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // No body or invalid JSON - that's fine for scheduled calls
+    }
+
+    // Handle test request for Shabbat notification
+    if (body.test && body.testType === 'shabbat') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization header required for test' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get user's push subscription
+      const { data: subscriptions } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!subscriptions?.length) {
+        return new Response(
+          JSON.stringify({ error: 'No push subscription found' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get Shabbat times for user's city
+      const city = body.city || 'Jerusalem';
+      const shabbatTimes = await getShabbatTimes(city);
+      
+      // Get user's hours_before_shabbat setting
+      const { data: prefs } = await supabase
+        .from('notification_preferences')
+        .select('hours_before_shabbat')
+        .eq('user_id', user.id)
+        .single();
+      
+      const hoursBeforeShabbat = prefs?.hours_before_shabbat || 2;
+
+      const payload = JSON.stringify({
+        title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
+        body: shabbatTimes 
+          ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} ב${city} | ${shabbatTimes.parasha}`
+          : `הכינו את עצמכם לשבת!`,
+        icon: '/icon-512.png',
+        badge: '/icon-512.png',
+        url: '/'
+      });
+
+      let sent = 0;
+      for (const sub of subscriptions) {
+        const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+        if (success) sent++;
+      }
+
+      // Log to notification history
+      await supabase.from('notification_history').insert({
+        user_id: user.id,
+        notification_type: 'web_push_shabbat_test',
+        message: 'התראת שבת - בדיקה',
+        status: 'sent'
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, sent, message: 'Test Shabbat notification sent' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Get current time in Israel timezone
     const now = new Date();
     const israelTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
