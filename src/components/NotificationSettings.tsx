@@ -172,29 +172,46 @@ export const NotificationSettings = () => {
     setTestingWhatsApp(true);
     
     try {
-      // Use WhatsApp Click-to-Chat - FREE alternative to Twilio
-      // Format: clean the phone number, remove + and spaces
+      // Try to send via Twilio first
+      const { data, error } = await supabase.functions.invoke('send-notifications', {
+        body: { 
+          testWhatsApp: true,
+          phone: contactInfo.phone 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.whatsappSent) {
+        toast({
+          title: "✅ הודעת WhatsApp נשלחה!",
+          description: "בדוק את ההודעות שלך בוואטסאפ",
+        });
+      } else {
+        // Fallback to Click-to-Chat
+        const cleanPhone = contactInfo.phone.replace(/[\s\-\+]/g, '');
+        const testMessage = `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי!\nתקבלו התראות על זמני שבת וחג.\n\n✅ הגדרות נשמרו בהצלחה`;
+        const encodedMessage = encodeURIComponent(testMessage);
+        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+
+        toast({
+          title: "נפתח WhatsApp!",
+          description: "לחץ 'שלח' בוואטסאפ כדי לשלוח את ההודעה",
+        });
+      }
+    } catch (error: any) {
+      console.error('Test WhatsApp error:', error);
+      // Fallback to Click-to-Chat
       const cleanPhone = contactInfo.phone.replace(/[\s\-\+]/g, '');
-      
-      // Create test message
-      const testMessage = `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי!\nתקבלו התראות על זמני שבת וחג.\n\n✅ הגדרות נשמרו בהצלחה`;
-      
-      // Open WhatsApp with pre-filled message
+      const testMessage = `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי!`;
       const encodedMessage = encodeURIComponent(testMessage);
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
-      
       window.open(whatsappUrl, '_blank');
 
       toast({
         title: "נפתח WhatsApp!",
         description: "לחץ 'שלח' בוואטסאפ כדי לשלוח את ההודעה",
-      });
-    } catch (error: any) {
-      console.error('Test WhatsApp error:', error);
-      toast({
-        title: "שגיאה בפתיחת WhatsApp",
-        description: error.message || "אירעה שגיאה בפתיחת ההודעה",
-        variant: "destructive",
       });
     } finally {
       setTestingWhatsApp(false);

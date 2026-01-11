@@ -16,14 +16,17 @@ interface PushSubscription {
 
 interface NotificationPreference {
   user_id: string;
+  phone: string | null;
   morning_time: string | null;
   hours_before_shabbat: number | null;
   push_enabled: boolean | null;
+  whatsapp_enabled: boolean | null;
 }
 
 interface Profile {
   id: string;
   city: string | null;
+  phone: string | null;
 }
 
 interface ShabbatTimes {
@@ -90,6 +93,51 @@ async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes
   } catch (error) {
     console.error("Error fetching Shabbat times:", error);
     return null;
+  }
+}
+
+async function sendWhatsApp(to: string, message: string): Promise<boolean> {
+  try {
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
+
+    if (!accountSid || !authToken || !fromWhatsApp) {
+      console.log('Twilio WhatsApp credentials not configured - skipping');
+      return false;
+    }
+
+    // Format phone number for WhatsApp
+    const cleanPhone = to.replace(/[\s\-]/g, '');
+    const formattedTo = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
+
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: `whatsapp:${formattedTo}`,
+          From: `whatsapp:${fromWhatsApp}`,
+          Body: message,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      console.error('Twilio WhatsApp error:', text);
+      return false;
+    }
+
+    console.log(`WhatsApp sent to ${formattedTo}`);
+    return true;
+  } catch (error: any) {
+    console.error('Error sending WhatsApp:', error.message || error);
+    return false;
   }
 }
 
@@ -270,31 +318,33 @@ serve(async (req) => {
     console.log(`Running scheduled push check at ${israelTime.toISOString()}`);
     console.log(`Israel time: ${currentHour}:${currentMinute.toString().padStart(2, '0')}, Day: ${currentDayOfWeek}`);
 
-    // Get all users with push enabled
+    // Get all users with push or whatsapp enabled
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, morning_time, hours_before_shabbat, push_enabled')
-      .eq('push_enabled', true);
+      .select('user_id, phone, morning_time, hours_before_shabbat, push_enabled, whatsapp_enabled');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
       throw prefError;
     }
 
-    console.log(`Found ${preferences?.length || 0} users with push enabled`);
+    // Filter to users with at least one notification method enabled
+    const activePrefs = (preferences || []).filter(p => p.push_enabled || p.whatsapp_enabled);
 
-    if (!preferences?.length) {
+    console.log(`Found ${activePrefs.length} users with notifications enabled`);
+
+    if (!activePrefs.length) {
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: 'No users with push enabled' }),
+        JSON.stringify({ success: true, sent: 0, message: 'No users with notifications enabled' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Get user profiles for city info
-    const userIds = preferences.map(p => p.user_id);
+    const userIds = activePrefs.map(p => p.user_id);
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, city')
+      .select('id, city, phone')
       .in('id', userIds);
 
     const profileMap = new Map<string, Profile>();
@@ -318,11 +368,12 @@ serve(async (req) => {
 
     let morningNotificationsSent = 0;
     let shabbatNotificationsSent = 0;
+    let whatsappNotificationsSent = 0;
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
 
     // Check each user's preferences
-    for (const pref of preferences) {
+    for (const pref of activePrefs) {
       const userCity = profileMap.get(pref.user_id)?.city || 'Jerusalem';
       
       // Check morning notification time
@@ -342,79 +393,140 @@ serve(async (req) => {
     console.log(`Users to notify (morning): ${usersToNotifyMorning.length}`);
     console.log(`Users to notify (before Shabbat): ${usersToNotifyShabbat.length}`);
 
+    // Create a map of preferences by user_id for quick lookup
+    const prefMap = new Map(activePrefs.map(p => [p.user_id, p]));
+
     // Send morning notifications
     for (const userId of usersToNotifyMorning) {
+      const userPref = prefMap.get(userId);
       const userSubs = subscriptionMap.get(userId) || [];
       const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userPhone = userPref?.phone || profileMap.get(userId)?.phone;
       const shabbatTimes = await getShabbatTimes(userCity);
       
-      const payload = JSON.stringify({
-        title: '🕯️ זמני שבת השבוע',
-        body: shabbatTimes 
-          ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצאי שבת: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`
-          : 'בדוק את זמני השבת באפליקציה',
-        icon: '/icon-512.png',
-        badge: '/icon-512.png',
-        url: '/'
-      });
+      // Web Push
+      if (userPref?.push_enabled && userSubs.length > 0) {
+        const payload = JSON.stringify({
+          title: '🕯️ זמני שבת השבוע',
+          body: shabbatTimes 
+            ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצאי שבת: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`
+            : 'בדוק את זמני השבת באפליקציה',
+          icon: '/icon-512.png',
+          badge: '/icon-512.png',
+          url: '/'
+        });
 
-      for (const sub of userSubs) {
-        const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
-        if (success) morningNotificationsSent++;
+        for (const sub of userSubs) {
+          const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+          if (success) morningNotificationsSent++;
+        }
+      }
+
+      // WhatsApp
+      if (userPref?.whatsapp_enabled && userPhone) {
+        const message = shabbatTimes 
+          ? `🕯️ שבת שלום!\n\n📅 ${shabbatTimes.parasha}\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 מוצאי שבת: ${shabbatTimes.havdalah_time}\n\nשבת שלום ומבורך! ✨`
+          : '🕯️ שבת שלום! בדוק את זמני השבת באפליקציה';
+        
+        const success = await sendWhatsApp(userPhone, message);
+        if (success) whatsappNotificationsSent++;
       }
     }
 
     // Send Shabbat reminder notifications
     for (const userId of usersToNotifyShabbat) {
+      const userPref = prefMap.get(userId);
       const userSubs = subscriptionMap.get(userId) || [];
       const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userPhone = userPref?.phone || profileMap.get(userId)?.phone;
       const shabbatTimes = await getShabbatTimes(userCity);
-      const hoursBeforeShabbat = preferences.find(p => p.user_id === userId)?.hours_before_shabbat || 2;
+      const hoursBeforeShabbat = userPref?.hours_before_shabbat || 2;
       
-      const payload = JSON.stringify({
-        title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
-        body: shabbatTimes 
-          ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} ב${userCity}`
-          : `הכינו את עצמכם לשבת!`,
-        icon: '/icon-512.png',
-        badge: '/icon-512.png',
-        url: '/'
-      });
+      // Web Push
+      if (userPref?.push_enabled && userSubs.length > 0) {
+        const payload = JSON.stringify({
+          title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
+          body: shabbatTimes 
+            ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} ב${userCity} | ${shabbatTimes.parasha}`
+            : `הכינו את עצמכם לשבת!`,
+          icon: '/icon-512.png',
+          badge: '/icon-512.png',
+          url: '/'
+        });
 
-      for (const sub of userSubs) {
-        const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
-        if (success) shabbatNotificationsSent++;
+        for (const sub of userSubs) {
+          const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+          if (success) shabbatNotificationsSent++;
+        }
+      }
+
+      // WhatsApp
+      if (userPref?.whatsapp_enabled && userPhone) {
+        const message = shabbatTimes 
+          ? `⏰ תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!\n\n📅 ${shabbatTimes.parasha}\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} ב${userCity}\n🌙 מוצאי שבת: ${shabbatTimes.havdalah_time}\n\nשבת שלום! 🕯️`
+          : `⏰ תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות! הכינו את עצמכם לשבת!`;
+        
+        const success = await sendWhatsApp(userPhone, message);
+        if (success) whatsappNotificationsSent++;
       }
     }
 
     // Log to notification history
-    const historyEntries = [
-      ...usersToNotifyMorning.map(userId => ({
-        user_id: userId,
-        notification_type: 'web_push_morning',
-        message: 'התראת בוקר - זמני שבת',
-        status: 'sent'
-      })),
-      ...usersToNotifyShabbat.map(userId => ({
-        user_id: userId,
-        notification_type: 'web_push_shabbat',
-        message: 'התראה לפני שבת',
-        status: 'sent'
-      }))
-    ];
+    const historyEntries: Array<{user_id: string, notification_type: string, message: string, status: string}> = [];
+    
+    for (const userId of usersToNotifyMorning) {
+      const userPref = prefMap.get(userId);
+      if (userPref?.push_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'web_push_morning',
+          message: 'התראת בוקר - זמני שבת',
+          status: 'sent'
+        });
+      }
+      if (userPref?.whatsapp_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'whatsapp_morning',
+          message: 'התראת בוקר WhatsApp - זמני שבת',
+          status: 'sent'
+        });
+      }
+    }
+    
+    for (const userId of usersToNotifyShabbat) {
+      const userPref = prefMap.get(userId);
+      if (userPref?.push_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'web_push_shabbat',
+          message: 'התראה לפני שבת',
+          status: 'sent'
+        });
+      }
+      if (userPref?.whatsapp_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'whatsapp_shabbat',
+          message: 'התראה לפני שבת WhatsApp',
+          status: 'sent'
+        });
+      }
+    }
 
     if (historyEntries.length > 0) {
       await supabase.from('notification_history').insert(historyEntries);
     }
 
-    console.log(`Notifications sent - Morning: ${morningNotificationsSent}, Shabbat: ${shabbatNotificationsSent}`);
+    console.log(`Notifications sent - Web Push Morning: ${morningNotificationsSent}, Web Push Shabbat: ${shabbatNotificationsSent}, WhatsApp: ${whatsappNotificationsSent}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         morning_sent: morningNotificationsSent,
         shabbat_sent: shabbatNotificationsSent,
-        total: morningNotificationsSent + shabbatNotificationsSent
+        whatsapp_sent: whatsappNotificationsSent,
+        total: morningNotificationsSent + shabbatNotificationsSent + whatsappNotificationsSent
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
