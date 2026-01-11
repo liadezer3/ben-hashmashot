@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Bell, BellOff, Loader2, Check, AlertCircle, Clock } from "lucide-react";
+import { Bell, BellOff, Loader2, Check, AlertCircle, Clock, Timer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -43,7 +43,9 @@ export const WebPushSettings = () => {
   const [subscribing, setSubscribing] = useState(false);
   const [testing, setTesting] = useState(false);
   const [notificationTime, setNotificationTime] = useState("08:00");
+  const [hoursBeforeShabbat, setHoursBeforeShabbat] = useState(2);
   const [savingTime, setSavingTime] = useState(false);
+  const [savingHours, setSavingHours] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,15 +74,62 @@ export const WebPushSettings = () => {
 
       const { data } = await supabase
         .from('notification_preferences')
-        .select('morning_time')
+        .select('morning_time, hours_before_shabbat')
         .eq('user_id', user.id)
         .single();
 
       if (data?.morning_time) {
         setNotificationTime(data.morning_time);
       }
+      if (data?.hours_before_shabbat !== null && data?.hours_before_shabbat !== undefined) {
+        setHoursBeforeShabbat(data.hours_before_shabbat);
+      }
     } catch (error) {
       console.error('Error loading notification time:', error);
+    }
+  };
+
+  const handleHoursChange = async (hours: string) => {
+    const hoursNum = parseInt(hours);
+    setHoursBeforeShabbat(hoursNum);
+    setSavingHours(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "יש להתחבר",
+          description: "התחבר כדי לשמור את ההגדרות",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('notification_preferences')
+        .upsert({
+          user_id: user.id,
+          hours_before_shabbat: hoursNum,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ ההגדרה נשמרה",
+        description: `תקבל התראה ${hoursNum} שעות לפני כניסת שבת`,
+      });
+    } catch (error: any) {
+      console.error('Error saving hours before shabbat:', error);
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו לשמור את ההגדרה",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingHours(false);
     }
   };
 
@@ -289,7 +338,8 @@ export const WebPushSettings = () => {
 
       {/* Time Selector - Only show when subscribed */}
       {isSubscribed && (
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 space-y-4">
+          {/* Daily notification time */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-primary" />
@@ -312,6 +362,34 @@ export const WebPushSettings = () => {
                       {time}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Hours before Shabbat */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Timer className="w-5 h-5 text-orange-500" />
+              <div>
+                <Label className="text-base">התראה לפני כניסת שבת</Label>
+                <p className="text-sm text-muted-foreground">
+                  קבל תזכורת לפני כניסת השבת
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {savingHours && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+              <Select value={hoursBeforeShabbat.toString()} onValueChange={handleHoursChange} disabled={savingHours}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="בחר זמן" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">שעה אחת</SelectItem>
+                  <SelectItem value="2">שעתיים</SelectItem>
+                  <SelectItem value="3">3 שעות</SelectItem>
+                  <SelectItem value="4">4 שעות</SelectItem>
+                  <SelectItem value="6">6 שעות</SelectItem>
                 </SelectContent>
               </Select>
             </div>
