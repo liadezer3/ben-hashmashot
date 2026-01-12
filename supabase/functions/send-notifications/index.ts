@@ -258,10 +258,36 @@ serve(async (req) => {
 
       // Fetch real Shabbat times for test
       const shabbatTimes = await getShabbatTimes();
+      console.log('Shabbat times for WhatsApp test:', shabbatTimes);
 
+      // Format a more complete message with all details
       const testMessage = shabbatTimes
-        ? `🕯️ הודעת בדיקה - זמני שבת\n\n📅 ${shabbatTimes.parasha}\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 מוצאי שבת: ${shabbatTimes.havdalah_time}\n\n✅ המערכת מוגדרת כראוי!`
+        ? `🕯️ *שבת שלום!* 🕯️\n\n📖 *פרשת ${shabbatTimes.parasha}*\n\n📅 *זמני שבת:*\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 צאת שבת: ${shabbatTimes.havdalah_time}\n\n✅ הודעת בדיקה - המערכת מוגדרת כראוי!`
         : `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי!`;
+
+      console.log('WhatsApp test message:', testMessage);
+
+      // Check if Twilio credentials are configured
+      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+      const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
+
+      if (!accountSid || !authToken || !fromWhatsApp) {
+        console.log('Twilio WhatsApp credentials missing:', { 
+          hasAccountSid: !!accountSid, 
+          hasAuthToken: !!authToken, 
+          hasFromWhatsApp: !!fromWhatsApp 
+        });
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'WhatsApp credentials not configured - using fallback', 
+            whatsappSent: false,
+            shabbatTimes 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       try {
         await sendWhatsApp(body.phone, testMessage);
@@ -269,11 +295,15 @@ serve(async (req) => {
           JSON.stringify({ success: true, message: 'Test WhatsApp sent', whatsappSent: true, shabbatTimes }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-      } catch (whatsappError) {
+      } catch (whatsappError: any) {
         console.error('WhatsApp test failed:', whatsappError);
-        // Return success but indicate WhatsApp wasn't sent so frontend can fallback
         return new Response(
-          JSON.stringify({ success: true, message: 'WhatsApp credentials not configured', whatsappSent: false }),
+          JSON.stringify({ 
+            success: false, 
+            message: whatsappError.message || 'WhatsApp sending failed', 
+            whatsappSent: false,
+            error: whatsappError.message
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
