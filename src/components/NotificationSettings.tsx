@@ -414,15 +414,37 @@ export const NotificationSettings = () => {
                   alt="WhatsApp" 
                   className="w-5 h-5"
                 />
-                <Label htmlFor="whatsapp" className="text-foreground cursor-pointer">
-                  הודעת WhatsApp
-                </Label>
+                <div className="flex-1">
+                  <Label htmlFor="whatsapp" className="text-foreground cursor-pointer">
+                    הודעת WhatsApp
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    קבלת זמני שבת, פרשה והתראות
+                  </p>
+                </div>
               </div>
-              <Switch
-                id="whatsapp"
-                checked={settings.whatsapp}
-                onCheckedChange={() => handleToggle("whatsapp")}
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestWhatsApp}
+                  disabled={testingWhatsApp || !contactInfo.phone}
+                  title="שלח הודעת WhatsApp בדיקה"
+                  className="border-[#25D366] hover:bg-[#25D366]/10 text-xs"
+                >
+                  <img 
+                    src={whatsappIcon} 
+                    alt="WhatsApp" 
+                    className={`w-4 h-4 ml-1 ${testingWhatsApp ? 'animate-pulse' : ''}`}
+                  />
+                  בדיקה
+                </Button>
+                <Switch
+                  id="whatsapp"
+                  checked={settings.whatsapp}
+                  onCheckedChange={() => handleToggle("whatsapp")}
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
