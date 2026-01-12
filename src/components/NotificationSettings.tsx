@@ -38,6 +38,7 @@ export const NotificationSettings = () => {
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingWhatsApp, setTestingWhatsApp] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
+  const [testingSMS, setTestingSMS] = useState(false);
 
   useEffect(() => {
     loadPreferences();
@@ -156,6 +157,52 @@ export const NotificationSettings = () => {
       });
     } finally {
       setTestingEmail(false);
+    }
+  };
+
+  const handleTestSMS = async () => {
+    if (!contactInfo.phone) {
+      toast({
+        title: "שגיאה",
+        description: "יש להזין מספר טלפון לפני שליחת בדיקה",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTestingSMS(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('send-notifications', {
+        body: { 
+          testSMS: true,
+          phone: contactInfo.phone 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.smsSent) {
+        toast({
+          title: "✅ הודעת SMS נשלחה!",
+          description: "בדוק את ההודעות שלך",
+        });
+      } else {
+        toast({
+          title: "שגיאה",
+          description: data?.message || "לא ניתן לשלוח SMS - בדוק הגדרות Twilio",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Test SMS error:', error);
+      toast({
+        title: "שגיאה בשליחת SMS",
+        description: error.message || "אירעה שגיאה בשליחת ה-SMS",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingSMS(false);
     }
   };
 
@@ -382,15 +429,33 @@ export const NotificationSettings = () => {
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
               <div className="flex items-center gap-3">
                 <Smartphone className="w-5 h-5 text-primary" />
-                <Label htmlFor="sms" className="text-foreground cursor-pointer">
-                  הודעת SMS
-                </Label>
+                <div className="flex-1">
+                  <Label htmlFor="sms" className="text-foreground cursor-pointer">
+                    הודעת SMS
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    קבלת זמני שבת והתראות ב-SMS
+                  </p>
+                </div>
               </div>
-              <Switch
-                id="sms"
-                checked={settings.sms}
-                onCheckedChange={() => handleToggle("sms")}
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestSMS}
+                  disabled={testingSMS || !contactInfo.phone}
+                  title="שלח SMS בדיקה"
+                  className="text-xs"
+                >
+                  <Smartphone className={`w-4 h-4 ml-1 ${testingSMS ? 'animate-pulse' : ''}`} />
+                  בדיקה
+                </Button>
+                <Switch
+                  id="sms"
+                  checked={settings.sms}
+                  onCheckedChange={() => handleToggle("sms")}
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">

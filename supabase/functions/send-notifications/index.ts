@@ -309,6 +309,64 @@ serve(async (req) => {
       }
     }
 
+    // Handle test SMS request
+    if (body.testSMS && body.phone) {
+      console.log('Sending test SMS to:', body.phone);
+
+      // Fetch real Shabbat times for test
+      const shabbatTimes = await getShabbatTimes();
+      console.log('Shabbat times for SMS test:', shabbatTimes);
+
+      const APP_URL_SMS = 'https://bein-hashmashut.lovable.app';
+      
+      // Format SMS message (shorter than WhatsApp)
+      const testMessage = shabbatTimes
+        ? `שבת שלום! 🕯️ פרשת ${shabbatTimes.parasha} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | צאת שבת: ${shabbatTimes.havdalah_time} | ${APP_URL_SMS}`
+        : `שבת שלום! בדוק זמני שבת באפליקציה: ${APP_URL_SMS}`;
+
+      console.log('SMS test message:', testMessage);
+
+      // Check if Twilio credentials are configured
+      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+      const fromPhone = Deno.env.get('TWILIO_PHONE_FROM');
+
+      if (!accountSid || !authToken || !fromPhone) {
+        console.log('Twilio SMS credentials missing:', { 
+          hasAccountSid: !!accountSid, 
+          hasAuthToken: !!authToken, 
+          hasFromPhone: !!fromPhone 
+        });
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: 'SMS credentials not configured', 
+            smsSent: false 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        await sendSMS(body.phone, testMessage);
+        return new Response(
+          JSON.stringify({ success: true, message: 'Test SMS sent', smsSent: true, shabbatTimes }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (smsError: any) {
+        console.error('SMS test failed:', smsError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: smsError.message || 'SMS sending failed', 
+            smsSent: false,
+            error: smsError.message
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
