@@ -7,6 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const APP_URL = 'https://bein-hashmashut.lovable.app';
+
 interface PushSubscription {
   endpoint: string;
   p256dh: string;
@@ -17,10 +19,12 @@ interface PushSubscription {
 interface NotificationPreference {
   user_id: string;
   phone: string | null;
+  email: string | null;
   morning_time: string | null;
   hours_before_shabbat: number | null;
   push_enabled: boolean | null;
   whatsapp_enabled: boolean | null;
+  sms_enabled: boolean | null;
 }
 
 interface Profile {
@@ -62,12 +66,14 @@ async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes
   try {
     const geoId = CITY_GEO_IDS[city] || "281184";
     const response = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on`
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=he`
     );
 
     if (!response.ok) return null;
 
     const data = await response.json();
+    console.log('Hebcal response:', JSON.stringify(data, null, 2));
+    
     let candleLighting = "";
     let candleDate = "";
     let havdalah = "";
@@ -75,14 +81,19 @@ async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes
 
     for (const item of data.items || []) {
       if (item.category === "candles") {
-        candleLighting = item.title?.replace("Candle lighting: ", "") || "";
+        // Extract time from title like "הדלקת נרות: 16:23"
+        const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
+        candleLighting = timeMatch ? timeMatch[1] : "";
         candleDate = item.date || "";
       } else if (item.category === "havdalah") {
-        havdalah = item.title?.replace("Havdalah: ", "") || "";
+        const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
+        havdalah = timeMatch ? timeMatch[1] : "";
       } else if (item.category === "parashat") {
-        parasha = item.title || "";
+        parasha = item.hebrew || item.title || "";
       }
     }
+
+    console.log('Parsed Shabbat times:', { candleLighting, candleDate, havdalah, parasha });
 
     return {
       candle_lighting_time: candleLighting,
@@ -102,6 +113,13 @@ async function sendWhatsApp(to: string, message: string): Promise<boolean> {
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
 
+    console.log('WhatsApp credentials check:', { 
+      hasAccountSid: !!accountSid, 
+      hasAuthToken: !!authToken, 
+      hasFromWhatsApp: !!fromWhatsApp,
+      to: to
+    });
+
     if (!accountSid || !authToken || !fromWhatsApp) {
       console.log('Twilio WhatsApp credentials not configured - skipping');
       return false;
@@ -110,6 +128,8 @@ async function sendWhatsApp(to: string, message: string): Promise<boolean> {
     // Format phone number for WhatsApp
     const cleanPhone = to.replace(/[\s\-]/g, '');
     const formattedTo = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
+
+    console.log(`Sending WhatsApp to ${formattedTo}`);
 
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
@@ -127,16 +147,74 @@ async function sendWhatsApp(to: string, message: string): Promise<boolean> {
       }
     );
 
+    const responseText = await response.text();
+    console.log('Twilio WhatsApp response:', response.status, responseText);
+
     if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      console.error('Twilio WhatsApp error:', text);
+      console.error('Twilio WhatsApp error:', responseText);
       return false;
     }
 
-    console.log(`WhatsApp sent to ${formattedTo}`);
+    console.log(`WhatsApp sent successfully to ${formattedTo}`);
     return true;
   } catch (error: any) {
     console.error('Error sending WhatsApp:', error.message || error);
+    return false;
+  }
+}
+
+async function sendSMS(to: string, message: string): Promise<boolean> {
+  try {
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const fromPhone = Deno.env.get('TWILIO_PHONE_FROM');
+
+    console.log('SMS credentials check:', { 
+      hasAccountSid: !!accountSid, 
+      hasAuthToken: !!authToken, 
+      hasFromPhone: !!fromPhone,
+      to: to
+    });
+
+    if (!accountSid || !authToken || !fromPhone) {
+      console.log('Twilio SMS credentials not configured - skipping');
+      return false;
+    }
+
+    // Format phone number
+    const cleanPhone = to.replace(/[\s\-]/g, '');
+    const formattedTo = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
+
+    console.log(`Sending SMS to ${formattedTo}`);
+
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: formattedTo,
+          From: fromPhone,
+          Body: message,
+        }),
+      }
+    );
+
+    const responseText = await response.text();
+    console.log('Twilio SMS response:', response.status, responseText);
+
+    if (!response.ok) {
+      console.error('Twilio SMS error:', responseText);
+      return false;
+    }
+
+    console.log(`SMS sent successfully to ${formattedTo}`);
+    return true;
+  } catch (error: any) {
+    console.error('Error sending SMS:', error.message || error);
     return false;
   }
 }
@@ -201,6 +279,41 @@ function isBeforeShabbat(
     console.error('Error checking before Shabbat time:', error);
     return false;
   }
+}
+
+// Create formatted messages with app link
+function createMorningMessage(shabbatTimes: ShabbatTimes | null, city: string): string {
+  if (shabbatTimes) {
+    return `🕯️ *שבת שלום!* 🕯️
+
+📖 *פרשת ${shabbatTimes.parasha}*
+
+📅 *זמני שבת ל${city}:*
+🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}
+🌙 צאת שבת: ${shabbatTimes.havdalah_time}
+
+שבת שלום ומבורך! ✨
+
+📱 לאפליקציה: ${APP_URL}`;
+  }
+  return `🕯️ שבת שלום! בדוק את זמני השבת באפליקציה: ${APP_URL}`;
+}
+
+function createShabbatReminderMessage(shabbatTimes: ShabbatTimes | null, city: string, hoursBeforeShabbat: number): string {
+  if (shabbatTimes) {
+    return `⏰ *תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!*
+
+📖 *פרשת ${shabbatTimes.parasha}*
+
+📅 *זמני שבת ל${city}:*
+🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}
+🌙 צאת שבת: ${shabbatTimes.havdalah_time}
+
+שבת שלום! 🕯️
+
+📱 לאפליקציה: ${APP_URL}`;
+  }
+  return `⏰ תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות! ${APP_URL}`;
 }
 
 serve(async (req) => {
@@ -281,7 +394,7 @@ serve(async (req) => {
       const payload = JSON.stringify({
         title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
         body: shabbatTimes 
-          ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} ב${city} | ${shabbatTimes.parasha}`
+          ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}`
           : `הכינו את עצמכם לשבת!`,
         icon: '/icon-512.png',
         badge: '/icon-512.png',
@@ -318,10 +431,10 @@ serve(async (req) => {
     console.log(`Running scheduled push check at ${israelTime.toISOString()}`);
     console.log(`Israel time: ${currentHour}:${currentMinute.toString().padStart(2, '0')}, Day: ${currentDayOfWeek}`);
 
-    // Get all users with push or whatsapp enabled
+    // Get all users with any notification method enabled
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, morning_time, hours_before_shabbat, push_enabled, whatsapp_enabled');
+      .select('user_id, phone, email, morning_time, hours_before_shabbat, push_enabled, whatsapp_enabled, sms_enabled');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
@@ -329,7 +442,7 @@ serve(async (req) => {
     }
 
     // Filter to users with at least one notification method enabled
-    const activePrefs = (preferences || []).filter(p => p.push_enabled || p.whatsapp_enabled);
+    const activePrefs = (preferences || []).filter(p => p.push_enabled || p.whatsapp_enabled || p.sms_enabled);
 
     console.log(`Found ${activePrefs.length} users with notifications enabled`);
 
@@ -369,6 +482,7 @@ serve(async (req) => {
     let morningNotificationsSent = 0;
     let shabbatNotificationsSent = 0;
     let whatsappNotificationsSent = 0;
+    let smsNotificationsSent = 0;
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
 
@@ -404,12 +518,14 @@ serve(async (req) => {
       const userPhone = userPref?.phone || profileMap.get(userId)?.phone;
       const shabbatTimes = await getShabbatTimes(userCity);
       
+      const message = createMorningMessage(shabbatTimes, userCity);
+      
       // Web Push
       if (userPref?.push_enabled && userSubs.length > 0) {
         const payload = JSON.stringify({
           title: '🕯️ זמני שבת השבוע',
           body: shabbatTimes 
-            ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} | מוצאי שבת: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`
+            ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}`
             : 'בדוק את זמני השבת באפליקציה',
           icon: '/icon-512.png',
           badge: '/icon-512.png',
@@ -424,12 +540,18 @@ serve(async (req) => {
 
       // WhatsApp
       if (userPref?.whatsapp_enabled && userPhone) {
-        const message = shabbatTimes 
-          ? `🕯️ שבת שלום!\n\n📅 ${shabbatTimes.parasha}\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 מוצאי שבת: ${shabbatTimes.havdalah_time}\n\nשבת שלום ומבורך! ✨`
-          : '🕯️ שבת שלום! בדוק את זמני השבת באפליקציה';
-        
         const success = await sendWhatsApp(userPhone, message);
         if (success) whatsappNotificationsSent++;
+      }
+
+      // SMS
+      if (userPref?.sms_enabled && userPhone) {
+        // SMS version is shorter (no markdown formatting)
+        const smsMessage = shabbatTimes 
+          ? `שבת שלום! פרשת ${shabbatTimes.parasha} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | צאת שבת: ${shabbatTimes.havdalah_time} | ${APP_URL}`
+          : `שבת שלום! ${APP_URL}`;
+        const success = await sendSMS(userPhone, smsMessage);
+        if (success) smsNotificationsSent++;
       }
     }
 
@@ -442,12 +564,14 @@ serve(async (req) => {
       const shabbatTimes = await getShabbatTimes(userCity);
       const hoursBeforeShabbat = userPref?.hours_before_shabbat || 2;
       
+      const message = createShabbatReminderMessage(shabbatTimes, userCity, hoursBeforeShabbat);
+      
       // Web Push
       if (userPref?.push_enabled && userSubs.length > 0) {
         const payload = JSON.stringify({
           title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
           body: shabbatTimes 
-            ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} ב${userCity} | ${shabbatTimes.parasha}`
+            ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}`
             : `הכינו את עצמכם לשבת!`,
           icon: '/icon-512.png',
           badge: '/icon-512.png',
@@ -462,12 +586,17 @@ serve(async (req) => {
 
       // WhatsApp
       if (userPref?.whatsapp_enabled && userPhone) {
-        const message = shabbatTimes 
-          ? `⏰ תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!\n\n📅 ${shabbatTimes.parasha}\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} ב${userCity}\n🌙 מוצאי שבת: ${shabbatTimes.havdalah_time}\n\nשבת שלום! 🕯️`
-          : `⏰ תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות! הכינו את עצמכם לשבת!`;
-        
         const success = await sendWhatsApp(userPhone, message);
         if (success) whatsappNotificationsSent++;
+      }
+
+      // SMS
+      if (userPref?.sms_enabled && userPhone) {
+        const smsMessage = shabbatTimes 
+          ? `שבת בעוד ${hoursBeforeShabbat} שעות! פרשת ${shabbatTimes.parasha} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | צאת: ${shabbatTimes.havdalah_time} | ${APP_URL}`
+          : `שבת נכנסת בעוד ${hoursBeforeShabbat} שעות! ${APP_URL}`;
+        const success = await sendSMS(userPhone, smsMessage);
+        if (success) smsNotificationsSent++;
       }
     }
 
@@ -492,6 +621,14 @@ serve(async (req) => {
           status: 'sent'
         });
       }
+      if (userPref?.sms_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'sms_morning',
+          message: 'התראת בוקר SMS - זמני שבת',
+          status: 'sent'
+        });
+      }
     }
     
     for (const userId of usersToNotifyShabbat) {
@@ -512,13 +649,21 @@ serve(async (req) => {
           status: 'sent'
         });
       }
+      if (userPref?.sms_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'sms_shabbat',
+          message: 'התראה לפני שבת SMS',
+          status: 'sent'
+        });
+      }
     }
 
     if (historyEntries.length > 0) {
       await supabase.from('notification_history').insert(historyEntries);
     }
 
-    console.log(`Notifications sent - Web Push Morning: ${morningNotificationsSent}, Web Push Shabbat: ${shabbatNotificationsSent}, WhatsApp: ${whatsappNotificationsSent}`);
+    console.log(`Notifications sent - Web Push Morning: ${morningNotificationsSent}, Web Push Shabbat: ${shabbatNotificationsSent}, WhatsApp: ${whatsappNotificationsSent}, SMS: ${smsNotificationsSent}`);
 
     return new Response(
       JSON.stringify({ 
@@ -526,7 +671,8 @@ serve(async (req) => {
         morning_sent: morningNotificationsSent,
         shabbat_sent: shabbatNotificationsSent,
         whatsapp_sent: whatsappNotificationsSent,
-        total: morningNotificationsSent + shabbatNotificationsSent + whatsappNotificationsSent
+        sms_sent: smsNotificationsSent,
+        total: morningNotificationsSent + shabbatNotificationsSent + whatsappNotificationsSent + smsNotificationsSent
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
