@@ -6,18 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface NotificationPreference {
-  user_id: string;
-  phone: string | null;
-  email: string | null;
-  sms_enabled: boolean;
-  email_enabled: boolean;
-  whatsapp_enabled: boolean;
-  push_enabled: boolean;
-  morning_time: string;
-  hours_before_shabbat: number;
-}
-
 interface ShabbatTimes {
   candle_lighting: string;
   candle_lighting_time: string;
@@ -48,14 +36,12 @@ const getShabbatTimes = async (location: string = "Jerusalem"): Promise<ShabbatT
     
     if (!candleLighting || !havdalah) return null;
     
-    // Extract times directly from titles which are already formatted correctly
     const candleTime = extractTimeFromTitle(candleLighting.title);
     const havdalahTime = extractTimeFromTitle(havdalah.title);
     
     console.log('Extracted candle time:', candleTime);
     console.log('Extracted havdalah time:', havdalahTime);
     
-    // Format the Shabbat entry date (e.g., "יום שישי, 6 בדצמבר")
     const candleDate = new Date(candleLighting.date);
     const hebrewDateFormatter = new Intl.DateTimeFormat('he-IL', {
       weekday: 'long',
@@ -91,7 +77,7 @@ const sendEmail = async (to: string, subject: string, html: string) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'זמני שבת <onboarding@resend.dev>',
+      from: 'בין השמשות <onboarding@resend.dev>',
       to: [to],
       subject,
       html,
@@ -112,9 +98,19 @@ const sendSMS = async (to: string, message: string) => {
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
   const fromPhone = Deno.env.get('TWILIO_PHONE_FROM');
 
+  console.log('SMS credentials check:', { 
+    hasAccountSid: !!accountSid, 
+    hasAuthToken: !!authToken, 
+    hasFromPhone: !!fromPhone,
+    to: to
+  });
+
   if (!accountSid || !authToken || !fromPhone) {
     throw new Error('Twilio SMS credentials not configured');
   }
+
+  const cleanPhone = to.replace(/[\s\-]/g, '');
+  const formattedTo = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
 
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
@@ -125,20 +121,22 @@ const sendSMS = async (to: string, message: string) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        To: to,
+        To: formattedTo,
         From: fromPhone,
         Body: message,
       }),
     }
   );
 
+  const responseText = await response.text();
+  console.log('Twilio SMS response:', response.status, responseText);
+
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    console.error('Twilio SMS error:', text);
-    throw new Error(`TWILIO_SMS_ERROR: ${text || response.status}`);
+    console.error('Twilio SMS error:', responseText);
+    throw new Error(`TWILIO_SMS_ERROR: ${responseText || response.status}`);
   }
 
-  console.log(`SMS sent to ${to}`);
+  console.log(`SMS sent to ${formattedTo}`);
 };
 
 const sendWhatsApp = async (to: string, message: string) => {
@@ -146,12 +144,18 @@ const sendWhatsApp = async (to: string, message: string) => {
   const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
   const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
 
+  console.log('WhatsApp credentials check:', { 
+    hasAccountSid: !!accountSid, 
+    hasAuthToken: !!authToken, 
+    hasFromWhatsApp: !!fromWhatsApp,
+    to: to
+  });
+
   if (!accountSid || !authToken || !fromWhatsApp) {
     console.log('Twilio WhatsApp credentials not configured - skipping WhatsApp');
-    return;
+    throw new Error('Twilio WhatsApp credentials not configured');
   }
 
-  // Format phone number for WhatsApp (needs whatsapp: prefix)
   const cleanPhone = to.replace(/[\s\-]/g, '');
   const formattedTo = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
 
@@ -171,10 +175,12 @@ const sendWhatsApp = async (to: string, message: string) => {
     }
   );
 
+  const responseText = await response.text();
+  console.log('Twilio WhatsApp response:', response.status, responseText);
+
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    console.error('Twilio WhatsApp error:', text);
-    throw new Error(`TWILIO_WHATSAPP_ERROR: ${text || response.status}`);
+    console.error('Twilio WhatsApp error:', responseText);
+    throw new Error(`TWILIO_WHATSAPP_ERROR: ${responseText || response.status}`);
   }
 
   console.log(`WhatsApp sent to ${formattedTo}`);
@@ -203,7 +209,7 @@ const getEmailPromoFooter = () => `
         <p style="margin: 3px 0; font-size: 13px;">📖 דבר תורה שבועי מעודכן</p>
         <p style="margin: 3px 0; font-size: 13px;">💝 יומן זיכרונות משפחתי</p>
       </div>
-      <a href="${APP_URL}" style="display: inline-block; padding: 10px 25px; background: rgba(255,255,255,0.25); color: white; text-decoration: none; border-radius: 25px; font-weight: bold; margin-top: 10px;">הצטרפו עכשיו 🚀</a>
+      <a href="${APP_URL}" style="display: inline-block; padding: 10px 25px; background: rgba(255,255,255,0.25); color: white; text-decoration: none; border-radius: 25px; font-weight: bold; margin-top: 10px;">פתח את האפליקציה 🚀</a>
     </div>
   </div>
 `;
@@ -220,18 +226,17 @@ serve(async (req) => {
     if (body.testEmail && body.email) {
       console.log('Sending test email to:', body.email);
 
-      // Fetch real Shabbat times for test email
       const shabbatTimes = await getShabbatTimes();
 
       const testEmailHtml = shabbatTimes ? `
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-radius: 12px; color: white;">
           <h1 style="margin: 0 0 20px 0;">🕯️ מייל בדיקה - זמני שבת</h1>
+          <p style="font-size: 18px; margin-bottom: 15px; opacity: 0.95;">📖 פרשת ${shabbatTimes.parasha}</p>
           <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
             <p style="font-size: 18px; margin: 5px 0;">📅 כניסת שבת: <strong>${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time}</strong></p>
             <p style="font-size: 18px; margin: 5px 0;">🕯️ הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
-            <p style="font-size: 18px; margin: 5px 0;">🌙 מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">🌙 צאת שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
           </div>
-          <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
           <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 20px 0;" />
           <p style="font-size: 12px; opacity: 0.7;">זו הודעת בדיקה - המערכת מוגדרת כראוי ✅</p>
           ${getEmailPromoFooter()}
@@ -244,10 +249,10 @@ serve(async (req) => {
         </div>
       `;
 
-      await sendEmail(body.email, 'בדיקת התראות - זמני שבת', testEmailHtml);
+      await sendEmail(body.email, '🕯️ בדיקת התראות - בין השמשות', testEmailHtml);
 
       return new Response(
-        JSON.stringify({ success: true, message: 'Test email sent', shabbatTimes }),
+        JSON.stringify({ success: true, message: 'Test email sent', emailSent: true, shabbatTimes }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -256,38 +261,28 @@ serve(async (req) => {
     if (body.testWhatsApp && body.phone) {
       console.log('Sending test WhatsApp to:', body.phone);
 
-      // Fetch real Shabbat times for test
       const shabbatTimes = await getShabbatTimes();
       console.log('Shabbat times for WhatsApp test:', shabbatTimes);
 
-      // Format a more complete message with all details
       const testMessage = shabbatTimes
-        ? `🕯️ *שבת שלום!* 🕯️\n\n📖 *פרשת ${shabbatTimes.parasha}*\n\n📅 *זמני שבת:*\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 צאת שבת: ${shabbatTimes.havdalah_time}\n\n✅ הודעת בדיקה - המערכת מוגדרת כראוי!`
-        : `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי!`;
+        ? `🕯️ *שבת שלום!* 🕯️
+
+📖 *פרשת ${shabbatTimes.parasha}*
+
+📅 *זמני שבת:*
+🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}
+🌙 צאת שבת: ${shabbatTimes.havdalah_time}
+
+✅ הודעת בדיקה - המערכת מוגדרת כראוי!
+
+📱 בין השמשות: ${APP_URL}`
+        : `🕯️ הודעת בדיקה - זמני שבת
+
+המערכת מוגדרת כראוי!
+
+📱 בין השמשות: ${APP_URL}`;
 
       console.log('WhatsApp test message:', testMessage);
-
-      // Check if Twilio credentials are configured
-      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-      const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
-
-      if (!accountSid || !authToken || !fromWhatsApp) {
-        console.log('Twilio WhatsApp credentials missing:', { 
-          hasAccountSid: !!accountSid, 
-          hasAuthToken: !!authToken, 
-          hasFromWhatsApp: !!fromWhatsApp 
-        });
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'WhatsApp credentials not configured - using fallback', 
-            whatsappSent: false,
-            shabbatTimes 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
 
       try {
         await sendWhatsApp(body.phone, testMessage);
@@ -313,39 +308,14 @@ serve(async (req) => {
     if (body.testSMS && body.phone) {
       console.log('Sending test SMS to:', body.phone);
 
-      // Fetch real Shabbat times for test
       const shabbatTimes = await getShabbatTimes();
       console.log('Shabbat times for SMS test:', shabbatTimes);
 
-      const APP_URL_SMS = 'https://bein-hashmashut.lovable.app';
-      
-      // Format SMS message (shorter than WhatsApp)
       const testMessage = shabbatTimes
-        ? `שבת שלום! 🕯️ פרשת ${shabbatTimes.parasha} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | צאת שבת: ${shabbatTimes.havdalah_time} | ${APP_URL_SMS}`
-        : `שבת שלום! בדוק זמני שבת באפליקציה: ${APP_URL_SMS}`;
+        ? `שבת שלום! 🕯️ פרשת ${shabbatTimes.parasha} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | צאת שבת: ${shabbatTimes.havdalah_time} | ${APP_URL}`
+        : `שבת שלום! בדוק זמני שבת באפליקציה: ${APP_URL}`;
 
       console.log('SMS test message:', testMessage);
-
-      // Check if Twilio credentials are configured
-      const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-      const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-      const fromPhone = Deno.env.get('TWILIO_PHONE_FROM');
-
-      if (!accountSid || !authToken || !fromPhone) {
-        console.log('Twilio SMS credentials missing:', { 
-          hasAccountSid: !!accountSid, 
-          hasAuthToken: !!authToken, 
-          hasFromPhone: !!fromPhone 
-        });
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            message: 'SMS credentials not configured', 
-            smsSent: false 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
 
       try {
         await sendSMS(body.phone, testMessage);
@@ -392,7 +362,7 @@ serve(async (req) => {
     console.log(`Found ${preferences?.length || 0} notification preferences`);
 
     // Scheduling mode
-    const timing = typeof body?.timing === 'string' ? body.timing : undefined; // 'morning' | 'afternoon' | undefined
+    const timing = typeof body?.timing === 'string' ? body.timing : undefined;
 
     // Check if we should send notifications (Friday before Shabbat)
     const now = new Date();
@@ -413,12 +383,7 @@ serve(async (req) => {
       const notificationTime = new Date(candleLightingTime);
       notificationTime.setHours(notificationTime.getHours() - pref.hours_before_shabbat);
 
-      // Default behavior: only send in the "hours_before_shabbat" window
       const shouldSendWindow = isFriday && now >= notificationTime && now < candleLightingTime;
-
-      // Cron-triggered modes:
-      // - morning: send only when user's morning_time matches Jerusalem clock
-      // - afternoon: send once for everyone on Friday (acts as "before Shabbat" batch)
       const shouldSendMorning = timing === 'morning' && isFriday && !!pref.morning_time && jerusalemClock === pref.morning_time;
       const shouldSendAfternoon = timing === 'afternoon' && isFriday;
 
@@ -428,16 +393,25 @@ serve(async (req) => {
         continue;
       }
 
-      const message = `שבת שלום! 🕯️ כניסת שבת: ${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time} | מוצ"ש: ${shabbatTimes.havdalah_time} | ${shabbatTimes.parasha}`;
+      const message = `🕯️ שבת שלום!
+
+📖 פרשת ${shabbatTimes.parasha}
+
+📅 זמני שבת:
+🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}
+🌙 צאת שבת: ${shabbatTimes.havdalah_time}
+
+📱 בין השמשות: ${APP_URL}`;
+
       const emailHtml = `
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-radius: 12px; color: white;">
           <h1 style="margin: 0 0 20px 0;">🕯️ שבת שלום!</h1>
+          <p style="font-size: 18px; margin-bottom: 15px; opacity: 0.95;">📖 פרשת ${shabbatTimes.parasha}</p>
           <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
             <p style="font-size: 18px; margin: 5px 0;">📅 כניסת שבת: <strong>${shabbatTimes.date} בשעה ${shabbatTimes.candle_lighting_time}</strong></p>
             <p style="font-size: 18px; margin: 5px 0;">🕯️ הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
-            <p style="font-size: 18px; margin: 5px 0;">🌙 מוצאי שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
+            <p style="font-size: 18px; margin: 5px 0;">🌙 צאת שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
           </div>
-          <p style="font-size: 16px; opacity: 0.9;">📖 ${shabbatTimes.parasha}</p>
           ${getEmailPromoFooter()}
         </div>
       `;
@@ -446,7 +420,7 @@ serve(async (req) => {
       if (pref.email_enabled && pref.email) {
         notificationsAttempted++;
         try {
-          await sendEmail(pref.email, 'זמני שבת', emailHtml);
+          await sendEmail(pref.email, '🕯️ זמני שבת - בין השמשות', emailHtml);
           notificationsSent++;
         } catch (e) {
           console.error(`Email failed for ${pref.email}:`, e);
@@ -503,4 +477,3 @@ serve(async (req) => {
     );
   }
 });
-
