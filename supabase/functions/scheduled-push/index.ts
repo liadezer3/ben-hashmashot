@@ -7,8 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const APP_URL = 'https://bein-hashmashut.lovable.app';
-const APP_LOGO_URL = 'https://bein-hashmashut.lovable.app/icon-512.png';
+const APP_URL = 'https://ben-hashmashot.lovable.app';
+const APP_LOGO_URL = 'https://ben-hashmashot.lovable.app/icon-512.png';
 
 interface PushSubscription {
   endpoint: string;
@@ -24,8 +24,6 @@ interface NotificationPreference {
   morning_time: string | null;
   hours_before_shabbat: number | null;
   push_enabled: boolean | null;
-  whatsapp_enabled: boolean | null;
-  sms_enabled: boolean | null;
   email_enabled: boolean | null;
 }
 
@@ -40,6 +38,13 @@ interface ShabbatTimes {
   candle_lighting_date: string;
   havdalah_time: string;
   parasha: string;
+}
+
+interface HolidayInfo {
+  name: string;
+  date: string;
+  time?: string;
+  type: 'holiday' | 'fast' | 'rosh_chodesh';
 }
 
 // City to GeoID mapping
@@ -64,14 +69,14 @@ const CITY_GEO_IDS: Record<string, string> = {
   "רמת גן": "293788",
 };
 
-async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes | null> {
+async function getShabbatAndHolidayTimes(city: string = "Jerusalem"): Promise<{ shabbat: ShabbatTimes | null; holidays: HolidayInfo[] }> {
   try {
     const geoId = CITY_GEO_IDS[city] || "281184";
     const response = await fetch(
       `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=he`
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) return { shabbat: null, holidays: [] };
 
     const data = await response.json();
     console.log('Hebcal response:', JSON.stringify(data, null, 2));
@@ -80,6 +85,7 @@ async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes
     let candleDate = "";
     let havdalah = "";
     let parasha = "";
+    const holidays: HolidayInfo[] = [];
 
     for (const item of data.items || []) {
       if (item.category === "candles") {
@@ -91,21 +97,51 @@ async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes
         havdalah = timeMatch ? timeMatch[1] : "";
       } else if (item.category === "parashat") {
         parasha = item.hebrew || item.title || "";
+      } else if (item.category === "holiday") {
+        holidays.push({
+          name: item.hebrew || item.title || "",
+          date: item.date || "",
+          type: 'holiday'
+        });
+      } else if (item.category === "fast") {
+        const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
+        holidays.push({
+          name: item.hebrew || item.title || "",
+          date: item.date || "",
+          time: timeMatch ? timeMatch[1] : undefined,
+          type: 'fast'
+        });
+      } else if (item.category === "roshchodesh") {
+        holidays.push({
+          name: item.hebrew || item.title || "",
+          date: item.date || "",
+          type: 'rosh_chodesh'
+        });
       }
     }
 
     console.log('Parsed Shabbat times:', { candleLighting, candleDate, havdalah, parasha });
+    console.log('Parsed holidays:', holidays);
 
     return {
-      candle_lighting_time: candleLighting,
-      candle_lighting_date: candleDate,
-      havdalah_time: havdalah,
-      parasha: parasha,
+      shabbat: {
+        candle_lighting_time: candleLighting,
+        candle_lighting_date: candleDate,
+        havdalah_time: havdalah,
+        parasha: parasha,
+      },
+      holidays
     };
   } catch (error) {
     console.error("Error fetching Shabbat times:", error);
-    return null;
+    return { shabbat: null, holidays: [] };
   }
+}
+
+// Keep backward compatibility
+async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes | null> {
+  const result = await getShabbatAndHolidayTimes(city);
+  return result.shabbat;
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
@@ -142,116 +178,6 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
     return true;
   } catch (error: any) {
     console.error('Error sending email:', error.message || error);
-    return false;
-  }
-}
-
-async function sendWhatsApp(to: string, message: string): Promise<boolean> {
-  try {
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
-
-    console.log('WhatsApp credentials check:', { 
-      hasAccountSid: !!accountSid, 
-      hasAuthToken: !!authToken, 
-      hasFromWhatsApp: !!fromWhatsApp,
-      to: to
-    });
-
-    if (!accountSid || !authToken || !fromWhatsApp) {
-      console.log('Twilio WhatsApp credentials not configured - skipping');
-      return false;
-    }
-
-    const cleanPhone = to.replace(/[\s\-]/g, '');
-    const formattedTo = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
-
-    console.log(`Sending WhatsApp to ${formattedTo}`);
-
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: `whatsapp:${formattedTo}`,
-          From: `whatsapp:${fromWhatsApp}`,
-          Body: message,
-        }),
-      }
-    );
-
-    const responseText = await response.text();
-    console.log('Twilio WhatsApp response:', response.status, responseText);
-
-    if (!response.ok) {
-      console.error('Twilio WhatsApp error:', responseText);
-      return false;
-    }
-
-    console.log(`WhatsApp sent successfully to ${formattedTo}`);
-    return true;
-  } catch (error: any) {
-    console.error('Error sending WhatsApp:', error.message || error);
-    return false;
-  }
-}
-
-async function sendSMS(to: string, message: string): Promise<boolean> {
-  try {
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromPhone = Deno.env.get('TWILIO_PHONE_FROM');
-
-    console.log('SMS credentials check:', { 
-      hasAccountSid: !!accountSid, 
-      hasAuthToken: !!authToken, 
-      hasFromPhone: !!fromPhone,
-      to: to
-    });
-
-    if (!accountSid || !authToken || !fromPhone) {
-      console.log('Twilio SMS credentials not configured - skipping');
-      return false;
-    }
-
-    const cleanPhone = to.replace(/[\s\-]/g, '');
-    const formattedTo = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
-
-    console.log(`Sending SMS to ${formattedTo}`);
-
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: formattedTo,
-          From: fromPhone,
-          Body: message,
-        }),
-      }
-    );
-
-    const responseText = await response.text();
-    console.log('Twilio SMS response:', response.status, responseText);
-
-    if (!response.ok) {
-      console.error('Twilio SMS error:', responseText);
-      return false;
-    }
-
-    console.log(`SMS sent successfully to ${formattedTo}`);
-    return true;
-  } catch (error: any) {
-    console.error('Error sending SMS:', error.message || error);
     return false;
   }
 }
@@ -319,8 +245,27 @@ function isBeforeShabbat(
   }
 }
 
+// Format holidays for message
+function formatHolidays(holidays: HolidayInfo[]): string {
+  if (!holidays.length) return '';
+  
+  const lines: string[] = [];
+  for (const h of holidays) {
+    if (h.type === 'holiday') {
+      lines.push(`🎉 ${h.name}`);
+    } else if (h.type === 'fast') {
+      lines.push(`🕯️ ${h.name}${h.time ? ` - סיום: ${h.time}` : ''}`);
+    } else if (h.type === 'rosh_chodesh') {
+      lines.push(`🌙 ${h.name}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 // Create formatted messages with app link and logo
-function createMorningMessage(shabbatTimes: ShabbatTimes | null, city: string): string {
+function createMorningMessage(shabbatTimes: ShabbatTimes | null, city: string, holidays: HolidayInfo[] = []): string {
+  const holidayText = formatHolidays(holidays);
+  
   if (shabbatTimes) {
     return `🕯️ *שבת שלום!* 🕯️
 
@@ -329,6 +274,7 @@ function createMorningMessage(shabbatTimes: ShabbatTimes | null, city: string): 
 📅 *זמני שבת ל${city}:*
 🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}
 🌙 צאת שבת: ${shabbatTimes.havdalah_time}
+${holidayText ? `\n📆 *אירועים קרובים:*\n${holidayText}` : ''}
 
 שבת שלום ומבורך! ✨
 
@@ -337,7 +283,9 @@ function createMorningMessage(shabbatTimes: ShabbatTimes | null, city: string): 
   return `🕯️ שבת שלום! בדוק את זמני השבת באפליקציה: ${APP_URL}`;
 }
 
-function createShabbatReminderMessage(shabbatTimes: ShabbatTimes | null, city: string, hoursBeforeShabbat: number): string {
+function createShabbatReminderMessage(shabbatTimes: ShabbatTimes | null, city: string, hoursBeforeShabbat: number, holidays: HolidayInfo[] = []): string {
+  const holidayText = formatHolidays(holidays);
+  
   if (shabbatTimes) {
     return `⏰ *תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!*
 
@@ -346,6 +294,7 @@ function createShabbatReminderMessage(shabbatTimes: ShabbatTimes | null, city: s
 📅 *זמני שבת ל${city}:*
 🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}
 🌙 צאת שבת: ${shabbatTimes.havdalah_time}
+${holidayText ? `\n📆 *אירועים קרובים:*\n${holidayText}` : ''}
 
 שבת שלום! 🕯️
 
@@ -354,10 +303,20 @@ function createShabbatReminderMessage(shabbatTimes: ShabbatTimes | null, city: s
   return `⏰ תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות! ${APP_URL}`;
 }
 
-function createEmailHtml(shabbatTimes: ShabbatTimes | null, city: string, notificationType: 'morning' | 'shabbat', hoursBeforeShabbat: number = 2): string {
+function createEmailHtml(shabbatTimes: ShabbatTimes | null, city: string, notificationType: 'morning' | 'shabbat', hoursBeforeShabbat: number = 2, holidays: HolidayInfo[] = []): string {
   const title = notificationType === 'morning' 
     ? '🕯️ זמני שבת השבוע' 
     : `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`;
+  
+  const holidayHtml = holidays.length > 0 ? `
+    <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; margin-top: 15px;">
+      <h3 style="margin: 0 0 10px 0; font-size: 16px;">📆 אירועים קרובים:</h3>
+      ${holidays.map(h => {
+        const icon = h.type === 'holiday' ? '🎉' : h.type === 'fast' ? '🕯️' : '🌙';
+        return `<p style="margin: 5px 0; font-size: 14px;">${icon} ${h.name}${h.time ? ` - סיום: ${h.time}` : ''}</p>`;
+      }).join('')}
+    </div>
+  ` : '';
   
   const promoFooter = `
     <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.3);">
@@ -372,8 +331,8 @@ function createEmailHtml(shabbatTimes: ShabbatTimes | null, city: string, notifi
         <h3 style="margin: 10px 0 5px 0; font-size: 18px;">✨ בין השמשות - זמני שבת וחג ✨</h3>
         <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">האפליקציה המשפחתית שלך לזמני שבת</p>
         <div style="margin: 15px 0; padding: 12px; background: rgba(255,255,255,0.15); border-radius: 8px;">
-          <p style="margin: 3px 0; font-size: 13px;">📅 זמני שבת מדויקים לפי המיקום שלך</p>
-          <p style="margin: 3px 0; font-size: 13px;">🔔 התראות אוטומטיות במייל, SMS ווואטסאפ</p>
+          <p style="margin: 3px 0; font-size: 13px;">📅 זמני שבת וחג מדויקים לפי המיקום שלך</p>
+          <p style="margin: 3px 0; font-size: 13px;">🔔 התראות אוטומטיות במייל ו-Push</p>
           <p style="margin: 3px 0; font-size: 13px;">📖 דבר תורה שבועי מעודכן</p>
           <p style="margin: 3px 0; font-size: 13px;">💝 יומן זיכרונות משפחתי</p>
         </div>
@@ -392,6 +351,7 @@ function createEmailHtml(shabbatTimes: ShabbatTimes | null, city: string, notifi
           <p style="font-size: 18px; margin: 5px 0;">🕯️ הדלקת נרות: <strong>${shabbatTimes.candle_lighting_time}</strong></p>
           <p style="font-size: 18px; margin: 5px 0;">🌙 צאת שבת: <strong>${shabbatTimes.havdalah_time}</strong></p>
         </div>
+        ${holidayHtml}
         <p style="font-size: 16px; opacity: 0.9;">שבת שלום ומבורך! ✨</p>
         ${promoFooter}
       </div>
@@ -468,7 +428,7 @@ serve(async (req) => {
       }
 
       const city = body.city || 'Jerusalem';
-      const shabbatTimes = await getShabbatTimes(city);
+      const { shabbat: shabbatTimes, holidays } = await getShabbatAndHolidayTimes(city);
       
       const { data: prefs } = await supabase
         .from('notification_preferences')
@@ -477,11 +437,12 @@ serve(async (req) => {
         .single();
       
       const hoursBeforeShabbat = prefs?.hours_before_shabbat || 2;
+      const holidayText = holidays.length > 0 ? ` | 📆 ${holidays[0].name}` : '';
 
       const payload = JSON.stringify({
         title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
         body: shabbatTimes 
-          ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}`
+          ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}${holidayText}`
           : `הכינו את עצמכם לשבת!`,
         icon: '/icon-512.png',
         badge: '/icon-512.png',
@@ -517,10 +478,10 @@ serve(async (req) => {
     console.log(`Running scheduled push check at ${israelTime.toISOString()}`);
     console.log(`Israel time: ${currentHour}:${currentMinute.toString().padStart(2, '0')}, Day: ${currentDayOfWeek}`);
 
-    // Get all users with any notification method enabled
+    // Get all users with any notification method enabled (only email and push now)
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, email, morning_time, hours_before_shabbat, push_enabled, whatsapp_enabled, sms_enabled, email_enabled');
+      .select('user_id, phone, email, morning_time, hours_before_shabbat, push_enabled, email_enabled');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
@@ -528,7 +489,7 @@ serve(async (req) => {
     }
 
     // Filter to users with at least one notification method enabled
-    const activePrefs = (preferences || []).filter(p => p.push_enabled || p.whatsapp_enabled || p.sms_enabled || p.email_enabled);
+    const activePrefs = (preferences || []).filter(p => p.push_enabled || p.email_enabled);
 
     console.log(`Found ${activePrefs.length} users with notifications enabled`);
 
@@ -567,8 +528,6 @@ serve(async (req) => {
 
     let morningNotificationsSent = 0;
     let shabbatNotificationsSent = 0;
-    let whatsappNotificationsSent = 0;
-    let smsNotificationsSent = 0;
     let emailNotificationsSent = 0;
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
@@ -606,18 +565,17 @@ serve(async (req) => {
       const userPref = prefMap.get(userId);
       const userSubs = subscriptionMap.get(userId) || [];
       const userCity = profileMap.get(userId)?.city || 'Jerusalem';
-      const userPhone = userPref?.phone || profileMap.get(userId)?.phone;
       const userEmail = userPref?.email;
-      const shabbatTimes = await getShabbatTimes(userCity);
+      const { shabbat: shabbatTimes, holidays } = await getShabbatAndHolidayTimes(userCity);
       
-      const message = createMorningMessage(shabbatTimes, userCity);
+      const holidayText = holidays.length > 0 ? ` | 📆 ${holidays[0].name}` : '';
       
       // Web Push
       if (userPref?.push_enabled && userSubs.length > 0) {
         const payload = JSON.stringify({
           title: '🕯️ זמני שבת השבוע',
           body: shabbatTimes 
-            ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}`
+            ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}${holidayText}`
             : 'בדוק את זמני השבת באפליקציה',
           icon: '/icon-512.png',
           badge: '/icon-512.png',
@@ -632,24 +590,9 @@ serve(async (req) => {
 
       // Email
       if (userPref?.email_enabled && userEmail) {
-        const emailHtml = createEmailHtml(shabbatTimes, userCity, 'morning');
+        const emailHtml = createEmailHtml(shabbatTimes, userCity, 'morning', 2, holidays);
         const success = await sendEmail(userEmail, '🕯️ זמני שבת השבוע', emailHtml);
         if (success) emailNotificationsSent++;
-      }
-
-      // WhatsApp
-      if (userPref?.whatsapp_enabled && userPhone) {
-        const success = await sendWhatsApp(userPhone, message);
-        if (success) whatsappNotificationsSent++;
-      }
-
-      // SMS
-      if (userPref?.sms_enabled && userPhone) {
-        const smsMessage = shabbatTimes 
-          ? `שבת שלום! פרשת ${shabbatTimes.parasha} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | צאת שבת: ${shabbatTimes.havdalah_time} | ${APP_URL}`
-          : `שבת שלום! ${APP_URL}`;
-        const success = await sendSMS(userPhone, smsMessage);
-        if (success) smsNotificationsSent++;
       }
     }
 
@@ -658,19 +601,18 @@ serve(async (req) => {
       const userPref = prefMap.get(userId);
       const userSubs = subscriptionMap.get(userId) || [];
       const userCity = profileMap.get(userId)?.city || 'Jerusalem';
-      const userPhone = userPref?.phone || profileMap.get(userId)?.phone;
       const userEmail = userPref?.email;
-      const shabbatTimes = await getShabbatTimes(userCity);
+      const { shabbat: shabbatTimes, holidays } = await getShabbatAndHolidayTimes(userCity);
       const hoursBeforeShabbat = userPref?.hours_before_shabbat || 2;
       
-      const message = createShabbatReminderMessage(shabbatTimes, userCity, hoursBeforeShabbat);
+      const holidayText = holidays.length > 0 ? ` | 📆 ${holidays[0].name}` : '';
       
       // Web Push
       if (userPref?.push_enabled && userSubs.length > 0) {
         const payload = JSON.stringify({
           title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
           body: shabbatTimes 
-            ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}`
+            ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}${holidayText}`
             : `הכינו את עצמכם לשבת!`,
           icon: '/icon-512.png',
           badge: '/icon-512.png',
@@ -685,24 +627,9 @@ serve(async (req) => {
 
       // Email
       if (userPref?.email_enabled && userEmail) {
-        const emailHtml = createEmailHtml(shabbatTimes, userCity, 'shabbat', hoursBeforeShabbat);
+        const emailHtml = createEmailHtml(shabbatTimes, userCity, 'shabbat', hoursBeforeShabbat, holidays);
         const success = await sendEmail(userEmail, `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`, emailHtml);
         if (success) emailNotificationsSent++;
-      }
-
-      // WhatsApp
-      if (userPref?.whatsapp_enabled && userPhone) {
-        const success = await sendWhatsApp(userPhone, message);
-        if (success) whatsappNotificationsSent++;
-      }
-
-      // SMS
-      if (userPref?.sms_enabled && userPhone) {
-        const smsMessage = shabbatTimes 
-          ? `שבת בעוד ${hoursBeforeShabbat} שעות! פרשת ${shabbatTimes.parasha} | הדלקת נרות: ${shabbatTimes.candle_lighting_time} | צאת: ${shabbatTimes.havdalah_time} | ${APP_URL}`
-          : `שבת נכנסת בעוד ${hoursBeforeShabbat} שעות! ${APP_URL}`;
-        const success = await sendSMS(userPhone, smsMessage);
-        if (success) smsNotificationsSent++;
       }
     }
 
@@ -727,22 +654,6 @@ serve(async (req) => {
           status: 'sent'
         });
       }
-      if (userPref?.whatsapp_enabled) {
-        historyEntries.push({
-          user_id: userId,
-          notification_type: 'whatsapp_morning',
-          message: 'התראת בוקר WhatsApp - זמני שבת',
-          status: 'sent'
-        });
-      }
-      if (userPref?.sms_enabled) {
-        historyEntries.push({
-          user_id: userId,
-          notification_type: 'sms_morning',
-          message: 'התראת בוקר SMS - זמני שבת',
-          status: 'sent'
-        });
-      }
     }
     
     for (const userId of usersToNotifyShabbat) {
@@ -763,29 +674,13 @@ serve(async (req) => {
           status: 'sent'
         });
       }
-      if (userPref?.whatsapp_enabled) {
-        historyEntries.push({
-          user_id: userId,
-          notification_type: 'whatsapp_shabbat',
-          message: 'התראה לפני שבת WhatsApp',
-          status: 'sent'
-        });
-      }
-      if (userPref?.sms_enabled) {
-        historyEntries.push({
-          user_id: userId,
-          notification_type: 'sms_shabbat',
-          message: 'התראה לפני שבת SMS',
-          status: 'sent'
-        });
-      }
     }
 
     if (historyEntries.length > 0) {
       await supabase.from('notification_history').insert(historyEntries);
     }
 
-    console.log(`Notifications sent - Web Push Morning: ${morningNotificationsSent}, Web Push Shabbat: ${shabbatNotificationsSent}, Email: ${emailNotificationsSent}, WhatsApp: ${whatsappNotificationsSent}, SMS: ${smsNotificationsSent}`);
+    console.log(`Notifications sent - Web Push Morning: ${morningNotificationsSent}, Web Push Shabbat: ${shabbatNotificationsSent}, Email: ${emailNotificationsSent}`);
 
     return new Response(
       JSON.stringify({ 
@@ -793,9 +688,7 @@ serve(async (req) => {
         morning_sent: morningNotificationsSent,
         shabbat_sent: shabbatNotificationsSent,
         email_sent: emailNotificationsSent,
-        whatsapp_sent: whatsappNotificationsSent,
-        sms_sent: smsNotificationsSent,
-        total: morningNotificationsSent + shabbatNotificationsSent + emailNotificationsSent + whatsappNotificationsSent + smsNotificationsSent
+        total: morningNotificationsSent + shabbatNotificationsSent + emailNotificationsSent
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
