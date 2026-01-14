@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, Smartphone, Clock } from "lucide-react";
+import { Bell, Mail, Clock, ExternalLink } from "lucide-react";
 import gmailIcon from "@/assets/gmail-icon.png";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -15,10 +15,54 @@ import {
 } from "@/lib/localNotifications";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 
+// Generate WhatsApp message with Shabbat times
+const generateWhatsAppMessage = async (city: string = "Jerusalem"): Promise<string> => {
+  try {
+    // Fetch current Shabbat times
+    const response = await fetch(
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&M=on&lg=he`
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      let candleLighting = "";
+      let havdalah = "";
+      let parasha = "";
+      
+      for (const item of data.items || []) {
+        if (item.category === "candles") {
+          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
+          candleLighting = timeMatch ? timeMatch[1] : "";
+        } else if (item.category === "havdalah") {
+          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
+          havdalah = timeMatch ? timeMatch[1] : "";
+        } else if (item.category === "parashat") {
+          parasha = item.hebrew || item.title || "";
+        }
+      }
+      
+      return `🕯️ *שבת שלום!* 🕯️
+
+📖 *פרשת ${parasha}*
+
+📅 *זמני שבת ל${city}:*
+🕯️ הדלקת נרות: ${candleLighting}
+🌙 צאת שבת: ${havdalah}
+
+שבת שלום ומבורך! ✨
+
+📱 בין השמשות: https://ben-hashmashot.lovable.app`;
+    }
+  } catch (error) {
+    console.error('Error fetching Shabbat times for WhatsApp:', error);
+  }
+  
+  return `🕯️ שבת שלום! בדוק את זמני השבת באפליקציה: https://ben-hashmashot.lovable.app`;
+};
+
 export const NotificationSettings = () => {
   const { toast } = useToast();
   const [settings, setSettings] = useState({
-    sms: false,
     email: false,
     whatsapp: false,
     push: true,
@@ -38,11 +82,27 @@ export const NotificationSettings = () => {
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingWhatsApp, setTestingWhatsApp] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
-  const [testingSMS, setTestingSMS] = useState(false);
+  const [userCity, setUserCity] = useState("ירושלים");
 
   useEffect(() => {
     loadPreferences();
+    loadUserCity();
   }, []);
+
+  const loadUserCity = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('city')
+      .eq('id', user.id)
+      .single();
+    
+    if (data?.city) {
+      setUserCity(data.city);
+    }
+  };
 
   const loadPreferences = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -56,7 +116,6 @@ export const NotificationSettings = () => {
 
     if (data && !error) {
       setSettings({
-        sms: data.sms_enabled,
         email: data.email_enabled,
         whatsapp: data.whatsapp_enabled,
         push: data.push_enabled,
@@ -96,7 +155,6 @@ export const NotificationSettings = () => {
         user_id: user.id,
         phone: contactInfo.phone,
         email: contactInfo.email,
-        sms_enabled: settings.sms,
         email_enabled: settings.email,
         whatsapp_enabled: settings.whatsapp,
         push_enabled: settings.push,
@@ -160,109 +218,47 @@ export const NotificationSettings = () => {
     }
   };
 
-  const handleTestSMS = async () => {
-    if (!contactInfo.phone) {
-      toast({
-        title: "שגיאה",
-        description: "יש להזין מספר טלפון לפני שליחת בדיקה",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setTestingSMS(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('send-notifications', {
-        body: { 
-          testSMS: true,
-          phone: contactInfo.phone 
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.smsSent) {
-        toast({
-          title: "✅ הודעת SMS נשלחה!",
-          description: "בדוק את ההודעות שלך",
-        });
-      } else {
-        toast({
-          title: "שגיאה",
-          description: data?.message || "לא ניתן לשלוח SMS - בדוק הגדרות Twilio",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error('Test SMS error:', error);
-      toast({
-        title: "שגיאה בשליחת SMS",
-        description: error.message || "אירעה שגיאה בשליחת ה-SMS",
-        variant: "destructive",
-      });
-    } finally {
-      setTestingSMS(false);
-    }
-  };
-
-  const handleTestWhatsApp = async () => {
-    if (!contactInfo.phone) {
-      toast({
-        title: "שגיאה",
-        description: "יש להזין מספר טלפון לפני שליחת בדיקה",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleOpenWhatsApp = async () => {
     setTestingWhatsApp(true);
     
     try {
-      // Try to send via Twilio first
-      const { data, error } = await supabase.functions.invoke('send-notifications', {
-        body: { 
-          testWhatsApp: true,
-          phone: contactInfo.phone 
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.whatsappSent) {
-        toast({
-          title: "✅ הודעת WhatsApp נשלחה!",
-          description: "בדוק את ההודעות שלך בוואטסאפ",
-        });
-      } else {
-        // Fallback to Click-to-Chat
+      const message = await generateWhatsAppMessage(userCity);
+      const encodedMessage = encodeURIComponent(message);
+      
+      // If phone number is provided, send to that number
+      if (contactInfo.phone) {
         const cleanPhone = contactInfo.phone.replace(/[\s\-\+]/g, '');
-        const testMessage = `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי!\nתקבלו התראות על זמני שבת וחג.\n\n✅ הגדרות נשמרו בהצלחה`;
-        const encodedMessage = encodeURIComponent(testMessage);
-        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank');
-
-        toast({
-          title: "נפתח WhatsApp!",
-          description: "לחץ 'שלח' בוואטסאפ כדי לשלוח את ההודעה",
-        });
+        window.open(`https://wa.me/${cleanPhone}?text=${encodedMessage}`, '_blank');
+      } else {
+        // Open WhatsApp without a recipient - user can choose
+        window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
       }
-    } catch (error: any) {
-      console.error('Test WhatsApp error:', error);
-      // Fallback to Click-to-Chat
-      const cleanPhone = contactInfo.phone.replace(/[\s\-\+]/g, '');
-      const testMessage = `🕯️ הודעת בדיקה - זמני שבת\n\nהמערכת מוגדרת כראוי!`;
-      const encodedMessage = encodeURIComponent(testMessage);
-      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
-      window.open(whatsappUrl, '_blank');
-
+      
       toast({
         title: "נפתח WhatsApp!",
         description: "לחץ 'שלח' בוואטסאפ כדי לשלוח את ההודעה",
       });
+    } catch (error: any) {
+      console.error('WhatsApp error:', error);
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו לפתוח WhatsApp",
+        variant: "destructive",
+      });
     } finally {
       setTestingWhatsApp(false);
     }
+  };
+
+  const handleShareWhatsApp = async () => {
+    const message = await generateWhatsAppMessage(userCity);
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    
+    toast({
+      title: "נפתח WhatsApp!",
+      description: "בחר את אנשי הקשר שאליהם תרצה לשלוח",
+    });
   };
 
   const handleTestPushNotification = async () => {
@@ -322,13 +318,13 @@ export const NotificationSettings = () => {
         <div className="space-y-4">
           <div>
             <Label htmlFor="phone" className="text-foreground">
-              מספר טלפון (בפורמט בינלאומי: +972...)
+              מספר טלפון לוואטסאפ (בפורמט בינלאומי: 972...)
             </Label>
             <div className="flex gap-2 mt-2">
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+972501234567"
+                placeholder="972501234567"
                 value={contactInfo.phone}
                 onChange={(e) =>
                   setContactInfo({ ...contactInfo, phone: e.target.value })
@@ -337,9 +333,9 @@ export const NotificationSettings = () => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={handleTestWhatsApp}
-                disabled={testingWhatsApp || !contactInfo.phone}
-                title="שלח הודעת WhatsApp בדיקה"
+                onClick={handleOpenWhatsApp}
+                disabled={testingWhatsApp}
+                title="שלח הודעת WhatsApp"
                 className="border-[#25D366] hover:bg-[#25D366]/10"
               >
                 <img 
@@ -349,6 +345,9 @@ export const NotificationSettings = () => {
                 />
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              💡 חינמי לחלוטין - נפתח WhatsApp עם הודעה מוכנה
+            </p>
           </div>
 
           <div>
@@ -428,42 +427,15 @@ export const NotificationSettings = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
               <div className="flex items-center gap-3">
-                <Smartphone className="w-5 h-5 text-primary" />
+                <Mail className="w-5 h-5 text-primary" />
                 <div className="flex-1">
-                  <Label htmlFor="sms" className="text-foreground cursor-pointer">
-                    הודעת SMS
+                  <Label htmlFor="email-toggle" className="text-foreground cursor-pointer">
+                    הודעת אימייל
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    קבלת זמני שבת והתראות ב-SMS
+                    קבלת זמני שבת אוטומטית במייל
                   </p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestSMS}
-                  disabled={testingSMS || !contactInfo.phone}
-                  title="שלח SMS בדיקה"
-                  className="text-xs"
-                >
-                  <Smartphone className={`w-4 h-4 ml-1 ${testingSMS ? 'animate-pulse' : ''}`} />
-                  בדיקה
-                </Button>
-                <Switch
-                  id="sms"
-                  checked={settings.sms}
-                  onCheckedChange={() => handleToggle("sms")}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-primary" />
-                <Label htmlFor="email-toggle" className="text-foreground cursor-pointer">
-                  הודעת אימייל
-                </Label>
               </div>
               <Switch
                 id="email-toggle"
@@ -481,10 +453,10 @@ export const NotificationSettings = () => {
                 />
                 <div className="flex-1">
                   <Label htmlFor="whatsapp" className="text-foreground cursor-pointer">
-                    הודעת WhatsApp
+                    שיתוף WhatsApp
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    קבלת זמני שבת, פרשה והתראות
+                    💚 חינמי - פותח הודעה מוכנה לשליחה
                   </p>
                 </div>
               </div>
@@ -492,23 +464,12 @@ export const NotificationSettings = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleTestWhatsApp}
-                  disabled={testingWhatsApp || !contactInfo.phone}
-                  title="שלח הודעת WhatsApp בדיקה"
+                  onClick={handleShareWhatsApp}
                   className="border-[#25D366] hover:bg-[#25D366]/10 text-xs"
                 >
-                  <img 
-                    src={whatsappIcon} 
-                    alt="WhatsApp" 
-                    className={`w-4 h-4 ml-1 ${testingWhatsApp ? 'animate-pulse' : ''}`}
-                  />
-                  בדיקה
+                  <ExternalLink className="w-4 h-4 ml-1" />
+                  שתף עכשיו
                 </Button>
-                <Switch
-                  id="whatsapp"
-                  checked={settings.whatsapp}
-                  onCheckedChange={() => handleToggle("whatsapp")}
-                />
               </div>
             </div>
 
