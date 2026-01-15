@@ -23,6 +23,8 @@ interface NotificationPreference {
   email: string | null;
   morning_time: string | null;
   hours_before_shabbat: number | null;
+  days_before_shabbat: number | null;
+  shabbat_reminder_time: string | null;
   push_enabled: boolean | null;
   email_enabled: boolean | null;
 }
@@ -481,7 +483,7 @@ serve(async (req) => {
     // Get all users with any notification method enabled (only email and push now)
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, email, morning_time, hours_before_shabbat, push_enabled, email_enabled');
+      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
@@ -528,9 +530,11 @@ serve(async (req) => {
 
     let morningNotificationsSent = 0;
     let shabbatNotificationsSent = 0;
+    let scheduledRemindersSent = 0;
     let emailNotificationsSent = 0;
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
+    const usersToNotifyScheduled: string[] = [];
 
     // Check each user's preferences
     for (const pref of activePrefs) {
@@ -545,8 +549,20 @@ serve(async (req) => {
         }
       }
 
-      // Check hours before Shabbat (only on Friday)
-      if (currentDayOfWeek === 5 && pref.hours_before_shabbat) {
+      // Check scheduled reminder (X days before Shabbat at specific time)
+      const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
+      const shabbatReminderTime = pref.shabbat_reminder_time || '12:00';
+      
+      // Calculate which day to send: Friday is day 5, so if daysBeforeShabbat=1, send on Thursday (day 4)
+      const targetDay = 5 - daysBeforeShabbat; // 5=Friday, 4=Thursday, 3=Wednesday, 2=Tuesday
+      
+      if (currentDayOfWeek === targetDay && isTimeMatch(shabbatReminderTime, currentHour, currentMinute)) {
+        console.log(`User ${pref.user_id} scheduled reminder: day ${targetDay}, time ${shabbatReminderTime}, matches!`);
+        usersToNotifyScheduled.push(pref.user_id);
+      }
+
+      // Check hours before Shabbat (only on Friday) - additional reminder
+      if (currentDayOfWeek === 5 && pref.hours_before_shabbat && pref.hours_before_shabbat > 0) {
         const shabbatTimes = await getShabbatTimes(userCity);
         if (shabbatTimes && isBeforeShabbat(shabbatTimes.candle_lighting_date, pref.hours_before_shabbat, now)) {
           usersToNotifyShabbat.push(pref.user_id);
@@ -555,7 +571,8 @@ serve(async (req) => {
     }
 
     console.log(`Users to notify (morning): ${usersToNotifyMorning.length}`);
-    console.log(`Users to notify (before Shabbat): ${usersToNotifyShabbat.length}`);
+    console.log(`Users to notify (scheduled reminder): ${usersToNotifyScheduled.length}`);
+    console.log(`Users to notify (hours before Shabbat): ${usersToNotifyShabbat.length}`);
 
     // Create a map of preferences by user_id for quick lookup
     const prefMap = new Map(activePrefs.map(p => [p.user_id, p]));
@@ -596,7 +613,45 @@ serve(async (req) => {
       }
     }
 
-    // Send Shabbat reminder notifications (X hours before Shabbat)
+    // Send scheduled reminder notifications (X days before Shabbat at specific time)
+    for (const userId of usersToNotifyScheduled) {
+      const userPref = prefMap.get(userId);
+      const userSubs = subscriptionMap.get(userId) || [];
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userEmail = userPref?.email;
+      const { shabbat: shabbatTimes, holidays } = await getShabbatAndHolidayTimes(userCity);
+      const daysBeforeShabbat = userPref?.days_before_shabbat ?? 0;
+      
+      const holidayText = holidays.length > 0 ? ` | 📆 ${holidays[0].name}` : '';
+      const daysText = daysBeforeShabbat === 0 ? 'היום' : daysBeforeShabbat === 1 ? 'מחר' : `בעוד ${daysBeforeShabbat} ימים`;
+      
+      // Web Push
+      if (userPref?.push_enabled && userSubs.length > 0) {
+        const payload = JSON.stringify({
+          title: `🕯️ תזכורת: שבת ${daysText}!`,
+          body: shabbatTimes 
+            ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}${holidayText}`
+            : `הכינו את עצמכם לשבת!`,
+          icon: '/icon-512.png',
+          badge: '/icon-512.png',
+          url: '/'
+        });
+
+        for (const sub of userSubs) {
+          const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+          if (success) scheduledRemindersSent++;
+        }
+      }
+
+      // Email
+      if (userPref?.email_enabled && userEmail) {
+        const emailHtml = createEmailHtml(shabbatTimes, userCity, 'shabbat', 0, holidays);
+        const success = await sendEmail(userEmail, `🕯️ תזכורת: שבת ${daysText}!`, emailHtml);
+        if (success) emailNotificationsSent++;
+      }
+    }
+
+    // Send Shabbat reminder notifications (X hours before Shabbat on Friday)
     for (const userId of usersToNotifyShabbat) {
       const userPref = prefMap.get(userId);
       const userSubs = subscriptionMap.get(userId) || [];
@@ -655,6 +710,26 @@ serve(async (req) => {
         });
       }
     }
+
+    for (const userId of usersToNotifyScheduled) {
+      const userPref = prefMap.get(userId);
+      if (userPref?.push_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'web_push_scheduled',
+          message: 'תזכורת מתוזמנת לשבת',
+          status: 'sent'
+        });
+      }
+      if (userPref?.email_enabled) {
+        historyEntries.push({
+          user_id: userId,
+          notification_type: 'email_scheduled',
+          message: 'אימייל תזכורת מתוזמנת לשבת',
+          status: 'sent'
+        });
+      }
+    }
     
     for (const userId of usersToNotifyShabbat) {
       const userPref = prefMap.get(userId);
@@ -680,15 +755,16 @@ serve(async (req) => {
       await supabase.from('notification_history').insert(historyEntries);
     }
 
-    console.log(`Notifications sent - Web Push Morning: ${morningNotificationsSent}, Web Push Shabbat: ${shabbatNotificationsSent}, Email: ${emailNotificationsSent}`);
+    console.log(`Notifications sent - Morning: ${morningNotificationsSent}, Scheduled: ${scheduledRemindersSent}, Before Shabbat: ${shabbatNotificationsSent}, Email: ${emailNotificationsSent}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         morning_sent: morningNotificationsSent,
+        scheduled_sent: scheduledRemindersSent,
         shabbat_sent: shabbatNotificationsSent,
         email_sent: emailNotificationsSent,
-        total: morningNotificationsSent + shabbatNotificationsSent + emailNotificationsSent
+        total: morningNotificationsSent + scheduledRemindersSent + shabbatNotificationsSent + emailNotificationsSent
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

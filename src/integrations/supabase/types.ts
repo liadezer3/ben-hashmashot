@@ -207,6 +207,7 @@ export type Database = {
         Row: {
           created_at: string
           custom_message: string | null
+          days_before_shabbat: number | null
           email: string | null
           email_enabled: boolean | null
           hours_before_shabbat: number | null
@@ -214,6 +215,7 @@ export type Database = {
           morning_time: string | null
           phone: string | null
           push_enabled: boolean | null
+          shabbat_reminder_time: string | null
           sms_enabled: boolean | null
           updated_at: string
           user_id: string
@@ -222,6 +224,7 @@ export type Database = {
         Insert: {
           created_at?: string
           custom_message?: string | null
+          days_before_shabbat?: number | null
           email?: string | null
           email_enabled?: boolean | null
           hours_before_shabbat?: number | null
@@ -229,6 +232,7 @@ export type Database = {
           morning_time?: string | null
           phone?: string | null
           push_enabled?: boolean | null
+          shabbat_reminder_time?: string | null
           sms_enabled?: boolean | null
           updated_at?: string
           user_id: string
@@ -237,6 +241,7 @@ export type Database = {
         Update: {
           created_at?: string
           custom_message?: string | null
+          days_before_shabbat?: number | null
           email?: string | null
           email_enabled?: boolean | null
           hours_before_shabbat?: number | null
@@ -244,6 +249,7 @@ export type Database = {
           morning_time?: string | null
           phone?: string | null
           push_enabled?: boolean | null
+          shabbat_reminder_time?: string | null
           sms_enabled?: boolean | null
           updated_at?: string
           user_id?: string

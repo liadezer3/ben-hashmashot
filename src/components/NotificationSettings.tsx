@@ -76,6 +76,8 @@ export const NotificationSettings = () => {
   const [timeSettings, setTimeSettings] = useState({
     morningTime: "08:00",
     hoursBeforeShabbat: 2,
+    daysBeforeShabbat: 0,
+    shabbatReminderTime: "12:00",
   });
 
   const [loading, setLoading] = useState(false);
@@ -127,6 +129,8 @@ export const NotificationSettings = () => {
       setTimeSettings({
         morningTime: data.morning_time || "08:00",
         hoursBeforeShabbat: data.hours_before_shabbat || 2,
+        daysBeforeShabbat: (data as any).days_before_shabbat || 0,
+        shabbatReminderTime: (data as any).shabbat_reminder_time || "12:00",
       });
     }
   };
@@ -160,7 +164,9 @@ export const NotificationSettings = () => {
         push_enabled: settings.push,
         morning_time: timeSettings.morningTime,
         hours_before_shabbat: timeSettings.hoursBeforeShabbat,
-      }, {
+        days_before_shabbat: timeSettings.daysBeforeShabbat,
+        shabbat_reminder_time: timeSettings.shabbatReminderTime,
+      } as any, {
         onConflict: 'user_id'
       });
 
@@ -400,22 +406,67 @@ export const NotificationSettings = () => {
                 className="mt-2"
               />
             </div>
-            <div>
-              <Label htmlFor="hoursBeforeShabbat" className="text-foreground flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                שעות לפני כניסת שבת/חג
-              </Label>
-              <Input
-                id="hoursBeforeShabbat"
-                type="number"
-                min="1"
-                max="6"
-                value={timeSettings.hoursBeforeShabbat}
-                onChange={(e) =>
-                  setTimeSettings({ ...timeSettings, hoursBeforeShabbat: parseInt(e.target.value) })
-                }
-                className="mt-2"
-              />
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="daysBeforeShabbat" className="text-foreground flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  ימים לפני כניסת שבת/חג לתזכורת
+                </Label>
+                <select
+                  id="daysBeforeShabbat"
+                  value={timeSettings.daysBeforeShabbat}
+                  onChange={(e) =>
+                    setTimeSettings({ ...timeSettings, daysBeforeShabbat: parseInt(e.target.value) })
+                  }
+                  className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value={0}>באותו יום (יום שישי)</option>
+                  <option value={1}>יום לפני (יום חמישי)</option>
+                  <option value={2}>יומיים לפני (יום רביעי)</option>
+                  <option value={3}>3 ימים לפני (יום שלישי)</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  מתי לשלוח תזכורת לפני שבת/חג
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="shabbatReminderTime" className="text-foreground">
+                  שעת תזכורת לפני שבת/חג
+                </Label>
+                <Input
+                  id="shabbatReminderTime"
+                  type="time"
+                  value={timeSettings.shabbatReminderTime}
+                  onChange={(e) =>
+                    setTimeSettings({ ...timeSettings, shabbatReminderTime: e.target.value })
+                  }
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  באיזו שעה לשלוח את התזכורת
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="hoursBeforeShabbat" className="text-foreground">
+                  תזכורת נוספת - שעות לפני כניסת שבת
+                </Label>
+                <Input
+                  id="hoursBeforeShabbat"
+                  type="number"
+                  min="0"
+                  max="6"
+                  value={timeSettings.hoursBeforeShabbat}
+                  onChange={(e) =>
+                    setTimeSettings({ ...timeSettings, hoursBeforeShabbat: parseInt(e.target.value) || 0 })
+                  }
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  תזכורת נוספת ביום שישי, X שעות לפני הדלקת נרות (0 = ללא)
+                </p>
+              </div>
             </div>
           </div>
         </div>
