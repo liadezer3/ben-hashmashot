@@ -469,6 +469,102 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Handle test request for scheduled reminder
+    if (body.test && body.testType === 'scheduled') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization header required for test' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const city = body.city || 'Jerusalem';
+      const { shabbat: shabbatTimes, holidays } = await getShabbatAndHolidayTimes(city);
+      
+      const { data: prefs } = await supabase
+        .from('notification_preferences')
+        .select('days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, email')
+        .eq('user_id', user.id)
+        .single();
+      
+      const daysBeforeShabbat = prefs?.days_before_shabbat ?? 0;
+      const dayNames = ['באותו יום (יום שישי)', 'יום לפני (יום חמישי)', 'יומיים לפני (יום רביעי)', '3 ימים לפני (יום שלישי)'];
+      const dayName = dayNames[daysBeforeShabbat] || dayNames[0];
+      const reminderTime = prefs?.shabbat_reminder_time || '12:00';
+      const holidayText = holidays.length > 0 ? ` | 📆 ${holidays[0].name}` : '';
+
+      let pushSent = 0;
+      let emailSent = false;
+
+      // Send Web Push if enabled
+      if (prefs?.push_enabled) {
+        const { data: subscriptions } = await supabase
+          .from('push_subscriptions')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (subscriptions?.length) {
+          const payload = JSON.stringify({
+            title: `📅 תזכורת מתוזמנת: שבת מתקרבת!`,
+            body: shabbatTimes 
+              ? `🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time} | 🌙 צאת: ${shabbatTimes.havdalah_time} | 📖 ${shabbatTimes.parasha}${holidayText}`
+              : `הכינו את עצמכם לשבת!`,
+            icon: '/icon-512.png',
+            badge: '/icon-512.png',
+            url: '/'
+          });
+
+          for (const sub of subscriptions) {
+            const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+            if (success) pushSent++;
+          }
+        }
+      }
+
+      // Send Email if enabled
+      if (prefs?.email_enabled && prefs?.email) {
+        const message = createShabbatReminderMessage(shabbatTimes, city, 0, holidays);
+        const emailHtml = createEmailHtml(shabbatTimes, city, 'shabbat', 0, holidays);
+        const subject = `📅 תזכורת מתוזמנת - זמני שבת (${dayName})`;
+        emailSent = await sendEmail(prefs.email, subject, emailHtml);
+      }
+
+      await supabase.from('notification_history').insert({
+        user_id: user.id,
+        notification_type: 'scheduled_reminder_test',
+        message: `בדיקת תזכורת מתוזמנת - ${dayName} בשעה ${reminderTime}`,
+        status: 'sent'
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          pushSent, 
+          emailSent,
+          settings: {
+            daysBeforeShabbat,
+            dayName,
+            reminderTime,
+            pushEnabled: prefs?.push_enabled,
+            emailEnabled: prefs?.email_enabled
+          },
+          message: 'Test scheduled reminder sent' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Get current time in Israel timezone
     const now = new Date();

@@ -84,6 +84,7 @@ export const NotificationSettings = () => {
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingWhatsApp, setTestingWhatsApp] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
+  const [testingScheduled, setTestingScheduled] = useState(false);
   const [userCity, setUserCity] = useState("ירושלים");
 
   useEffect(() => {
@@ -313,6 +314,55 @@ export const NotificationSettings = () => {
     }
   };
 
+  const handleTestScheduledReminder = async () => {
+    setTestingScheduled(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "שגיאה",
+          description: "יש להתחבר כדי לבדוק את התזכורת המתוזמנת",
+          variant: "destructive",
+        });
+        setTestingScheduled(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('scheduled-push', {
+        body: { 
+          test: true,
+          testType: 'scheduled',
+          city: userCity
+        }
+      });
+
+      if (error) throw error;
+
+      const dayNames = ['באותו יום (יום שישי)', 'יום לפני (יום חמישי)', 'יומיים לפני (יום רביעי)', '3 ימים לפני (יום שלישי)'];
+      const dayName = dayNames[timeSettings.daysBeforeShabbat] || dayNames[0];
+
+      let description = `הגדרות: ${dayName} בשעה ${timeSettings.shabbatReminderTime}`;
+      if (data?.pushSent > 0) description += ` | Web Push נשלח`;
+      if (data?.emailSent) description += ` | מייל נשלח`;
+
+      toast({
+        title: "תזכורת מתוזמנת נשלחה!",
+        description,
+      });
+    } catch (error: any) {
+      console.error('Test scheduled reminder error:', error);
+      toast({
+        title: "שגיאה בשליחת תזכורת",
+        description: error.message || "אירעה שגיאה בשליחת התזכורת המתוזמנת",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingScheduled(false);
+    }
+  };
+
   return (
     <Card className="p-6 bg-gradient-card shadow-card border-border/50">
       <h2 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2">
@@ -443,9 +493,21 @@ export const NotificationSettings = () => {
                   }
                   className="mt-2"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  באיזו שעה לשלוח את התזכורת
-                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <p className="text-xs text-muted-foreground flex-1">
+                    באיזו שעה לשלוח את התזכורת
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestScheduledReminder}
+                    disabled={testingScheduled}
+                    className="text-xs"
+                  >
+                    <Bell className={`w-4 h-4 ml-1 ${testingScheduled ? 'animate-pulse' : ''}`} />
+                    {testingScheduled ? "שולח..." : "בדוק תזכורת"}
+                  </Button>
+                </div>
               </div>
 
               <div>
