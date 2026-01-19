@@ -620,60 +620,6 @@ export const NotificationSettings = () => {
               </div>
             </div>
 
-            {/* Push Notification Test */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-primary" />
-                <div>
-                  <span className="text-sm font-medium">התראה מקומית</span>
-                  {testResults.push.status !== 'idle' && (
-                    <p className="text-xs text-muted-foreground">
-                      {testResults.push.message} {testResults.push.timestamp && `(${formatTimestamp(testResults.push.timestamp)})`}
-                    </p>
-                  )}
-                  {!isNativeApp() && (
-                    <p className="text-xs text-muted-foreground">זמין רק באפליקציה המותקנת</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(testResults.push.status)}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestPushNotification}
-                  disabled={testResults.push.status === 'sending' || !isNativeApp()}
-                >
-                  {testResults.push.status === 'sending' ? 'שולח...' : 'בדיקה'}
-                </Button>
-              </div>
-            </div>
-
-            {/* Scheduled Reminder Test */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-primary" />
-                <div>
-                  <span className="text-sm font-medium">תזכורת מתוזמנת</span>
-                  {testResults.scheduled.status !== 'idle' && (
-                    <p className="text-xs text-muted-foreground">
-                      {testResults.scheduled.message} {testResults.scheduled.timestamp && `(${formatTimestamp(testResults.scheduled.timestamp)})`}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(testResults.scheduled.status)}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestScheduledReminder}
-                  disabled={testResults.scheduled.status === 'sending'}
-                >
-                  {testResults.scheduled.status === 'sending' ? 'שולח...' : 'בדיקה'}
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -796,6 +742,57 @@ export const NotificationSettings = () => {
                 <p className="text-xs text-muted-foreground mt-1">
                   תזכורת נוספת ביום שישי, X שעות לפני הדלקת נרות (0 = ללא)
                 </p>
+              </div>
+
+              {/* Scheduled Notification Status */}
+              <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-primary" />
+                  <span className="font-medium text-foreground">סיכום תזכורות אוטומטיות</span>
+                </div>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <p>📧 תזכורת מתוזמנת תישלח במייל:</p>
+                  <p className="font-medium text-foreground mr-4">
+                    {timeSettings.daysBeforeShabbat === 0 ? 'יום שישי' : 
+                     timeSettings.daysBeforeShabbat === 1 ? 'יום חמישי' :
+                     timeSettings.daysBeforeShabbat === 2 ? 'יום רביעי' : 'יום שלישי'} 
+                    {' '}בשעה {timeSettings.shabbatReminderTime}
+                  </p>
+                  {timeSettings.hoursBeforeShabbat > 0 && (
+                    <p className="mt-2">⏰ תזכורת נוספת {timeSettings.hoursBeforeShabbat} שעות לפני הדלקת נרות</p>
+                  )}
+                  <p className="mt-2">🌅 התראת בוקר בשעה {timeSettings.morningTime}</p>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestScheduledReminder}
+                    disabled={testResults.scheduled.status === 'sending' || !contactInfo.email}
+                    className="text-xs"
+                  >
+                    {testResults.scheduled.status === 'sending' ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin ml-1" />
+                        שולח...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3 h-3 ml-1" />
+                        שלח בדיקה עכשיו
+                      </>
+                    )}
+                  </Button>
+                  {testResults.scheduled.status !== 'idle' && (
+                    <span className="flex items-center gap-1 text-xs">
+                      {getStatusIcon(testResults.scheduled.status)}
+                      {testResults.scheduled.message}
+                    </span>
+                  )}
+                </div>
+                {!contactInfo.email && (
+                  <p className="text-xs text-destructive mt-2">יש להזין כתובת אימייל כדי לקבל תזכורות</p>
+                )}
               </div>
             </div>
           </div>
