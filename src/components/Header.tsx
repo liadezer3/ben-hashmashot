@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import logo from "@/assets/logo.jpg";
 import { ThemeToggle } from "./ThemeToggle";
+import { HebrewDateDisplay } from "./HebrewDateDisplay";
 
 export const Header = () => {
   const navigate = useNavigate();
@@ -98,9 +99,12 @@ export const Header = () => {
             )}
           </div>
         </div>
-        <p className="text-center mt-3 text-primary-foreground/90 text-lg">
-          קבלו התראות אוטומטיות לפני כל שבת וחג
-        </p>
+        <div className="flex flex-col items-center gap-2 mt-3">
+          <HebrewDateDisplay variant="header" />
+          <p className="text-primary-foreground/90 text-lg">
+            קבלו התראות אוטומטיות לפני כל שבת וחג
+          </p>
+        </div>
       </div>
     </header>
   );
