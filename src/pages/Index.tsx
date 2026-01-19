@@ -18,6 +18,7 @@ import SmartHomeSettings from "@/components/SmartHomeSettings";
 import VoiceAssistant from "@/components/VoiceAssistant";
 import { AutomationHistory } from "@/components/AutomationHistory";
 import { WebPushSettings } from "@/components/WebPushSettings";
+import { HebrewDateDisplay } from "@/components/HebrewDateDisplay";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -66,6 +67,9 @@ const Index = () => {
       <Header />
       
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Hebrew Date - Today */}
+        <HebrewDateDisplay variant="full" showGregorian={true} />
+        
         <ShabbatTimes onParshaLoaded={setCurrentParsha} />
         
         {/* Torah Content & Preparation */}
