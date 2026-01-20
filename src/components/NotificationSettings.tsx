@@ -14,6 +14,7 @@ import {
   isNativeApp 
 } from "@/lib/localNotifications";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
+import { WebPushSettings } from "@/components/WebPushSettings";
 
 // Generate SMS message with Shabbat times
 const generateSMSMessage = async (city: string = "Jerusalem"): Promise<string> => {
@@ -852,32 +853,30 @@ export const NotificationSettings = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-primary" />
-                <div className="flex-1">
-                  <Label htmlFor="push" className="text-foreground cursor-pointer">
-                    התראות מקומיות (מהמכשיר)
-                  </Label>
-                  {isNativeApp() && (
+            {/* Web Push for Browser */}
+            <WebPushSettings />
+
+            {/* Local notifications for native app */}
+            {isNativeApp() && (
+              <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <Label htmlFor="push" className="text-foreground cursor-pointer">
+                      התראות מקומיות (מהמכשיר)
+                    </Label>
                     <p className="text-xs text-muted-foreground mt-1">
                       התראות ישירות ממכשיר הנייד
                     </p>
-                  )}
-                  {!isNativeApp() && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      זמין רק באפליקציה המותקנת
-                    </p>
-                  )}
+                  </div>
                 </div>
+                <Switch
+                  id="push"
+                  checked={settings.push}
+                  onCheckedChange={() => handleToggle("push")}
+                />
               </div>
-              <Switch
-                id="push"
-                checked={settings.push}
-                onCheckedChange={() => handleToggle("push")}
-                disabled={!isNativeApp()}
-              />
-            </div>
+            )}
           </div>
         </div>
 
