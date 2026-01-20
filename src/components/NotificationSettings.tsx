@@ -1,3 +1,4 @@
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Bell, Mail, Clock, ExternalLink, MessageSquare, CheckCircle2, XCircle, Loader2, Send } from "lucide-react";
 import gmailIcon from "@/assets/gmail-icon.png";
-import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -14,7 +14,7 @@ import {
   isNativeApp 
 } from "@/lib/localNotifications";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
-import { WebPushSettings } from "@/components/WebPushSettings";
+import { WebPushSettings } from "./WebPushSettings";
 
 // Generate SMS message with Shabbat times
 const generateSMSMessage = async (city: string = "Jerusalem"): Promise<string> => {
