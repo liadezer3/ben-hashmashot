@@ -10,6 +10,7 @@ const APP_URL = 'https://ben-hashmashot.lovable.app';
 const APP_LOGO_URL = 'https://ben-hashmashot.lovable.app/icon-512.png';
 
 interface PushSubscription {
+  id: string;
   endpoint: string;
   p256dh: string;
   auth: string;
@@ -26,6 +27,8 @@ interface NotificationPreference {
   shabbat_reminder_time: string | null;
   push_enabled: boolean | null;
   email_enabled: boolean | null;
+  sms_enabled: boolean | null;
+  whatsapp_enabled: boolean | null;
 }
 
 interface Profile {
@@ -80,7 +83,6 @@ async function getShabbatAndHolidayTimes(city: string = "Jerusalem"): Promise<{ 
     if (!response.ok) return { shabbat: null, holidays: [] };
 
     const data = await response.json();
-    console.log('Hebcal response:', JSON.stringify(data, null, 2));
     
     let candleLighting = "";
     let candleDate = "";
@@ -121,9 +123,6 @@ async function getShabbatAndHolidayTimes(city: string = "Jerusalem"): Promise<{ 
       }
     }
 
-    console.log('Parsed Shabbat times:', { candleLighting, candleDate, havdalah, parasha });
-    console.log('Parsed holidays:', holidays);
-
     return {
       shabbat: {
         candle_lighting_time: candleLighting,
@@ -139,6 +138,7 @@ async function getShabbatAndHolidayTimes(city: string = "Jerusalem"): Promise<{ 
   }
 }
 
+// ========== EMAIL ==========
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -161,11 +161,9 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
       }),
     });
 
-    const responseText = await response.text();
-    console.log('Resend response:', response.status, responseText);
-
     if (!response.ok) {
-      console.error('Resend error:', responseText);
+      const errorText = await response.text();
+      console.error('Resend error:', errorText);
       return false;
     }
 
@@ -177,99 +175,295 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   }
 }
 
-// Base64URL encode/decode utilities
+// ========== SMS (Twilio) ==========
+async function sendSMS(to: string, message: string): Promise<boolean> {
+  try {
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const fromNumber = Deno.env.get('TWILIO_PHONE_FROM');
+
+    if (!accountSid || !authToken || !fromNumber) {
+      console.log('Twilio SMS credentials not configured');
+      return false;
+    }
+
+    // Format phone number if needed
+    let formattedPhone = to.replace(/[\s\-]/g, '');
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+' + formattedPhone;
+    }
+
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: formattedPhone,
+          From: fromNumber,
+          Body: message,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Twilio SMS error:', errorText);
+      return false;
+    }
+
+    console.log(`SMS sent successfully to ${to}`);
+    return true;
+  } catch (error: any) {
+    console.error('Error sending SMS:', error.message || error);
+    return false;
+  }
+}
+
+// ========== WHATSAPP (Twilio) ==========
+async function sendWhatsApp(to: string, message: string): Promise<boolean> {
+  try {
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
+
+    if (!accountSid || !authToken || !fromWhatsApp) {
+      console.log('Twilio WhatsApp credentials not configured');
+      return false;
+    }
+
+    // Format phone number if needed
+    let formattedPhone = to.replace(/[\s\-]/g, '');
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+' + formattedPhone;
+    }
+
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: `whatsapp:${formattedPhone}`,
+          From: fromWhatsApp.startsWith('whatsapp:') ? fromWhatsApp : `whatsapp:${fromWhatsApp}`,
+          Body: message,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Twilio WhatsApp error:', errorText);
+      return false;
+    }
+
+    console.log(`WhatsApp sent successfully to ${to}`);
+    return true;
+  } catch (error: any) {
+    console.error('Error sending WhatsApp:', error.message || error);
+    return false;
+  }
+}
+
+// ========== WEB PUSH ==========
 function base64UrlEncode(data: Uint8Array): string {
-  return btoa(String.fromCharCode(...data))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  let binary = '';
+  for (let i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i]);
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 function base64UrlDecode(str: string): Uint8Array {
   const padding = '='.repeat((4 - str.length % 4) % 4);
   const base64 = (str + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
-}
-
-// Import VAPID private key for signing
-async function importVapidPrivateKey(privateKeyBase64: string): Promise<CryptoKey> {
-  const privateKeyBytes = base64UrlDecode(privateKeyBase64);
-  
-  // Create JWK from raw private key bytes (P-256)
-  const jwk = {
-    kty: 'EC',
-    crv: 'P-256',
-    d: base64UrlEncode(privateKeyBytes),
-    x: '', // Will be computed
-    y: '', // Will be computed
-  };
-  
-  // For simplicity, we'll use the raw key import if available
-  // Otherwise, we need to derive public key from private
-  try {
-    return await crypto.subtle.importKey(
-      'jwk',
-      {
-        ...jwk,
-        // Placeholder - we need actual x,y coordinates
-        // For now, try raw import
-      },
-      { name: 'ECDSA', namedCurve: 'P-256' },
-      true,
-      ['sign']
-    );
-  } catch {
-    // Fallback: import as raw PKCS8 if possible
-    const pkcs8Header = new Uint8Array([
-      0x30, 0x81, 0x87, 0x02, 0x01, 0x00, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86,
-      0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
-      0x03, 0x01, 0x07, 0x04, 0x6d, 0x30, 0x6b, 0x02, 0x01, 0x01, 0x04, 0x20
-    ]);
-    const pkcs8 = new Uint8Array([...pkcs8Header, ...privateKeyBytes, 0xa1, 0x44, 0x03, 0x42, 0x00, 0x04]);
-    
-    return await crypto.subtle.importKey(
-      'pkcs8',
-      pkcs8,
-      { name: 'ECDSA', namedCurve: 'P-256' },
-      true,
-      ['sign']
-    );
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
   }
+  return bytes;
 }
 
-// Create VAPID JWT for authorization
-async function createVapidJwt(audience: string, subject: string, vapidPrivateKey: string): Promise<string> {
+function toArrayBuffer(data: Uint8Array): ArrayBuffer {
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+}
+
+async function createVapidJwt(
+  endpoint: string,
+  vapidPublicKey: string,
+  vapidPrivateKey: string
+): Promise<{ token: string; publicKey: string }> {
+  const url = new URL(endpoint);
+  const audience = `${url.protocol}//${url.host}`;
+  
   const header = { typ: 'JWT', alg: 'ES256' };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     aud: audience,
-    exp: now + 12 * 60 * 60, // 12 hours
-    sub: subject,
+    exp: now + 12 * 60 * 60,
+    sub: 'mailto:notifications@benhashmashot.app'
   };
 
   const headerB64 = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
   const payloadB64 = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Import key and sign
   const privateKeyBytes = base64UrlDecode(vapidPrivateKey);
+  const publicKeyBytes = base64UrlDecode(vapidPublicKey);
   
-  // For P-256, the private key should be 32 bytes
-  // Create the key in JWK format
-  const keyData = privateKeyBytes.length === 32 ? privateKeyBytes : privateKeyBytes.slice(0, 32);
-  
-  // We need to compute the public key point from the private key
-  // This is complex in Web Crypto, so we'll use a simpler approach
-  // by storing the full key pair in secrets
-  
-  // For now, we'll use a direct HTTP approach without VAPID JWT
-  // since the web-push complexity is too high for basic implementation
-  
-  return '';
+  const jwk = {
+    kty: 'EC',
+    crv: 'P-256',
+    x: base64UrlEncode(publicKeyBytes.slice(1, 33)),
+    y: base64UrlEncode(publicKeyBytes.slice(33, 65)),
+    d: base64UrlEncode(privateKeyBytes)
+  };
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'jwk',
+    jwk,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    cryptoKey,
+    new TextEncoder().encode(unsignedToken)
+  );
+
+  const signatureBytes = new Uint8Array(signature);
+  const signatureB64 = base64UrlEncode(signatureBytes);
+
+  return {
+    token: `${unsignedToken}.${signatureB64}`,
+    publicKey: vapidPublicKey
+  };
 }
 
-// Send web push notification using native fetch
+async function hkdf(
+  salt: Uint8Array,
+  ikm: Uint8Array,
+  info: Uint8Array,
+  length: number
+): Promise<Uint8Array> {
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    toArrayBuffer(ikm),
+    { name: 'HKDF' },
+    false,
+    ['deriveBits']
+  );
+
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: 'HKDF',
+      hash: 'SHA-256',
+      salt: toArrayBuffer(salt),
+      info: toArrayBuffer(info)
+    },
+    keyMaterial,
+    length * 8
+  );
+
+  return new Uint8Array(bits);
+}
+
+function createInfo(type: string, context: Uint8Array): Uint8Array {
+  const typeBytes = new TextEncoder().encode(`Content-Encoding: ${type}\0`);
+  const result = new Uint8Array(typeBytes.length + 1 + context.length);
+  result.set(typeBytes);
+  result[typeBytes.length] = 0;
+  if (context.length > 0) {
+    result.set(context, typeBytes.length + 1);
+  }
+  return result;
+}
+
+async function encryptPayload(
+  payload: string,
+  p256dh: string,
+  auth: string
+): Promise<{ encrypted: Uint8Array; salt: Uint8Array; localPublicKey: Uint8Array }> {
+  const payloadBytes = new TextEncoder().encode(payload);
+  const userPublicKeyBytes = base64UrlDecode(p256dh);
+  const authSecret = base64UrlDecode(auth);
+  
+  const localKeyPair = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    ['deriveBits']
+  );
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  
+  const localPublicKeyRaw = await crypto.subtle.exportKey('raw', localKeyPair.publicKey);
+  const localPublicKey = new Uint8Array(localPublicKeyRaw);
+  
+  const userPublicKey = await crypto.subtle.importKey(
+    'raw',
+    toArrayBuffer(userPublicKeyBytes),
+    { name: 'ECDH', namedCurve: 'P-256' },
+    false,
+    []
+  );
+  
+  const sharedSecretBits = await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: userPublicKey },
+    localKeyPair.privateKey,
+    256
+  );
+  const sharedSecret = new Uint8Array(sharedSecretBits);
+  
+  const context = new Uint8Array(1 + 2 + 65 + 2 + 65);
+  context[0] = 0;
+  context[1] = 0; context[2] = 65;
+  context.set(userPublicKeyBytes, 3);
+  context[68] = 0; context[69] = 65;
+  context.set(localPublicKey, 70);
+  
+  const ikm = await hkdf(authSecret, sharedSecret, new TextEncoder().encode('Content-Encoding: auth\0'), 32);
+  
+  const cekInfo = createInfo('aes128gcm', context);
+  const nonceInfo = createInfo('nonce', context);
+  
+  const cek = await hkdf(salt, ikm, cekInfo, 16);
+  const nonce = await hkdf(salt, ikm, nonceInfo, 12);
+  
+  const aesKey = await crypto.subtle.importKey(
+    'raw',
+    toArrayBuffer(cek),
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt']
+  );
+  
+  const paddingLength = 2;
+  const paddedPayload = new Uint8Array(payloadBytes.length + paddingLength);
+  paddedPayload[0] = (paddingLength >> 8) & 0xff;
+  paddedPayload[1] = paddingLength & 0xff;
+  paddedPayload.set(payloadBytes, paddingLength);
+  
+  const encryptedBuffer = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: toArrayBuffer(nonce) },
+    aesKey,
+    paddedPayload
+  );
+  
+  return {
+    encrypted: new Uint8Array(encryptedBuffer),
+    salt,
+    localPublicKey
+  };
+}
+
 async function sendWebPush(
   subscription: PushSubscription,
   payload: string,
@@ -277,56 +471,68 @@ async function sendWebPush(
   vapidPrivateKey: string
 ): Promise<boolean> {
   try {
-    // Parse the endpoint URL to get the audience
-    const endpointUrl = new URL(subscription.endpoint);
-    const audience = `${endpointUrl.protocol}//${endpointUrl.host}`;
+    console.log(`Sending push to: ${subscription.endpoint.substring(0, 60)}...`);
     
-    console.log(`Sending push to: ${subscription.endpoint.substring(0, 50)}...`);
+    const vapid = await createVapidJwt(subscription.endpoint, vapidPublicKey, vapidPrivateKey);
     
-    // For now, send without VAPID (some push services accept this for testing)
-    // In production, you'd need full VAPID implementation with proper key handling
+    const { encrypted, salt, localPublicKey } = await encryptPayload(
+      payload,
+      subscription.p256dh,
+      subscription.auth
+    );
     
-    // Create the encrypted payload (simplified - real implementation needs AES-GCM)
-    const payloadBytes = new TextEncoder().encode(payload);
+    const recordSize = 4096;
+    const header = new Uint8Array(86);
+    header.set(salt, 0);
+    header[16] = (recordSize >> 24) & 0xff;
+    header[17] = (recordSize >> 16) & 0xff;
+    header[18] = (recordSize >> 8) & 0xff;
+    header[19] = recordSize & 0xff;
+    header[20] = 65;
+    header.set(localPublicKey, 21);
     
-    // Simple push request (may work with some services, especially for testing)
+    const body = new Uint8Array(header.length + encrypted.length);
+    body.set(header);
+    body.set(encrypted, header.length);
+    
     const response = await fetch(subscription.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/octet-stream',
         'Content-Encoding': 'aes128gcm',
         'TTL': '86400',
+        'Authorization': `vapid t=${vapid.token}, k=${vapid.publicKey}`,
+        'Content-Length': body.length.toString()
       },
-      body: payloadBytes,
+      body: body
     });
-    
+
     if (response.ok || response.status === 201) {
-      console.log(`Push sent successfully to endpoint: ${subscription.endpoint.substring(0, 50)}...`);
+      console.log('Push notification sent successfully');
       return true;
     }
     
-    console.log(`Push response: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    console.error(`Push failed with status ${response.status}: ${errorText}`);
     return false;
-  } catch (error: any) {
-    console.error('Error sending push:', error.message || error);
+  } catch (error) {
+    console.error('Error sending push notification:', error);
     return false;
   }
 }
 
-// Check if current time is within 5 minutes of target time (HH:MM or HH:MM:SS format)
+// ========== TIME MATCHING ==========
 function isTimeMatch(targetTime: string, currentHour: number, currentMinute: number): boolean {
   const timeParts = targetTime.split(':');
   const targetHour = parseInt(timeParts[0], 10);
   const targetMinute = parseInt(timeParts[1] || '0', 10);
   
-  // Check if we're in the same hour and minute within 5 minute window
   if (currentHour === targetHour && Math.abs(currentMinute - targetMinute) < 5) {
     return true;
   }
   return false;
 }
 
-// Check if current time is X hours before Shabbat candle lighting
 function isBeforeShabbat(
   candleLightingDate: string,
   hoursBeforeShabbat: number,
@@ -346,7 +552,7 @@ function isBeforeShabbat(
   }
 }
 
-// Format holidays for message
+// ========== MESSAGE FORMATTING ==========
 function formatHolidays(holidays: HolidayInfo[]): string {
   if (!holidays.length) return '';
   
@@ -363,23 +569,44 @@ function formatHolidays(holidays: HolidayInfo[]): string {
   return lines.join('\n');
 }
 
-// Create formatted messages with app link and logo
-function createMorningMessage(shabbatTimes: ShabbatTimes | null, city: string, holidays: HolidayInfo[] = []): string {
-  const holidayText = formatHolidays(holidays);
-  
+function createSMSMessage(shabbatTimes: ShabbatTimes | null, city: string): string {
   if (shabbatTimes) {
-    return `🕯️ *שבת שלום!* 🕯️\n\n📖 *פרשת ${shabbatTimes.parasha}*\n\n📅 *זמני שבת ל${city}:*\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 צאת שבת: ${shabbatTimes.havdalah_time}\n${holidayText ? `\n📆 *אירועים קרובים:*\n${holidayText}` : ''}\n\nשבת שלום ומבורך! ✨\n\n📱 בין השמשות: ${APP_URL}`;
+    return `שבת שלום! פרשת ${shabbatTimes.parasha} - הדלקת נרות: ${shabbatTimes.candle_lighting_time}, צאת שבת: ${shabbatTimes.havdalah_time}. ${APP_URL}`;
   }
-  return `🕯️ שבת שלום! בדוק את זמני השבת באפליקציה: ${APP_URL}`;
+  return `שבת שלום! בדוק זמני שבת: ${APP_URL}`;
 }
 
-function createShabbatReminderMessage(shabbatTimes: ShabbatTimes | null, city: string, hoursBeforeShabbat: number, holidays: HolidayInfo[] = []): string {
+function createWhatsAppMessage(shabbatTimes: ShabbatTimes | null, city: string, holidays: HolidayInfo[] = []): string {
   const holidayText = formatHolidays(holidays);
   
   if (shabbatTimes) {
-    return `⏰ *תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!*\n\n📖 *פרשת ${shabbatTimes.parasha}*\n\n📅 *זמני שבת ל${city}:*\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 צאת שבת: ${shabbatTimes.havdalah_time}\n${holidayText ? `\n📆 *אירועים קרובים:*\n${holidayText}` : ''}\n\nשבת שלום! 🕯️\n\n📱 בין השמשות: ${APP_URL}`;
+    return `🕯️ *שבת שלום!* 🕯️\n\n📖 *פרשת ${shabbatTimes.parasha}*\n\n📅 *זמני שבת ל${city}:*\n🕯️ הדלקת נרות: ${shabbatTimes.candle_lighting_time}\n🌙 צאת שבת: ${shabbatTimes.havdalah_time}\n${holidayText ? `\n📆 *אירועים קרובים:*\n${holidayText}` : ''}\n\nשבת שלום ומבורך! ✨\n\n📱 ${APP_URL}`;
   }
-  return `⏰ תזכורת: שבת נכנסת בעוד ${hoursBeforeShabbat} שעות! ${APP_URL}`;
+  return `🕯️ שבת שלום! בדוק את זמני השבת: ${APP_URL}`;
+}
+
+function createPushPayload(shabbatTimes: ShabbatTimes | null, city: string, notificationType: 'morning' | 'shabbat', hoursBeforeShabbat: number = 2): string {
+  if (notificationType === 'morning') {
+    return JSON.stringify({
+      title: `🕯️ פרשת ${shabbatTimes?.parasha || 'השבוע'}`,
+      body: shabbatTimes 
+        ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} | הבדלה: ${shabbatTimes.havdalah_time}`
+        : 'בדוק את זמני השבת באפליקציה',
+      icon: '/icon-512.png',
+      badge: '/icon-512.png',
+      data: { url: APP_URL }
+    });
+  }
+  
+  return JSON.stringify({
+    title: `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`,
+    body: shabbatTimes 
+      ? `הדלקת נרות: ${shabbatTimes.candle_lighting_time} | ${city}`
+      : 'בדוק את זמני השבת',
+    icon: '/icon-512.png',
+    badge: '/icon-512.png',
+    data: { url: APP_URL }
+  });
 }
 
 function createEmailHtml(shabbatTimes: ShabbatTimes | null, city: string, notificationType: 'morning' | 'shabbat', hoursBeforeShabbat: number = 2, holidays: HolidayInfo[] = []): string {
@@ -409,12 +636,6 @@ function createEmailHtml(shabbatTimes: ShabbatTimes | null, city: string, notifi
       <div style="text-align: center; color: rgba(255,255,255,0.95);">
         <h3 style="margin: 10px 0 5px 0; font-size: 18px;">✨ בין השמשות - זמני שבת וחג ✨</h3>
         <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">האפליקציה המשפחתית שלך לזמני שבת</p>
-        <div style="margin: 15px 0; padding: 12px; background: rgba(255,255,255,0.15); border-radius: 8px;">
-          <p style="margin: 3px 0; font-size: 13px;">📅 זמני שבת וחג מדויקים לפי המיקום שלך</p>
-          <p style="margin: 3px 0; font-size: 13px;">🔔 התראות אוטומטיות במייל ו-Push</p>
-          <p style="margin: 3px 0; font-size: 13px;">📖 דבר תורה שבועי מעודכן</p>
-          <p style="margin: 3px 0; font-size: 13px;">💝 יומן זיכרונות משפחתי</p>
-        </div>
         <a href="${APP_URL}" style="display: inline-block; padding: 10px 25px; background: rgba(255,255,255,0.25); color: white; text-decoration: none; border-radius: 25px; font-weight: bold; margin-top: 10px;">פתח את האפליקציה 🚀</a>
       </div>
     </div>
@@ -446,6 +667,7 @@ function createEmailHtml(shabbatTimes: ShabbatTimes | null, city: string, notifi
   `;
 }
 
+// ========== MAIN HANDLER ==========
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -457,14 +679,6 @@ serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
 
-    if (!vapidPublicKey || !vapidPrivateKey) {
-      console.error('VAPID keys not configured');
-      return new Response(
-        JSON.stringify({ error: 'VAPID keys not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     let body: any = {};
@@ -473,6 +687,8 @@ serve(async (req) => {
     } catch {
       // No body or invalid JSON - that's fine for scheduled calls
     }
+
+    console.log('Request body:', JSON.stringify(body));
 
     // Handle test request for Shabbat notification
     if (body.test && body.testType === 'shabbat') {
@@ -499,14 +715,15 @@ serve(async (req) => {
       
       const { data: prefs } = await supabase
         .from('notification_preferences')
-        .select('hours_before_shabbat, email, email_enabled')
+        .select('hours_before_shabbat, email, email_enabled, push_enabled, sms_enabled, whatsapp_enabled, phone')
         .eq('user_id', user.id)
         .single();
       
       const hoursBeforeShabbat = prefs?.hours_before_shabbat || 2;
-      const holidayText = holidays.length > 0 ? ` | 📆 ${holidays[0].name}` : '';
-
       let emailSent = false;
+      let pushSent = 0;
+      let smsSent = false;
+      let whatsappSent = false;
       
       // Send test email if enabled
       if (prefs?.email_enabled && prefs?.email) {
@@ -515,15 +732,43 @@ serve(async (req) => {
         emailSent = await sendEmail(prefs.email, subject, emailHtml);
       }
 
+      // Send test push if enabled
+      if (prefs?.push_enabled && vapidPublicKey && vapidPrivateKey) {
+        const { data: subscriptions } = await supabase
+          .from('push_subscriptions')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        if (subscriptions?.length) {
+          const payload = createPushPayload(shabbatTimes, city, 'shabbat', hoursBeforeShabbat);
+          for (const sub of subscriptions) {
+            const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+            if (success) pushSent++;
+          }
+        }
+      }
+
+      // Send test SMS if enabled
+      if (prefs?.sms_enabled && prefs?.phone) {
+        const message = createSMSMessage(shabbatTimes, city);
+        smsSent = await sendSMS(prefs.phone, message);
+      }
+
+      // Send test WhatsApp if enabled
+      if (prefs?.whatsapp_enabled && prefs?.phone) {
+        const message = createWhatsAppMessage(shabbatTimes, city, holidays);
+        whatsappSent = await sendWhatsApp(prefs.phone, message);
+      }
+
       await supabase.from('notification_history').insert({
         user_id: user.id,
         notification_type: 'shabbat_reminder_test',
-        message: 'התראת שבת - בדיקה',
+        message: `התראת שבת - בדיקה | Email: ${emailSent} | Push: ${pushSent} | SMS: ${smsSent} | WhatsApp: ${whatsappSent}`,
         status: 'sent'
       });
 
       return new Response(
-        JSON.stringify({ success: true, emailSent, message: 'Test Shabbat notification sent' }),
+        JSON.stringify({ success: true, emailSent, pushSent, smsSent, whatsappSent, message: 'Test Shabbat notification sent' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -553,7 +798,7 @@ serve(async (req) => {
       
       const { data: prefs } = await supabase
         .from('notification_preferences')
-        .select('days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, email')
+        .select('days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, email, sms_enabled, whatsapp_enabled, phone')
         .eq('user_id', user.id)
         .single();
       
@@ -561,15 +806,45 @@ serve(async (req) => {
       const dayNames = ['באותו יום (יום שישי)', 'יום לפני (יום חמישי)', 'יומיים לפני (יום רביעי)', '3 ימים לפני (יום שלישי)'];
       const dayName = dayNames[daysBeforeShabbat] || dayNames[0];
       const reminderTime = prefs?.shabbat_reminder_time || '12:00';
-      const holidayText = holidays.length > 0 ? ` | 📆 ${holidays[0].name}` : '';
 
       let emailSent = false;
+      let pushSent = 0;
+      let smsSent = false;
+      let whatsappSent = false;
 
       // Send Email if enabled
       if (prefs?.email_enabled && prefs?.email) {
-        const emailHtml = createEmailHtml(shabbatTimes, city, 'shabbat', 0, holidays);
+        const emailHtml = createEmailHtml(shabbatTimes, city, 'morning', 0, holidays);
         const subject = `📅 בדיקת תזכורת מתוזמנת - זמני שבת`;
         emailSent = await sendEmail(prefs.email, subject, emailHtml);
+      }
+
+      // Send Push if enabled
+      if (prefs?.push_enabled && vapidPublicKey && vapidPrivateKey) {
+        const { data: subscriptions } = await supabase
+          .from('push_subscriptions')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        if (subscriptions?.length) {
+          const payload = createPushPayload(shabbatTimes, city, 'morning');
+          for (const sub of subscriptions) {
+            const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+            if (success) pushSent++;
+          }
+        }
+      }
+
+      // Send SMS if enabled
+      if (prefs?.sms_enabled && prefs?.phone) {
+        const message = createSMSMessage(shabbatTimes, city);
+        smsSent = await sendSMS(prefs.phone, message);
+      }
+
+      // Send WhatsApp if enabled
+      if (prefs?.whatsapp_enabled && prefs?.phone) {
+        const message = createWhatsAppMessage(shabbatTimes, city, holidays);
+        whatsappSent = await sendWhatsApp(prefs.phone, message);
       }
 
       await supabase.from('notification_history').insert({
@@ -583,11 +858,17 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           emailSent,
+          pushSent,
+          smsSent,
+          whatsappSent,
           settings: {
             daysBeforeShabbat,
             dayName,
             reminderTime,
-            emailEnabled: prefs?.email_enabled
+            emailEnabled: prefs?.email_enabled,
+            pushEnabled: prefs?.push_enabled,
+            smsEnabled: prefs?.sms_enabled,
+            whatsappEnabled: prefs?.whatsapp_enabled
           },
           message: 'Test scheduled reminder sent' 
         }),
@@ -595,30 +876,32 @@ serve(async (req) => {
       );
     }
     
-    // Get current time in Israel timezone
+    // ========== AUTOMATED SCHEDULED NOTIFICATIONS ==========
     const now = new Date();
     const israelTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
     const currentHour = israelTime.getHours();
     const currentMinute = israelTime.getMinutes();
-    const currentDayOfWeek = israelTime.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+    const currentDayOfWeek = israelTime.getDay();
     
     console.log(`Running scheduled push check at ${israelTime.toISOString()}`);
     console.log(`Israel time: ${currentHour}:${currentMinute.toString().padStart(2, '0')}, Day: ${currentDayOfWeek}`);
 
-    // Get all users with email notifications enabled
+    // Get all users with any notification enabled
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled');
+      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, sms_enabled, whatsapp_enabled');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
       throw prefError;
     }
 
-    // Filter to users with email enabled (main notification method now)
-    const activePrefs = (preferences || []).filter(p => p.email_enabled);
+    // Filter to users with at least one notification channel enabled
+    const activePrefs = (preferences || []).filter(p => 
+      p.email_enabled || p.push_enabled || p.sms_enabled || p.whatsapp_enabled
+    );
 
-    console.log(`Found ${activePrefs.length} users with email notifications enabled`);
+    console.log(`Found ${activePrefs.length} users with notifications enabled`);
 
     if (!activePrefs.length) {
       return new Response(
@@ -639,9 +922,25 @@ serve(async (req) => {
       profileMap.set(profile.id, profile);
     }
 
-    let morningNotificationsSent = 0;
-    let shabbatNotificationsSent = 0;
-    let scheduledRemindersSent = 0;
+    // Get push subscriptions for all users with push enabled
+    const pushEnabledUserIds = activePrefs.filter(p => p.push_enabled).map(p => p.user_id);
+    const { data: allSubscriptions } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .in('user_id', pushEnabledUserIds);
+
+    const subscriptionMap = new Map<string, PushSubscription[]>();
+    for (const sub of allSubscriptions || []) {
+      const existing = subscriptionMap.get(sub.user_id) || [];
+      existing.push(sub);
+      subscriptionMap.set(sub.user_id, existing);
+    }
+
+    let totalEmailsSent = 0;
+    let totalPushSent = 0;
+    let totalSMSSent = 0;
+    let totalWhatsAppSent = 0;
+    
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
     const usersToNotifyScheduled: string[] = [];
@@ -649,11 +948,11 @@ serve(async (req) => {
     // Check each user's preferences
     for (const pref of activePrefs) {
       const userCity = profileMap.get(pref.user_id)?.city || 'Jerusalem';
+      const userPhone = pref.phone || profileMap.get(pref.user_id)?.phone;
       
       // Check morning notification time (user's chosen time)
-      if (pref.morning_time && pref.email) {
+      if (pref.morning_time) {
         const timeMatches = isTimeMatch(pref.morning_time, currentHour, currentMinute);
-        console.log(`User ${pref.user_id} morning_time: ${pref.morning_time}, current: ${currentHour}:${currentMinute}, matches: ${timeMatches}`);
         if (timeMatches) {
           usersToNotifyMorning.push(pref.user_id);
         }
@@ -662,21 +961,17 @@ serve(async (req) => {
       // Check scheduled reminder (X days before Shabbat at specific time)
       const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
       const shabbatReminderTime = pref.shabbat_reminder_time || '12:00';
+      const targetDay = 5 - daysBeforeShabbat;
       
-      // Calculate which day we should notify based on days_before_shabbat
-      // Friday = day 5, so if days_before_shabbat = 1, we notify on Thursday (day 4)
-      const targetDay = 5 - daysBeforeShabbat; // 5 = Friday
-      
-      if (currentDayOfWeek === targetDay && pref.email) {
+      if (currentDayOfWeek === targetDay) {
         const timeMatches = isTimeMatch(shabbatReminderTime, currentHour, currentMinute);
-        console.log(`User ${pref.user_id} scheduled reminder: day ${targetDay}, time ${shabbatReminderTime}, matches: ${timeMatches}`);
         if (timeMatches) {
           usersToNotifyScheduled.push(pref.user_id);
         }
       }
 
       // Check hours before Shabbat notification (only on Friday)
-      if (currentDayOfWeek === 5 && pref.hours_before_shabbat && pref.hours_before_shabbat > 0 && pref.email) {
+      if (currentDayOfWeek === 5 && pref.hours_before_shabbat && pref.hours_before_shabbat > 0) {
         const { shabbat } = await getShabbatAndHolidayTimes(userCity);
         if (shabbat?.candle_lighting_date) {
           const shouldNotify = isBeforeShabbat(
@@ -684,7 +979,6 @@ serve(async (req) => {
             pref.hours_before_shabbat,
             israelTime
           );
-          console.log(`User ${pref.user_id} hours before check: ${pref.hours_before_shabbat}h before, matches: ${shouldNotify}`);
           if (shouldNotify) {
             usersToNotifyShabbat.push(pref.user_id);
           }
@@ -694,93 +988,126 @@ serve(async (req) => {
 
     console.log(`Users to notify - Morning: ${usersToNotifyMorning.length}, Shabbat: ${usersToNotifyShabbat.length}, Scheduled: ${usersToNotifyScheduled.length}`);
 
-    // Send morning notifications via email
+    // Helper function to send to all channels
+    async function sendToAllChannels(
+      userId: string,
+      pref: NotificationPreference,
+      shabbatTimes: ShabbatTimes | null,
+      holidays: HolidayInfo[],
+      notificationType: 'morning' | 'shabbat',
+      hoursBeforeShabbat: number = 2
+    ) {
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userPhone = pref.phone || profileMap.get(userId)?.phone;
+      let emailSent = false;
+      let pushSent = 0;
+      let smsSent = false;
+      let whatsappSent = false;
+
+      // Email
+      if (pref.email_enabled && pref.email) {
+        const emailHtml = createEmailHtml(shabbatTimes, userCity, notificationType, hoursBeforeShabbat, holidays);
+        const subject = notificationType === 'morning' 
+          ? `🕯️ זמני שבת השבוע - פרשת ${shabbatTimes?.parasha || 'השבוע'}`
+          : `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`;
+        
+        emailSent = await sendEmail(pref.email, subject, emailHtml);
+        if (emailSent) totalEmailsSent++;
+      }
+
+      // Web Push
+      if (pref.push_enabled && vapidPublicKey && vapidPrivateKey) {
+        const subscriptions = subscriptionMap.get(userId) || [];
+        if (subscriptions.length > 0) {
+          const payload = createPushPayload(shabbatTimes, userCity, notificationType, hoursBeforeShabbat);
+          for (const sub of subscriptions) {
+            const success = await sendWebPush(sub, payload, vapidPublicKey, vapidPrivateKey);
+            if (success) {
+              pushSent++;
+              totalPushSent++;
+            }
+          }
+        }
+      }
+
+      // SMS
+      if (pref.sms_enabled && userPhone) {
+        const message = createSMSMessage(shabbatTimes, userCity);
+        smsSent = await sendSMS(userPhone, message);
+        if (smsSent) totalSMSSent++;
+      }
+
+      // WhatsApp
+      if (pref.whatsapp_enabled && userPhone) {
+        const message = createWhatsAppMessage(shabbatTimes, userCity, holidays);
+        whatsappSent = await sendWhatsApp(userPhone, message);
+        if (whatsappSent) totalWhatsAppSent++;
+      }
+
+      // Log to history
+      if (emailSent || pushSent > 0 || smsSent || whatsappSent) {
+        await supabase.from('notification_history').insert({
+          user_id: userId,
+          notification_type: `${notificationType}_auto`,
+          message: `Email: ${emailSent} | Push: ${pushSent} | SMS: ${smsSent} | WhatsApp: ${whatsappSent}`,
+          status: 'sent'
+        });
+      }
+    }
+
+    // Send morning notifications
     for (const userId of usersToNotifyMorning) {
       const pref = activePrefs.find(p => p.user_id === userId);
-      if (!pref?.email) continue;
+      if (!pref) continue;
       
       const userCity = profileMap.get(userId)?.city || 'Jerusalem';
       const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
       
-      const emailHtml = createEmailHtml(shabbat, userCity, 'morning', 0, holidays);
-      const subject = `🕯️ זמני שבת השבוע - פרשת ${shabbat?.parasha || 'השבוע'}`;
-      
-      const sent = await sendEmail(pref.email, subject, emailHtml);
-      if (sent) {
-        morningNotificationsSent++;
-        await supabase.from('notification_history').insert({
-          user_id: userId,
-          notification_type: 'morning_email',
-          message: `זמני שבת בוקר - ${userCity}`,
-          status: 'sent'
-        });
-      }
+      await sendToAllChannels(userId, pref as NotificationPreference, shabbat, holidays, 'morning');
     }
 
-    // Send scheduled reminder notifications via email
+    // Send scheduled reminder notifications
     for (const userId of usersToNotifyScheduled) {
       const pref = activePrefs.find(p => p.user_id === userId);
-      if (!pref?.email) continue;
+      if (!pref) continue;
       
       const userCity = profileMap.get(userId)?.city || 'Jerusalem';
       const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
       
-      const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
-      const dayNames = ['באותו יום', 'יום לפני', 'יומיים לפני', '3 ימים לפני'];
-      const dayName = dayNames[daysBeforeShabbat] || dayNames[0];
-      
-      const emailHtml = createEmailHtml(shabbat, userCity, 'shabbat', 0, holidays);
-      const subject = `📅 תזכורת ${dayName} - זמני שבת`;
-      
-      const sent = await sendEmail(pref.email, subject, emailHtml);
-      if (sent) {
-        scheduledRemindersSent++;
-        await supabase.from('notification_history').insert({
-          user_id: userId,
-          notification_type: 'scheduled_reminder_email',
-          message: `תזכורת מתוזמנת ${dayName} - ${userCity}`,
-          status: 'sent'
-        });
-      }
+      await sendToAllChannels(userId, pref as NotificationPreference, shabbat, holidays, 'morning');
     }
 
-    // Send hours-before-Shabbat notifications via email
+    // Send hours-before-Shabbat notifications
     for (const userId of usersToNotifyShabbat) {
       const pref = activePrefs.find(p => p.user_id === userId);
-      if (!pref?.email) continue;
+      if (!pref) continue;
       
       const userCity = profileMap.get(userId)?.city || 'Jerusalem';
       const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
       const hoursBeforeShabbat = pref.hours_before_shabbat || 2;
       
-      const emailHtml = createEmailHtml(shabbat, userCity, 'shabbat', hoursBeforeShabbat, holidays);
-      const subject = `⏰ שבת נכנסת בעוד ${hoursBeforeShabbat} שעות!`;
-      
-      const sent = await sendEmail(pref.email, subject, emailHtml);
-      if (sent) {
-        shabbatNotificationsSent++;
-        await supabase.from('notification_history').insert({
-          user_id: userId,
-          notification_type: 'shabbat_reminder_email',
-          message: `תזכורת ${hoursBeforeShabbat}ש לפני שבת - ${userCity}`,
-          status: 'sent'
-        });
-      }
+      await sendToAllChannels(userId, pref as NotificationPreference, shabbat, holidays, 'shabbat', hoursBeforeShabbat);
     }
 
-    const totalSent = morningNotificationsSent + shabbatNotificationsSent + scheduledRemindersSent;
-    console.log(`Total sent: ${totalSent} (Morning: ${morningNotificationsSent}, Shabbat: ${shabbatNotificationsSent}, Scheduled: ${scheduledRemindersSent})`);
+    const totalSent = totalEmailsSent + totalPushSent + totalSMSSent + totalWhatsAppSent;
+    console.log(`Total sent: ${totalSent} (Email: ${totalEmailsSent}, Push: ${totalPushSent}, SMS: ${totalSMSSent}, WhatsApp: ${totalWhatsAppSent})`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         sent: totalSent,
         breakdown: {
-          morning: morningNotificationsSent,
-          shabbat: shabbatNotificationsSent,
-          scheduled: scheduledRemindersSent
+          email: totalEmailsSent,
+          push: totalPushSent,
+          sms: totalSMSSent,
+          whatsapp: totalWhatsAppSent
         },
-        message: `Sent ${totalSent} email notifications`
+        usersNotified: {
+          morning: usersToNotifyMorning.length,
+          scheduled: usersToNotifyScheduled.length,
+          shabbat: usersToNotifyShabbat.length
+        },
+        message: `Sent ${totalSent} notifications`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
