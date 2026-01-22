@@ -108,6 +108,7 @@ export const NotificationSettings = () => {
   const [settings, setSettings] = useState({
     email: false,
     whatsapp: false,
+    sms: false,
     push: true,
   });
 
@@ -176,9 +177,10 @@ export const NotificationSettings = () => {
 
     if (data && !error) {
       setSettings({
-        email: data.email_enabled,
-        whatsapp: data.whatsapp_enabled,
-        push: data.push_enabled,
+        email: data.email_enabled ?? false,
+        whatsapp: data.whatsapp_enabled ?? false,
+        sms: data.sms_enabled ?? false,
+        push: data.push_enabled ?? true,
       });
       setContactInfo({
         phone: data.phone || "",
@@ -219,6 +221,7 @@ export const NotificationSettings = () => {
         email: contactInfo.email,
         email_enabled: settings.email,
         whatsapp_enabled: settings.whatsapp,
+        sms_enabled: settings.sms,
         push_enabled: settings.push,
         morning_time: timeSettings.morningTime,
         hours_before_shabbat: timeSettings.hoursBeforeShabbat,
@@ -824,6 +827,51 @@ export const NotificationSettings = () => {
               />
             </div>
 
+            {/* WhatsApp Auto Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={whatsappIcon} 
+                  alt="WhatsApp" 
+                  className="w-5 h-5"
+                />
+                <div className="flex-1">
+                  <Label htmlFor="whatsapp-toggle" className="text-foreground cursor-pointer">
+                    התראות WhatsApp אוטומטיות
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    💰 דורש הגדרת Twilio (בתשלום)
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="whatsapp-toggle"
+                checked={settings.whatsapp}
+                onCheckedChange={() => handleToggle("whatsapp")}
+              />
+            </div>
+
+            {/* SMS Auto Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-5 h-5 text-blue-500" />
+                <div className="flex-1">
+                  <Label htmlFor="sms-toggle" className="text-foreground cursor-pointer">
+                    התראות SMS אוטומטיות
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    💰 דורש הגדרת Twilio (בתשלום)
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="sms-toggle"
+                checked={settings.sms}
+                onCheckedChange={() => handleToggle("sms")}
+              />
+            </div>
+
+            {/* Manual WhatsApp Share */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
               <div className="flex items-center gap-3">
                 <img 
@@ -833,7 +881,7 @@ export const NotificationSettings = () => {
                 />
                 <div className="flex-1">
                   <Label htmlFor="whatsapp" className="text-foreground cursor-pointer">
-                    שיתוף WhatsApp
+                    שיתוף WhatsApp ידני
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">
                     💚 חינמי - פותח הודעה מוכנה לשליחה
