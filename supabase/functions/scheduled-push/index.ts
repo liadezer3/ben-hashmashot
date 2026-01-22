@@ -521,7 +521,7 @@ async function sendWebPush(
   }
 }
 
-// ========== TIME MATCHING ==========
+// ========== TIME AND DATE MATCHING ==========
 function isTimeMatch(targetTime: string, currentHour: number, currentMinute: number): boolean {
   const timeParts = targetTime.split(':');
   const targetHour = parseInt(timeParts[0], 10);
@@ -531,6 +531,37 @@ function isTimeMatch(targetTime: string, currentHour: number, currentMinute: num
     return true;
   }
   return false;
+}
+
+// Check if today is Friday or the day before a Jewish holiday
+function isFridayOrHolidayEve(currentDayOfWeek: number, holidays: HolidayInfo[], currentDate: Date): { isFriday: boolean; isHolidayEve: boolean; holidayName: string | null } {
+  const isFriday = currentDayOfWeek === 5; // Friday
+  
+  // Check if today is the day before a holiday (holiday eve)
+  const tomorrow = new Date(currentDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  
+  let isHolidayEve = false;
+  let holidayName: string | null = null;
+  
+  for (const holiday of holidays) {
+    const holidayDate = holiday.date.split('T')[0];
+    if (holidayDate === tomorrowStr && holiday.type === 'holiday') {
+      isHolidayEve = true;
+      holidayName = holiday.name;
+      break;
+    }
+  }
+  
+  return { isFriday, isHolidayEve, holidayName };
+}
+
+// Calculate the target notification day based on days_before_shabbat setting
+function getNotificationTargetDay(daysBeforeShabbat: number): number {
+  // Friday is day 5, so if days_before_shabbat is 0, target is 5 (Friday)
+  // If days_before_shabbat is 1, target is 4 (Thursday), etc.
+  return 5 - daysBeforeShabbat;
 }
 
 function isBeforeShabbat(
@@ -886,6 +917,12 @@ serve(async (req) => {
     console.log(`Running scheduled push check at ${israelTime.toISOString()}`);
     console.log(`Israel time: ${currentHour}:${currentMinute.toString().padStart(2, '0')}, Day: ${currentDayOfWeek}`);
 
+    // Fetch upcoming holidays for date detection (using Jerusalem as default)
+    const { holidays: upcomingHolidays } = await getShabbatAndHolidayTimes('Jerusalem');
+    const { isFriday, isHolidayEve, holidayName } = isFridayOrHolidayEve(currentDayOfWeek, upcomingHolidays, israelTime);
+    
+    console.log(`Date check - Is Friday: ${isFriday}, Is Holiday Eve: ${isHolidayEve}${holidayName ? ` (${holidayName})` : ''}`);
+
     // Get all users with any notification enabled
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
@@ -958,20 +995,26 @@ serve(async (req) => {
         }
       }
 
-      // Check scheduled reminder (X days before Shabbat at specific time)
+      // Check scheduled reminder (X days before Shabbat/holiday at specific time)
       const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
       const shabbatReminderTime = pref.shabbat_reminder_time || '12:00';
-      const targetDay = 5 - daysBeforeShabbat;
+      const targetDay = getNotificationTargetDay(daysBeforeShabbat);
       
-      if (currentDayOfWeek === targetDay) {
+      // Notify if:
+      // 1. It's the target day based on days_before_shabbat setting (e.g., Friday, Thursday, etc.)
+      // 2. OR it's the day before a major holiday
+      const shouldNotifyScheduled = currentDayOfWeek === targetDay || isHolidayEve;
+      
+      if (shouldNotifyScheduled) {
         const timeMatches = isTimeMatch(shabbatReminderTime, currentHour, currentMinute);
         if (timeMatches) {
           usersToNotifyScheduled.push(pref.user_id);
+          console.log(`User ${pref.user_id} scheduled for notification (Day: ${currentDayOfWeek}, Holiday Eve: ${isHolidayEve})`);
         }
       }
 
-      // Check hours before Shabbat notification (only on Friday)
-      if (currentDayOfWeek === 5 && pref.hours_before_shabbat && pref.hours_before_shabbat > 0) {
+      // Check hours before Shabbat/holiday notification (on Friday OR holiday eve)
+      if ((isFriday || isHolidayEve) && pref.hours_before_shabbat && pref.hours_before_shabbat > 0) {
         const { shabbat } = await getShabbatAndHolidayTimes(userCity);
         if (shabbat?.candle_lighting_date) {
           const shouldNotify = isBeforeShabbat(
