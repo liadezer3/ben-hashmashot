@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, Clock, ExternalLink, MessageSquare, CheckCircle2, XCircle, Loader2, Send } from "lucide-react";
+import { Bell, Mail, Clock, ExternalLink, MessageSquare, CheckCircle2, XCircle, Loader2, Send, AlertCircle } from "lucide-react";
 import gmailIcon from "@/assets/gmail-icon.png";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/localNotifications";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { WebPushSettings } from "./WebPushSettings";
+import { NextNotificationDisplay } from "./NextNotificationDisplay";
 
 // Generate SMS message with Shabbat times
 const generateSMSMessage = async (city: string = "Jerusalem"): Promise<string> => {
@@ -748,6 +749,12 @@ export const NotificationSettings = () => {
                 </p>
               </div>
 
+              {/* Next Notification Display - Real-time calculation */}
+              <NextNotificationDisplay 
+                settings={settings} 
+                timeSettings={timeSettings}
+              />
+
               {/* Scheduled Notification Status */}
               <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="flex items-center gap-2 mb-2">
@@ -767,6 +774,15 @@ export const NotificationSettings = () => {
                   )}
                   <p className="mt-2">🌅 התראת בוקר בשעה {timeSettings.morningTime}</p>
                 </div>
+                
+                {/* Automation Status Indicator */}
+                <div className="mt-3 p-2 rounded bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  <span className="text-xs text-green-700 dark:text-green-400">
+                    מערכת האוטומציה פעילה - בודקת כל 5 דקות
+                  </span>
+                </div>
+                
                 <div className="mt-3 flex gap-2">
                   <Button
                     variant="outline"
