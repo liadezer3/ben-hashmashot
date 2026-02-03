@@ -1,39 +1,56 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { HDate, gematriya, months, Locale } from '@hebcal/core';
 
 export interface HebrewDateData {
-  hebrew: string;        // Full Hebrew date string (e.g., "כ' בטבת תשפ"ו")
-  hebrewDay: string;     // Hebrew day (e.g., "כ'")
-  hebrewMonth: string;   // Hebrew month (e.g., "טבת")
-  hebrewYear: string;    // Hebrew year (e.g., "תשפ"ו")
+  hebrew: string;        // Full Hebrew date string (e.g., "ט״ו חֶשְׁוָן תשס״ט")
+  hebrewDay: string;     // Hebrew day in gematriya (e.g., "ט״ו")
+  hebrewMonth: string;   // Hebrew month (e.g., "חשון")
+  hebrewYear: string;    // Hebrew year in gematriya (e.g., "תשס״ט")
   gregorian: string;     // Gregorian date formatted
   dayOfWeek: string;     // Hebrew day of week (e.g., "יום ראשון")
 }
 
+// Hebrew month names mapping
+const hebrewMonthNames: Record<number, string> = {
+  [months.NISAN]: 'ניסן',
+  [months.IYYAR]: 'אייר',
+  [months.SIVAN]: 'סיוון',
+  [months.TAMUZ]: 'תמוז',
+  [months.AV]: 'אב',
+  [months.ELUL]: 'אלול',
+  [months.TISHREI]: 'תשרי',
+  [months.CHESHVAN]: 'חשוון',
+  [months.KISLEV]: 'כסלו',
+  [months.TEVET]: 'טבת',
+  [months.SHVAT]: 'שבט',
+  [months.ADAR_I]: 'אדר א׳',
+  [months.ADAR_II]: 'אדר ב׳',
+};
+
 export const useHebrewDate = (date: Date = new Date()) => {
-  const [hebrewDate, setHebrewDate] = useState<HebrewDateData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHebrewDate = useCallback(async () => {
+  const hebrewDate = useMemo<HebrewDateData | null>(() => {
     try {
-      setLoading(true);
       setError(null);
       
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      const year = date.getFullYear();
+      // Create Hebrew date using @hebcal/core
+      const hDate = new HDate(date);
       
-      const response = await fetch(
-        `https://www.hebcal.com/converter?cfg=json&gy=${year}&gm=${month}&gd=${day}&g2h=1`
-      );
+      // Get Hebrew day in gematriya
+      const hebrewDay = gematriya(hDate.getDate());
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch Hebrew date');
-      }
+      // Get Hebrew month name
+      const hebrewMonth = hebrewMonthNames[hDate.getMonth()] || 
+        Locale.gettext(hDate.getMonthName(), 'he');
       
-      const data = await response.json();
+      // Get Hebrew year in gematriya
+      const hebrewYear = gematriya(hDate.getFullYear());
       
-      // Format the Hebrew date
+      // Use built-in renderGematriya for full Hebrew date (without nikud for cleaner display)
+      const hebrew = hDate.renderGematriya(true); // true = suppress nikud
+      
+      // Day of week in Hebrew
       const dayOfWeekNames = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
       const dayOfWeek = dayOfWeekNames[date.getDay()];
       
@@ -44,30 +61,25 @@ export const useHebrewDate = (date: Date = new Date()) => {
         year: 'numeric'
       });
       
-      setHebrewDate({
-        hebrew: data.hebrew || '',
-        hebrewDay: data.hd?.toString() || '',
-        hebrewMonth: data.hm || '',
-        hebrewYear: data.hy?.toString() || '',
+      return {
+        hebrew,
+        hebrewDay,
+        hebrewMonth,
+        hebrewYear,
         gregorian: gregorianFormatter.format(date),
         dayOfWeek,
-      });
+      };
     } catch (err) {
-      console.error('Error fetching Hebrew date:', err);
-      setError('לא הצלחנו לטעון את התאריך העברי');
-    } finally {
-      setLoading(false);
+      console.error('Error calculating Hebrew date:', err);
+      setError('לא הצלחנו לחשב את התאריך העברי');
+      return null;
     }
   }, [date.getDate(), date.getMonth(), date.getFullYear()]);
 
-  useEffect(() => {
-    fetchHebrewDate();
-  }, [fetchHebrewDate]);
-
   return {
     hebrewDate,
-    loading,
+    loading: false, // No loading needed - calculation is synchronous
     error,
-    refetch: fetchHebrewDate,
+    refetch: () => {}, // No refetch needed - useMemo handles updates
   };
 };
