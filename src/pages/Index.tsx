@@ -1,24 +1,31 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ShabbatTimes } from "@/components/ShabbatTimes";
-import { UpcomingHolidays } from "@/components/UpcomingHolidays";
-import { NotificationSettings } from "@/components/NotificationSettings";
-import { NotificationHistory } from "@/components/NotificationHistory";
-import { SavedLocations } from "@/components/SavedLocations";
-import { FamilyMembers } from "@/components/FamilyMembers";
 import { Header } from "@/components/Header";
 import ParshaContent from "@/components/ParshaContent";
 import ShabbatTaskList from "@/components/ShabbatTaskList";
-import FamilyMemories from "@/components/FamilyMemories";
-import { AppReviews } from "@/components/AppReviews";
-import { AppPromotion } from "@/components/AppPromotion";
-import SefariaContent from "@/components/SefariaContent";
-import SmartHomeSettings from "@/components/SmartHomeSettings";
-import VoiceAssistant from "@/components/VoiceAssistant";
-import { AutomationHistory } from "@/components/AutomationHistory";
-import { WebPushSettings } from "@/components/WebPushSettings";
 import { HebrewDateDisplay } from "@/components/HebrewDateDisplay";
+import { PutDownPhoneTimer } from "@/components/PutDownPhoneTimer";
+import { useShabbatMode, getPhaseStyles } from "@/hooks/useShabbatMode";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { 
+  Settings, 
+  Users, 
+  Bell, 
+  MapPin, 
+  BookOpen, 
+  Calendar, 
+  Home,
+  MessageSquare,
+  History,
+  Star,
+  Mic,
+  Image as ImageIcon,
+  ChevronLeft
+} from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -26,6 +33,12 @@ const Index = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string>("Jerusalem");
   const [currentParsha, setCurrentParsha] = useState<string>("");
+  const [candleLighting, setCandleLighting] = useState<string>("");
+  const [havdalah, setHavdalah] = useState<string>("");
+
+  // Dynamic mode based on time
+  const shabbatMode = useShabbatMode(candleLighting, havdalah);
+  const phaseStyles = getPhaseStyles(shabbatMode.phase);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -58,54 +71,106 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Handle times loaded from ShabbatTimes component
+  const handleTimesLoaded = (times: { candleLighting: string; havdalah: string }) => {
+    setCandleLighting(times.candleLighting);
+    setHavdalah(times.havdalah);
+  };
+
   if (loading || !userId) {
     return null;
   }
 
+  // Quick links to other features
+  const quickLinks = [
+    { icon: Bell, label: "התראות", href: "/settings?tab=notifications" },
+    { icon: MapPin, label: "מיקומים", href: "/settings?tab=locations" },
+    { icon: Users, label: "משפחה", href: "/settings?tab=family" },
+    { icon: Home, label: "בית חכם", href: "/settings?tab=smart-home" },
+    { icon: BookOpen, label: "תוכן תורני", href: "/settings?tab=torah" },
+    { icon: ImageIcon, label: "זכרונות", href: "/settings?tab=memories" },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen transition-colors duration-500", phaseStyles.bgClass)}>
       <Header />
       
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Hebrew Date - Today */}
-        <HebrewDateDisplay variant="full" showGregorian={true} />
-        
-        <ShabbatTimes onParshaLoaded={setCurrentParsha} />
-        
-        {/* Torah Content & Preparation */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <ParshaContent />
-          <ShabbatTaskList userId={userId} />
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Phase indicator */}
+        <div className="flex items-center justify-center gap-2 text-lg">
+          <span className="text-2xl">{shabbatMode.phaseEmoji}</span>
+          <span className={cn("font-medium", phaseStyles.accentClass)}>
+            {shabbatMode.phaseLabel}
+          </span>
         </div>
 
-        {/* Sefaria - Torah Sources & Commentary */}
-        <SefariaContent currentParsha={currentParsha} />
+        {/* Hebrew Date - Compact */}
+        <HebrewDateDisplay variant="full" showGregorian={true} />
         
-        {/* Family Memories - Central Feature */}
-        <FamilyMemories userId={userId} />
-
-        {/* Voice Assistant */}
-        <VoiceAssistant city={userCity} />
-
-        {/* Smart Home Settings with Automation History */}
-        <SmartHomeSettings />
-        <AutomationHistory userId={userId} />
-
-        {/* Web Push Notifications */}
-        <WebPushSettings />
+        {/* Put Down Phone Timer - Shows during rush or Shabbat */}
+        {shabbatMode.showPutDownPhone && (
+          <PutDownPhoneTimer 
+            minutesToCandles={shabbatMode.minutesToCandles}
+            phase={shabbatMode.phase}
+          />
+        )}
         
-        <SavedLocations />
-        <UpcomingHolidays />
-        <NotificationSettings />
-        <FamilyMembers />
-        <NotificationHistory />
-        <AppReviews />
-        <AppPromotion />
+        {/* Shabbat Times - Core */}
+        <ShabbatTimes 
+          onParshaLoaded={setCurrentParsha}
+          onTimesLoaded={handleTimesLoaded}
+        />
+        
+        {/* Tasks - Only show during preparation phases */}
+        {(shabbatMode.phase === 'pre-shabbat-early' || 
+          shabbatMode.phase === 'pre-shabbat-prep' || 
+          shabbatMode.phase === 'pre-shabbat-rush') && (
+          <ShabbatTaskList userId={userId} />
+        )}
+
+        {/* Parsha Content - Only during prep or weekday */}
+        {shabbatMode.phase !== 'shabbat' && (
+          <ParshaContent />
+        )}
+
+        {/* Quick Links to Other Features */}
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Settings className="w-5 h-5 text-primary" />
+            תכונות נוספות
+          </h3>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+            {quickLinks.map((link) => (
+              <Link
+                key={link.label}
+                to={link.href}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-3 rounded-lg border transition-all",
+                  "hover:bg-primary/5 hover:border-primary/30",
+                  phaseStyles.borderClass
+                )}
+              >
+                <link.icon className="w-6 h-6 text-primary" />
+                <span className="text-xs text-center text-muted-foreground">
+                  {link.label}
+                </span>
+              </Link>
+            ))}
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full mt-4 gap-2"
+            onClick={() => navigate('/settings')}
+          >
+            לכל ההגדרות והתכונות
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+        </Card>
       </main>
 
-      <footer className="border-t border-border mt-16 py-8">
+      <footer className="border-t border-border mt-16 py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>זמני שבת וחגים מחושבים לפי לוח שנה עברי עם התחשבות בשעון קיץ וחורף</p>
+          <p>זמני שבת וחגים מחושבים לפי לוח שנה עברי</p>
         </div>
       </footer>
     </div>
