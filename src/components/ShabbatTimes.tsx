@@ -36,9 +36,10 @@ interface CountdownTime {
 
 interface ShabbatTimesProps {
   onParshaLoaded?: (parsha: string) => void;
+  onTimesLoaded?: (times: { candleLighting: string; havdalah: string }) => void;
 }
 
-export const ShabbatTimes = ({ onParshaLoaded }: ShabbatTimesProps = {}) => {
+export const ShabbatTimes = ({ onParshaLoaded, onTimesLoaded }: ShabbatTimesProps = {}) => {
   const [shabbatTimes, setShabbatTimes] = useState<ShabbatTime | null>(null);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("Jerusalem");
@@ -256,6 +257,14 @@ export const ShabbatTimes = ({ onParshaLoaded }: ShabbatTimesProps = {}) => {
       // Notify parent about the parsha
       if (parshaName && onParshaLoaded) {
         onParshaLoaded(parshaName);
+      }
+
+      // Notify parent about times for dynamic mode
+      if (onTimesLoaded) {
+        onTimesLoaded({
+          candleLighting: candleLighting?.title || '',
+          havdalah: havdalah?.title || ''
+        });
       }
     } catch (error) {
       console.error('Error fetching Shabbat times:', error);
