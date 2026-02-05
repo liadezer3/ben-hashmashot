@@ -4,6 +4,7 @@ const CACHE_NAME = 'ben-hashmashot-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/widget',
   '/icon-512.png',
   '/manifest.json',
 ];

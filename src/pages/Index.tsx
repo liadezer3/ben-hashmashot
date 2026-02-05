@@ -24,7 +24,8 @@ import {
   Star,
   Mic,
   Image as ImageIcon,
-  ChevronLeft
+  ChevronLeft,
+  Smartphone
 } from "lucide-react";
 
 const Index = () => {
@@ -83,12 +84,12 @@ const Index = () => {
 
   // Quick links to other features
   const quickLinks = [
+    { icon: Smartphone, label: "Widget אופליין", href: "/widget" },
     { icon: Bell, label: "התראות", href: "/settings?tab=notifications" },
     { icon: MapPin, label: "מיקומים", href: "/settings?tab=locations" },
     { icon: Users, label: "משפחה", href: "/settings?tab=family" },
     { icon: Home, label: "בית חכם", href: "/settings?tab=smart-home" },
     { icon: BookOpen, label: "תוכן תורני", href: "/settings?tab=torah" },
-    { icon: ImageIcon, label: "זכרונות", href: "/settings?tab=memories" },
   ];
 
   return (
