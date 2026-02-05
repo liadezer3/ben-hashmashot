@@ -9,6 +9,15 @@
   "orientation": "portrait",
   "dir": "rtl",
   "lang": "he",
+  "shortcuts": [
+    {
+      "name": "Widget שבת",
+      "short_name": "Widget",
+      "description": "זמני שבת במבט מהיר",
+      "url": "/widget",
+      "icons": [{ "src": "/icon-512.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icon-512.png",

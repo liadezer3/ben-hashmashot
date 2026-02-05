@@ -33,6 +33,7 @@ import FamilyMemories from "@/components/FamilyMemories";
 import { AppReviews } from "@/components/AppReviews";
 import { AppPromotion } from "@/components/AppPromotion";
 import VoiceAssistant from "@/components/VoiceAssistant";
+import { TraditionSelector } from "@/components/TraditionSelector";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -133,6 +134,7 @@ const Settings = () => {
 
           <TabsContent value="locations" className="space-y-6">
             <SavedLocations />
+            <TraditionSelector />
             <UpcomingHolidays />
           </TabsContent>
 
