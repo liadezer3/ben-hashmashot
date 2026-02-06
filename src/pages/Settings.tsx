@@ -24,6 +24,7 @@ import { NotificationSettings } from "@/components/NotificationSettings";
 import { NotificationHistory } from "@/components/NotificationHistory";
 import { SavedLocations } from "@/components/SavedLocations";
 import { FamilyMembers } from "@/components/FamilyMembers";
+import { FamilyGroups } from "@/components/FamilyGroups";
 import SmartHomeSettings from "@/components/SmartHomeSettings";
 import { AutomationHistory } from "@/components/AutomationHistory";
 import { WebPushSettings } from "@/components/WebPushSettings";
@@ -139,6 +140,7 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="family" className="space-y-6">
+            <FamilyGroups />
             <FamilyMembers />
           </TabsContent>
 

@@ -86,6 +86,68 @@ export type Database = {
         }
         Relationships: []
       }
+      family_group_members: {
+        Row: {
+          display_name: string
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          display_name: string
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          display_name?: string
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          invite_code: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          invite_code?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          invite_code?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       family_members: {
         Row: {
           auto_send_shabbat_times: boolean | null
@@ -376,6 +438,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      shared_tasks: {
+        Row: {
+          completed_by: string | null
+          completed_by_name: string | null
+          created_at: string
+          created_by: string
+          created_by_name: string
+          group_id: string
+          id: string
+          is_completed: boolean | null
+          sort_order: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          created_by: string
+          created_by_name: string
+          group_id: string
+          id?: string
+          is_completed?: boolean | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          group_id?: string
+          id?: string
+          is_completed?: boolean | null
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_tasks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
