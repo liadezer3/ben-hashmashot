@@ -16,7 +16,8 @@ import {
   Star,
   Mic,
   ArrowRight,
-  Calendar
+  Calendar,
+  Music
 } from "lucide-react";
 
 // Import all feature components
@@ -35,6 +36,7 @@ import { AppReviews } from "@/components/AppReviews";
 import { AppPromotion } from "@/components/AppPromotion";
 import VoiceAssistant from "@/components/VoiceAssistant";
 import { TraditionSelector } from "@/components/TraditionSelector";
+import ShabbatMusicPlayer from "@/components/ShabbatMusicPlayer";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -121,6 +123,10 @@ const Settings = () => {
               <ImageIcon className="w-4 h-4" />
               <span className="hidden sm:inline">זכרונות</span>
             </TabsTrigger>
+            <TabsTrigger value="music" className="gap-1 text-sm">
+              <Music className="w-4 h-4" />
+              <span className="hidden sm:inline">מוזיקה</span>
+            </TabsTrigger>
             <TabsTrigger value="more" className="gap-1 text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">עוד</span>
@@ -156,6 +162,10 @@ const Settings = () => {
 
           <TabsContent value="memories" className="space-y-6">
             <FamilyMemories userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="music" className="space-y-6">
+            <ShabbatMusicPlayer />
           </TabsContent>
 
           <TabsContent value="more" className="space-y-6">
