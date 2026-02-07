@@ -17,7 +17,8 @@ import {
   Mic,
   ArrowRight,
   Calendar,
-  Music
+  Music,
+  Users2
 } from "lucide-react";
 
 // Import all feature components
@@ -37,6 +38,7 @@ import { AppPromotion } from "@/components/AppPromotion";
 import VoiceAssistant from "@/components/VoiceAssistant";
 import { TraditionSelector } from "@/components/TraditionSelector";
 import ShabbatMusicPlayer from "@/components/ShabbatMusicPlayer";
+import CommunityFeed from "@/components/community/CommunityFeed";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -123,6 +125,10 @@ const Settings = () => {
               <ImageIcon className="w-4 h-4" />
               <span className="hidden sm:inline">זכרונות</span>
             </TabsTrigger>
+            <TabsTrigger value="community" className="gap-1 text-sm">
+              <Users2 className="w-4 h-4" />
+              <span className="hidden sm:inline">קהילה</span>
+            </TabsTrigger>
             <TabsTrigger value="music" className="gap-1 text-sm">
               <Music className="w-4 h-4" />
               <span className="hidden sm:inline">מוזיקה</span>
@@ -162,6 +168,10 @@ const Settings = () => {
 
           <TabsContent value="memories" className="space-y-6">
             <FamilyMemories userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="community" className="space-y-6">
+            <CommunityFeed userId={userId} />
           </TabsContent>
 
           <TabsContent value="music" className="space-y-6">
