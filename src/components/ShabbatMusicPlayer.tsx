@@ -2,18 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Music, 
-  Play, 
-  Pause, 
-  SkipForward, 
-  SkipBack, 
-  Volume2,
-  VolumeX,
-  ListMusic,
-  Sparkles
-} from "lucide-react";
-import { useShabbatMode, ShabbatModePhase } from "@/hooks/useShabbatMode";
+import { Music, ListMusic, Sparkles } from "lucide-react";
+import { useShabbatMode } from "@/hooks/useShabbatMode";
 import {
   Select,
   SelectContent,
@@ -21,90 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// YouTube playlists organized by Shabbat phase
-const SHABBAT_PLAYLISTS = {
-  'erev-shabbat': {
-    name: 'ערב שבת',
-    emoji: '🕯️',
-    description: 'שירים להכנת השבת',
-    videos: [
-      { id: 'SHYxBGf96HU', title: 'לכה דודי - יעקב שוואקי' },
-      { id: '2xJWQPdG7jE', title: 'שלום עליכם - מרדכי בן דוד' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות - עמירן דביר' },
-      { id: 'N5YP8at2T-o', title: 'יה ריבון - יצחק מאיר' },
-    ]
-  },
-  'friday-night': {
-    name: 'ליל שבת',
-    emoji: '✨',
-    description: 'ניגונים לסעודת ליל שבת',
-    videos: [
-      { id: 'SHYxBGf96HU', title: 'לכה דודי - יעקב שוואקי' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות - עמירן דביר' },
-      { id: 'qPNfKyRnRxc', title: 'צור משלו - שלמה כהן' },
-      { id: '2xJWQPdG7jE', title: 'שלום עליכם' },
-    ]
-  },
-  'shabbat-morning': {
-    name: 'בוקר שבת',
-    emoji: '☀️',
-    description: 'ניגונים לתפילה וסעודה שנייה',
-    videos: [
-      { id: 'qPNfKyRnRxc', title: 'צור משלו - שלמה כהן' },
-      { id: 'N5YP8at2T-o', title: 'יה ריבון - יצחק מאיר' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות' },
-      { id: 'SHYxBGf96HU', title: 'שבת שלום' },
-    ]
-  },
-  'seuda-shlishit': {
-    name: 'סעודה שלישית',
-    emoji: '🌅',
-    description: 'ניגונים לסעודה שלישית ונעילת שבת',
-    videos: [
-      { id: 'N5YP8at2T-o', title: 'יה ריבון' },
-      { id: 'qPNfKyRnRxc', title: 'צור משלו' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות' },
-      { id: 'SHYxBGf96HU', title: 'לכה דודי' },
-    ]
-  },
-  'havdalah': {
-    name: 'מוצאי שבת',
-    emoji: '🌙',
-    description: 'שירי הבדלה ופתיחת שבוע',
-    videos: [
-      { id: '2xJWQPdG7jE', title: 'אליהו הנביא' },
-      { id: 'N5YP8at2T-o', title: 'שבוע טוב' },
-      { id: 'SHYxBGf96HU', title: 'המבדיל' },
-    ]
-  },
-  'weekday': {
-    name: 'ימי חול',
-    emoji: '📅',
-    description: 'שירים לימות השבוע',
-    videos: [
-      { id: 'SHYxBGf96HU', title: 'שירי שבת קלאסיים' },
-      { id: '2xJWQPdG7jE', title: 'שלום עליכם' },
-      { id: 'N5YP8at2T-o', title: 'יה ריבון' },
-    ]
-  }
-};
-
-// Map ShabbatModePhase to playlist keys
-const getPlaylistForPhase = (phase: ShabbatModePhase): keyof typeof SHABBAT_PLAYLISTS => {
-  switch (phase) {
-    case 'pre-shabbat-rush':
-    case 'pre-shabbat-prep':
-      return 'erev-shabbat';
-    case 'shabbat':
-      // Could be more specific based on time of day
-      return 'friday-night';
-    case 'motzei-shabbat':
-      return 'havdalah';
-    default:
-      return 'weekday';
-  }
-};
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SHABBAT_PLAYLISTS, getPlaylistForPhase, type PlaylistKey, type MusicPlatform } from "./music/musicData";
+import YouTubePlayer from "./music/YouTubePlayer";
+import SpotifyPlayer from "./music/SpotifyPlayer";
 
 interface ShabbatMusicPlayerProps {
   candleLighting?: string;
@@ -113,13 +23,13 @@ interface ShabbatMusicPlayerProps {
 
 const ShabbatMusicPlayer = ({ candleLighting, havdalah }: ShabbatMusicPlayerProps) => {
   const shabbatMode = useShabbatMode(candleLighting, havdalah);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<keyof typeof SHABBAT_PLAYLISTS>('erev-shabbat');
+  const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistKey>('erev-shabbat');
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [autoMode, setAutoMode] = useState(true);
+  const [platform, setPlatform] = useState<MusicPlatform>('youtube');
 
-  // Update playlist based on Shabbat phase when auto mode is on
   useEffect(() => {
     if (autoMode) {
       const suggestedPlaylist = getPlaylistForPhase(shabbatMode.phase);
@@ -129,22 +39,22 @@ const ShabbatMusicPlayer = ({ candleLighting, havdalah }: ShabbatMusicPlayerProp
   }, [shabbatMode.phase, autoMode]);
 
   const currentPlaylist = SHABBAT_PLAYLISTS[selectedPlaylist];
-  const currentVideo = currentPlaylist.videos[currentVideoIndex];
+  const currentVideo = currentPlaylist.youtube[currentVideoIndex];
 
   const handleNext = () => {
-    setCurrentVideoIndex((prev) => 
-      prev < currentPlaylist.videos.length - 1 ? prev + 1 : 0
+    setCurrentVideoIndex((prev) =>
+      prev < currentPlaylist.youtube.length - 1 ? prev + 1 : 0
     );
   };
 
   const handlePrevious = () => {
-    setCurrentVideoIndex((prev) => 
-      prev > 0 ? prev - 1 : currentPlaylist.videos.length - 1
+    setCurrentVideoIndex((prev) =>
+      prev > 0 ? prev - 1 : currentPlaylist.youtube.length - 1
     );
   };
 
   const handlePlaylistChange = (value: string) => {
-    setSelectedPlaylist(value as keyof typeof SHABBAT_PLAYLISTS);
+    setSelectedPlaylist(value as PlaylistKey);
     setCurrentVideoIndex(0);
     setAutoMode(false);
   };
@@ -177,8 +87,22 @@ const ShabbatMusicPlayer = ({ candleLighting, havdalah }: ShabbatMusicPlayerProp
           </Button>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
+        {/* Platform toggle */}
+        <Tabs value={platform} onValueChange={(v) => setPlatform(v as MusicPlatform)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="youtube" className="gap-2">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/><path d="M9.545 15.568V8.432L15.818 12l-6.273 3.568z" className="fill-primary-foreground"/></svg>
+              YouTube
+            </TabsTrigger>
+            <TabsTrigger value="spotify" className="gap-2">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+              Spotify
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Playlist selector */}
         <div className="flex items-center gap-2">
           <ListMusic className="w-4 h-4 text-muted-foreground" />
@@ -210,78 +134,24 @@ const ShabbatMusicPlayer = ({ candleLighting, havdalah }: ShabbatMusicPlayerProp
           </div>
         </div>
 
-        {/* YouTube embed */}
-        <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-          <iframe
-            src={`https://www.youtube.com/embed/${currentVideo.id}?autoplay=${isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}&enablejsapi=1`}
-            title={currentVideo.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full"
+        {/* Platform-specific player */}
+        {platform === 'youtube' ? (
+          <YouTubePlayer
+            video={currentVideo}
+            isPlaying={isPlaying}
+            isMuted={isMuted}
+            currentIndex={currentVideoIndex}
+            totalVideos={currentPlaylist.youtube.length}
+            videos={currentPlaylist.youtube}
+            onPlay={() => setIsPlaying(!isPlaying)}
+            onMute={() => setIsMuted(!isMuted)}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            onSelectTrack={setCurrentVideoIndex}
           />
-        </div>
-
-        {/* Current track info */}
-        <div className="text-center">
-          <p className="font-medium">{currentVideo.title}</p>
-          <p className="text-sm text-muted-foreground">
-            {currentVideoIndex + 1} מתוך {currentPlaylist.videos.length}
-          </p>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsMuted(!isMuted)}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handlePrevious}
-          >
-            <SkipBack className="w-4 h-4" />
-          </Button>
-          
-          <Button
-            variant="default"
-            size="icon"
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="h-12 w-12"
-          >
-            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleNext}
-          >
-            <SkipForward className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Track list */}
-        <div className="space-y-1 max-h-40 overflow-y-auto">
-          <p className="text-sm font-medium text-muted-foreground mb-2">רשימת שירים:</p>
-          {currentPlaylist.videos.map((video, index) => (
-            <button
-              key={video.id}
-              onClick={() => setCurrentVideoIndex(index)}
-              className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
-                index === currentVideoIndex 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              {index + 1}. {video.title}
-            </button>
-          ))}
-        </div>
+        ) : (
+          <SpotifyPlayer playlists={currentPlaylist.spotify} />
+        )}
       </CardContent>
     </Card>
   );
