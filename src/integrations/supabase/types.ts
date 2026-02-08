@@ -148,6 +148,36 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_playlists: {
+        Row: {
+          created_at: string
+          id: string
+          phase_key: string
+          playlist_name: string
+          spotify_uri: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phase_key: string
+          playlist_name?: string
+          spotify_uri: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phase_key?: string
+          playlist_name?: string
+          spotify_uri?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       family_group_members: {
         Row: {
           display_name: string
