@@ -468,6 +468,39 @@ export type Database = {
         }
         Relationships: []
       }
+      shabbat_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          parsha: string | null
+          rating: number
+          shabbat_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          parsha?: string | null
+          rating: number
+          shabbat_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          parsha?: string | null
+          rating?: number
+          shabbat_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shabbat_tasks: {
         Row: {
           created_at: string
