@@ -181,7 +181,7 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="music" className="space-y-6">
-            <ShabbatMusicPlayer />
+            <ShabbatMusicPlayer userId={userId} />
           </TabsContent>
 
           <TabsContent value="rating" className="space-y-6">

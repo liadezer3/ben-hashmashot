@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { SpotifyPlaylist } from "./musicData";
+import { Badge } from "@/components/ui/badge";
 
 interface SpotifyPlayerProps {
   playlists: SpotifyPlaylist[];
+  customPlaylist?: { uri: string; name: string } | null;
 }
 
-const SpotifyPlayer = ({ playlists }: SpotifyPlayerProps) => {
+const SpotifyPlayer = ({ playlists, customPlaylist }: SpotifyPlayerProps) => {
+  const allPlaylists = customPlaylist
+    ? [{ uri: customPlaylist.uri, title: `⭐ ${customPlaylist.name}` }, ...playlists]
+    : playlists;
+
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const currentPlaylist = playlists[selectedIndex];
+  const currentPlaylist = allPlaylists[selectedIndex];
 
   if (!currentPlaylist) {
     return (
@@ -33,12 +39,12 @@ const SpotifyPlayer = ({ playlists }: SpotifyPlayerProps) => {
       </div>
 
       {/* Playlist selector */}
-      {playlists.length > 1 && (
+      {allPlaylists.length > 1 && (
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground mb-2">פלייליסטים זמינים:</p>
-          {playlists.map((pl, index) => (
+          {allPlaylists.map((pl, index) => (
             <button
-              key={pl.uri}
+              key={`${pl.uri}-${index}`}
               onClick={() => setSelectedIndex(index)}
               className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
                 index === selectedIndex
