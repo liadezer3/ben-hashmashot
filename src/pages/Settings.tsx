@@ -18,7 +18,8 @@ import {
   ArrowRight,
   Calendar,
   Music,
-  Users2
+  Users2,
+  BarChart3
 } from "lucide-react";
 
 // Import all feature components
@@ -39,6 +40,7 @@ import VoiceAssistant from "@/components/VoiceAssistant";
 import { TraditionSelector } from "@/components/TraditionSelector";
 import ShabbatMusicPlayer from "@/components/ShabbatMusicPlayer";
 import CommunityFeed from "@/components/community/CommunityFeed";
+import ShabbatRating from "@/components/ShabbatRating";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -133,6 +135,10 @@ const Settings = () => {
               <Music className="w-4 h-4" />
               <span className="hidden sm:inline">מוזיקה</span>
             </TabsTrigger>
+            <TabsTrigger value="rating" className="gap-1 text-sm">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">דירוג</span>
+            </TabsTrigger>
             <TabsTrigger value="more" className="gap-1 text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">עוד</span>
@@ -176,6 +182,10 @@ const Settings = () => {
 
           <TabsContent value="music" className="space-y-6">
             <ShabbatMusicPlayer />
+          </TabsContent>
+
+          <TabsContent value="rating" className="space-y-6">
+            <ShabbatRating userId={userId} />
           </TabsContent>
 
           <TabsContent value="more" className="space-y-6">
