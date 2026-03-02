@@ -71,7 +71,7 @@ export const subscribeToWebPush = async (vapidPublicKey: string): Promise<PushSu
     await navigator.serviceWorker.ready;
 
     // Check for existing subscription
-    let subscription = await registration.pushManager.getSubscription();
+    let subscription = await (registration as any).pushManager.getSubscription();
     
     if (subscription) {
       console.log('Existing subscription found');
@@ -79,7 +79,7 @@ export const subscribeToWebPush = async (vapidPublicKey: string): Promise<PushSu
     }
 
     // Create new subscription
-    subscription = await registration.pushManager.subscribe({
+    subscription = await (registration as any).pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     });
@@ -131,7 +131,7 @@ export const saveSubscriptionToDatabase = async (subscription: PushSubscription)
 export const unsubscribeFromWebPush = async (): Promise<boolean> => {
   try {
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const subscription = await (registration as any).pushManager.getSubscription();
     
     if (subscription) {
       // Delete from database first
@@ -162,7 +162,7 @@ export const checkWebPushSubscription = async (): Promise<boolean> => {
   
   try {
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const subscription = await (registration as any).pushManager.getSubscription();
     return subscription !== null;
   } catch {
     return false;
