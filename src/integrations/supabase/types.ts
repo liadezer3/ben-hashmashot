@@ -614,6 +614,60 @@ export type Database = {
           },
         ]
       }
+      user_preferences: {
+        Row: {
+          channels: Json
+          created_at: string
+          custom_offsets: Json | null
+          id: string
+          language: Database["public"]["Enums"]["app_language"]
+          location: Json | null
+          minhag: string | null
+          multiple_locations: Json | null
+          observance_level: Database["public"]["Enums"]["observance_level"]
+          silent_during_shabbat: boolean
+          timezone: string | null
+          updated_at: string
+          user_id: string
+          verified_channels: Json
+          zmanim_preset: Database["public"]["Enums"]["zmanim_preset"]
+        }
+        Insert: {
+          channels?: Json
+          created_at?: string
+          custom_offsets?: Json | null
+          id?: string
+          language?: Database["public"]["Enums"]["app_language"]
+          location?: Json | null
+          minhag?: string | null
+          multiple_locations?: Json | null
+          observance_level?: Database["public"]["Enums"]["observance_level"]
+          silent_during_shabbat?: boolean
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+          verified_channels?: Json
+          zmanim_preset?: Database["public"]["Enums"]["zmanim_preset"]
+        }
+        Update: {
+          channels?: Json
+          created_at?: string
+          custom_offsets?: Json | null
+          id?: string
+          language?: Database["public"]["Enums"]["app_language"]
+          location?: Json | null
+          minhag?: string | null
+          multiple_locations?: Json | null
+          observance_level?: Database["public"]["Enums"]["observance_level"]
+          silent_during_shabbat?: boolean
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_channels?: Json
+          zmanim_preset?: Database["public"]["Enums"]["zmanim_preset"]
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -664,7 +718,10 @@ export type Database = {
       }
     }
     Enums: {
+      app_language: "he" | "en"
       app_role: "admin" | "user"
+      observance_level: "religious" | "traditional" | "secular"
+      zmanim_preset: "strict" | "standard" | "lenient" | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -792,7 +849,10 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_language: ["he", "en"],
       app_role: ["admin", "user"],
+      observance_level: ["religious", "traditional", "secular"],
+      zmanim_preset: ["strict", "standard", "lenient", "custom"],
     },
   },
 } as const
