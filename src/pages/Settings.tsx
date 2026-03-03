@@ -20,7 +20,8 @@ import {
   Calendar,
   Music,
   Users2,
-  BarChart3
+  BarChart3,
+  SlidersHorizontal
 } from "lucide-react";
 
 // Import all feature components
@@ -42,6 +43,7 @@ import { TraditionSelector } from "@/components/TraditionSelector";
 import ShabbatMusicPlayer from "@/components/ShabbatMusicPlayer";
 import CommunityFeed from "@/components/community/CommunityFeed";
 import ShabbatRating from "@/components/ShabbatRating";
+import UserPreferencesPanel from "@/components/UserPreferencesPanel";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -105,6 +107,10 @@ const Settings = () => {
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="preferences" className="gap-1 text-sm">
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="hidden sm:inline">העדפות</span>
+            </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-1 text-sm">
               <Bell className="w-4 h-4" />
               <span className="hidden sm:inline">התראות</span>
@@ -148,6 +154,10 @@ const Settings = () => {
               <span className="hidden sm:inline">עוד</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="preferences" className="space-y-6">
+            <UserPreferencesPanel />
+          </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
             <NotificationSettings />
