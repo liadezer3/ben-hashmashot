@@ -8,6 +8,7 @@ import ShabbatTaskList from "@/components/ShabbatTaskList";
 import { HebrewDateDisplay } from "@/components/HebrewDateDisplay";
 import { PutDownPhoneTimer } from "@/components/PutDownPhoneTimer";
 import { useShabbatMode, getPhaseStyles } from "@/hooks/useShabbatMode";
+import { useObservance } from "@/contexts/ObservanceContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ import {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { showReligiousContent, isSecular } = useObservance();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string>("Jerusalem");
@@ -84,13 +86,13 @@ const Index = () => {
 
   // Quick links to other features
   const quickLinks = [
-    { icon: Smartphone, label: "Widget אופליין", href: "/widget" },
-    { icon: Bell, label: "התראות", href: "/settings?tab=notifications" },
-    { icon: MapPin, label: "מיקומים", href: "/settings?tab=locations" },
-    { icon: Users, label: "משפחה", href: "/settings?tab=family" },
-    { icon: Home, label: "בית חכם", href: "/settings?tab=smart-home" },
-    { icon: BookOpen, label: "תוכן תורני", href: "/settings?tab=torah" },
-  ];
+    { icon: Smartphone, label: "Widget אופליין", href: "/widget", showAlways: true },
+    { icon: Bell, label: "התראות", href: "/settings?tab=notifications", showAlways: true },
+    { icon: MapPin, label: "מיקומים", href: "/settings?tab=locations", showAlways: true },
+    { icon: Users, label: "משפחה", href: "/settings?tab=family", showAlways: true },
+    { icon: Home, label: "בית חכם", href: "/settings?tab=smart-home", showAlways: true },
+    { icon: BookOpen, label: "תוכן תורני", href: "/settings?tab=torah", showAlways: !isSecular },
+  ].filter(link => link.showAlways);
 
   return (
     <div className={cn("min-h-screen transition-colors duration-500", phaseStyles.bgClass)}>
@@ -129,8 +131,8 @@ const Index = () => {
           <ShabbatTaskList userId={userId} />
         )}
 
-        {/* Parsha Content - Only during prep or weekday */}
-        {shabbatMode.phase !== 'shabbat' && (
+        {/* Parsha Content - Only for religious/traditional users, not during Shabbat */}
+        {showReligiousContent && shabbatMode.phase !== 'shabbat' && (
           <ParshaContent />
         )}
 
