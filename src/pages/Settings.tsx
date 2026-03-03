@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
+import { useObservance } from "@/contexts/ObservanceContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string>("Jerusalem");
+  const { showReligiousContent } = useObservance();
   
   const defaultTab = searchParams.get('tab') || 'notifications';
 
@@ -119,10 +121,12 @@ const Settings = () => {
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">בית חכם</span>
             </TabsTrigger>
-            <TabsTrigger value="torah" className="gap-1 text-sm">
-              <BookOpen className="w-4 h-4" />
-              <span className="hidden sm:inline">תורה</span>
-            </TabsTrigger>
+            {showReligiousContent && (
+              <TabsTrigger value="torah" className="gap-1 text-sm">
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden sm:inline">תורה</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="memories" className="gap-1 text-sm">
               <ImageIcon className="w-4 h-4" />
               <span className="hidden sm:inline">זכרונות</span>
@@ -167,10 +171,12 @@ const Settings = () => {
             <AutomationHistory userId={userId} />
           </TabsContent>
 
-          <TabsContent value="torah" className="space-y-6">
-            <SefariaContent currentParsha="" />
-            <VoiceAssistant city={userCity} />
-          </TabsContent>
+          {showReligiousContent && (
+            <TabsContent value="torah" className="space-y-6">
+              <SefariaContent currentParsha="" />
+              <VoiceAssistant city={userCity} />
+            </TabsContent>
+          )}
 
           <TabsContent value="memories" className="space-y-6">
             <FamilyMemories userId={userId} />
