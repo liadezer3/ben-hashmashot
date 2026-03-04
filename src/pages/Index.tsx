@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
+  BarChart3,
   Settings, 
   Users, 
   Bell, 
@@ -86,6 +87,7 @@ const Index = () => {
 
   // Quick links to other features
   const quickLinks = [
+    { icon: BarChart3, label: "דשבורד", href: "/dashboard", showAlways: true },
     { icon: Smartphone, label: "Widget אופליין", href: "/widget", showAlways: true },
     { icon: Bell, label: "התראות", href: "/settings?tab=notifications", showAlways: true },
     { icon: MapPin, label: "מיקומים", href: "/settings?tab=locations", showAlways: true },
