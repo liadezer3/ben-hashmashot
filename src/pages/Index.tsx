@@ -8,10 +8,13 @@ import ShabbatTaskList from "@/components/ShabbatTaskList";
 import { HebrewDateDisplay } from "@/components/HebrewDateDisplay";
 import { PutDownPhoneTimer } from "@/components/PutDownPhoneTimer";
 import { useShabbatMode, getPhaseStyles } from "@/hooks/useShabbatMode";
+import { useAutoTheme } from "@/hooks/useAutoTheme";
 import { useObservance } from "@/contexts/ObservanceContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { PhaseTransition } from "@/components/PhaseTransition";
 import { 
   BarChart3,
   Settings, 
@@ -39,10 +42,14 @@ const Index = () => {
   const [currentParsha, setCurrentParsha] = useState<string>("");
   const [candleLighting, setCandleLighting] = useState<string>("");
   const [havdalah, setHavdalah] = useState<string>("");
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Dynamic mode based on time
   const shabbatMode = useShabbatMode(candleLighting, havdalah);
   const phaseStyles = getPhaseStyles(shabbatMode.phase);
+
+  // Auto dark mode during Shabbat
+  useAutoTheme(shabbatMode.phase);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -58,6 +65,10 @@ const Index = () => {
           .single();
         if (profile?.city) {
           setUserCity(profile.city);
+        }
+        // Check if onboarding needed
+        if (!localStorage.getItem("onboarding_complete")) {
+          setShowOnboarding(true);
         }
         setLoading(false);
       }
@@ -97,7 +108,12 @@ const Index = () => {
   ].filter(link => link.showAlways);
 
   return (
-    <div className={cn("min-h-screen transition-colors duration-500", phaseStyles.bgClass)}>
+    <>
+      {showOnboarding && (
+        <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
+      )}
+      <PhaseTransition phase={shabbatMode.phase}>
+      <div className={cn("min-h-screen transition-colors duration-500", phaseStyles.bgClass)}>
       <Header />
       
       <main className="container mx-auto px-4 py-6 space-y-6">
@@ -179,6 +195,8 @@ const Index = () => {
         </div>
       </footer>
     </div>
+    </PhaseTransition>
+    </>
   );
 };
 
