@@ -35,3 +35,11 @@ verify_jwt = false
 [functions.find-synagogues]
 enabled = true
 verify_jwt = false
+
+[functions.generate-recipes]
+enabled = true
+verify_jwt = false
+
+[functions.shabbat-summary]
+enabled = true
+verify_jwt = false

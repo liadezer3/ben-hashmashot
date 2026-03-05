@@ -12,6 +12,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Widget from "./pages/Widget";
 import Dashboard from "./pages/Dashboard";
+import InvitePage from "./pages/InvitePage";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/widget" element={<Widget />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/invite/:code" element={<InvitePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
