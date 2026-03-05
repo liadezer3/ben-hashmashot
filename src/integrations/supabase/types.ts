@@ -327,6 +327,50 @@ export type Database = {
         }
         Relationships: []
       }
+      invitation_guests: {
+        Row: {
+          created_at: string
+          dish_to_bring: string | null
+          guest_contact: string | null
+          guest_name: string
+          id: string
+          invitation_id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dish_to_bring?: string | null
+          guest_contact?: string | null
+          guest_name: string
+          id?: string
+          invitation_id: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dish_to_bring?: string | null
+          guest_contact?: string | null
+          guest_name?: string
+          id?: string
+          invitation_id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_guests_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "shabbat_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_history: {
         Row: {
           created_at: string
@@ -498,6 +542,51 @@ export type Database = {
         }
         Relationships: []
       }
+      shabbat_invitations: {
+        Row: {
+          address: string | null
+          candle_lighting: string | null
+          created_at: string
+          havdalah: string | null
+          host_name: string
+          id: string
+          invite_code: string
+          max_guests: number | null
+          message: string | null
+          shabbat_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          candle_lighting?: string | null
+          created_at?: string
+          havdalah?: string | null
+          host_name?: string
+          id?: string
+          invite_code?: string
+          max_guests?: number | null
+          message?: string | null
+          shabbat_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          candle_lighting?: string | null
+          created_at?: string
+          havdalah?: string | null
+          host_name?: string
+          id?: string
+          invite_code?: string
+          max_guests?: number | null
+          message?: string | null
+          shabbat_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shabbat_ratings: {
         Row: {
           created_at: string
@@ -607,6 +696,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "shared_tasks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shopping_list_items: {
+        Row: {
+          added_by: string
+          added_by_name: string
+          category: string | null
+          created_at: string
+          group_id: string
+          id: string
+          is_purchased: boolean | null
+          purchased_by_name: string | null
+          quantity: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          added_by: string
+          added_by_name?: string
+          category?: string | null
+          created_at?: string
+          group_id: string
+          id?: string
+          is_purchased?: boolean | null
+          purchased_by_name?: string | null
+          quantity?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string
+          added_by_name?: string
+          category?: string | null
+          created_at?: string
+          group_id?: string
+          id?: string
+          is_purchased?: boolean | null
+          purchased_by_name?: string | null
+          quantity?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_list_items_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "family_groups"

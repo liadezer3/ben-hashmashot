@@ -21,7 +21,11 @@ import {
   Music,
   Users2,
   BarChart3,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ChefHat,
+  FileText,
+  ShoppingCart,
+  Mail
 } from "lucide-react";
 
 // Import all feature components
@@ -44,6 +48,11 @@ import ShabbatMusicPlayer from "@/components/ShabbatMusicPlayer";
 import CommunityFeed from "@/components/community/CommunityFeed";
 import ShabbatRating from "@/components/ShabbatRating";
 import UserPreferencesPanel from "@/components/UserPreferencesPanel";
+import { ShoppingList } from "@/components/ShoppingList";
+import { GuestInvitations } from "@/components/GuestInvitations";
+import { AIRecipes } from "@/components/AIRecipes";
+import { ShabbatSummary } from "@/components/ShabbatSummary";
+import { FamilyShoppingLists } from "@/components/FamilyShoppingLists";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -149,6 +158,18 @@ const Settings = () => {
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">דירוג</span>
             </TabsTrigger>
+            <TabsTrigger value="invitations" className="gap-1 text-sm">
+              <Mail className="w-4 h-4" />
+              <span className="hidden sm:inline">הזמנות</span>
+            </TabsTrigger>
+            <TabsTrigger value="recipes" className="gap-1 text-sm">
+              <ChefHat className="w-4 h-4" />
+              <span className="hidden sm:inline">מתכונים</span>
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="gap-1 text-sm">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">סיכום</span>
+            </TabsTrigger>
             <TabsTrigger value="more" className="gap-1 text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">עוד</span>
@@ -174,6 +195,7 @@ const Settings = () => {
           <TabsContent value="family" className="space-y-6">
             <FamilyGroups />
             <FamilyMembers />
+            <FamilyShoppingLists userId={userId} />
           </TabsContent>
 
           <TabsContent value="smart-home" className="space-y-6">
@@ -202,6 +224,18 @@ const Settings = () => {
 
           <TabsContent value="rating" className="space-y-6">
             <ShabbatRating userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="invitations" className="space-y-6">
+            <GuestInvitations userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="recipes" className="space-y-6">
+            <AIRecipes userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="summary" className="space-y-6">
+            <ShabbatSummary userId={userId} />
           </TabsContent>
 
           <TabsContent value="more" className="space-y-6">
