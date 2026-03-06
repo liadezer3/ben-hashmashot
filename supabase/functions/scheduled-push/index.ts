@@ -987,8 +987,13 @@ serve(async (req) => {
       const userCity = profileMap.get(pref.user_id)?.city || 'Jerusalem';
       const userPhone = pref.phone || profileMap.get(pref.user_id)?.phone;
       
-      // Check morning notification time (user's chosen time)
-      if (pref.morning_time) {
+      // Calculate target day for this user
+      const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
+      const targetDay = getNotificationTargetDay(daysBeforeShabbat);
+      const isRelevantDay = currentDayOfWeek === targetDay || isHolidayEve;
+
+      // Check morning notification time — ONLY on relevant days (target day or holiday eve)
+      if (pref.morning_time && isRelevantDay) {
         const timeMatches = isTimeMatch(pref.morning_time, currentHour, currentMinute);
         if (timeMatches) {
           usersToNotifyMorning.push(pref.user_id);
@@ -996,16 +1001,9 @@ serve(async (req) => {
       }
 
       // Check scheduled reminder (X days before Shabbat/holiday at specific time)
-      const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
       const shabbatReminderTime = pref.shabbat_reminder_time || '12:00';
-      const targetDay = getNotificationTargetDay(daysBeforeShabbat);
       
-      // Notify if:
-      // 1. It's the target day based on days_before_shabbat setting (e.g., Friday, Thursday, etc.)
-      // 2. OR it's the day before a major holiday
-      const shouldNotifyScheduled = currentDayOfWeek === targetDay || isHolidayEve;
-      
-      if (shouldNotifyScheduled) {
+      if (isRelevantDay) {
         const timeMatches = isTimeMatch(shabbatReminderTime, currentHour, currentMinute);
         if (timeMatches) {
           usersToNotifyScheduled.push(pref.user_id);
