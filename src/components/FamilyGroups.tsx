@@ -170,38 +170,33 @@ export const FamilyGroups = () => {
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        throw new Error('יש להתחבר כדי להצטרף לקבוצה');
+      }
 
-      // Find group by invite code - need to use a different approach since we can't see the group yet
-      const { data: groups, error: findError } = await supabase
-        .from('family_groups')
-        .select('id, name')
-        .eq('invite_code', joinCode.trim());
+      const normalizedCode = joinCode.trim().toLowerCase();
 
-      // Try to join even if we can't see the group (RLS might prevent seeing it before joining)
-      // We'll use a workaround by attempting to insert directly
-      const { error: joinError } = await supabase
-        .from('family_group_members')
-        .insert({
-          group_id: groups?.[0]?.id || joinCode, // This will fail if code is invalid
-          user_id: user.id,
-          display_name: displayName,
-          role: 'member',
-        });
+      const { error: joinError } = await (supabase as any).rpc('join_family_group_by_code', {
+        p_invite_code: normalizedCode,
+        p_display_name: displayName.trim(),
+      });
 
       if (joinError) {
-        if (joinError.message.includes('violates foreign key')) {
+        if (joinError.message?.includes('INVALID_INVITE_CODE')) {
           throw new Error('קוד הזמנה לא תקין');
         }
-        if (joinError.message.includes('duplicate key')) {
+        if (joinError.message?.includes('ALREADY_MEMBER')) {
           throw new Error('את/ה כבר חבר/ה בקבוצה זו');
+        }
+        if (joinError.message?.includes('UNAUTHENTICATED')) {
+          throw new Error('יש להתחבר כדי להצטרף לקבוצה');
         }
         throw joinError;
       }
 
       setJoinCode("");
       setShowJoinForm(false);
-      loadGroups();
+      await loadGroups();
 
       toast({
         title: "הצלחה!",
