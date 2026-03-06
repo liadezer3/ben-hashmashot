@@ -855,6 +855,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_family_group_admin: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_family_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       join_family_group_by_code: {
         Args: { p_display_name: string; p_invite_code: string }
         Returns: string
