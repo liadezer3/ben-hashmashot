@@ -855,6 +855,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      join_family_group_by_code: {
+        Args: { p_display_name: string; p_invite_code: string }
+        Returns: string
+      }
     }
     Enums: {
       app_language: "he" | "en"
