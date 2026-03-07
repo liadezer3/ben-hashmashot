@@ -857,6 +857,8 @@ serve(async (req) => {
       let pushSent = 0;
       let smsSent = false;
       let whatsappSent = false;
+      let smsError: string | null = null;
+      let whatsappError: string | null = null;
 
       // Send Email if enabled
       if (prefs?.email_enabled && prefs?.email) {
@@ -884,20 +886,24 @@ serve(async (req) => {
       // Send SMS if enabled
       if (prefs?.sms_enabled && prefs?.phone) {
         const message = createSMSMessage(shabbatTimes, city);
-        smsSent = await sendSMS(prefs.phone, message);
+        const smsResult = await sendSMS(prefs.phone, message);
+        smsSent = smsResult.success;
+        smsError = smsResult.error;
       }
 
       // Send WhatsApp if enabled
       if (prefs?.whatsapp_enabled && prefs?.phone) {
         const message = createWhatsAppMessage(shabbatTimes, city, holidays);
-        whatsappSent = await sendWhatsApp(prefs.phone, message);
+        const whatsappResult = await sendWhatsApp(prefs.phone, message);
+        whatsappSent = whatsappResult.success;
+        whatsappError = whatsappResult.error;
       }
 
       await supabase.from('notification_history').insert({
         user_id: user.id,
         notification_type: 'scheduled_reminder_test',
-        message: `בדיקת תזכורת מתוזמנת - ${dayName} בשעה ${reminderTime}`,
-        status: 'sent'
+        message: `בדיקת תזכורת מתוזמנת - ${dayName} בשעה ${reminderTime} | Email: ${emailSent} | Push: ${pushSent} | SMS: ${smsSent}${smsError ? ` (${smsError.slice(0, 120)})` : ''} | WhatsApp: ${whatsappSent}${whatsappError ? ` (${whatsappError.slice(0, 120)})` : ''}`,
+        status: (emailSent || pushSent > 0 || smsSent || whatsappSent) ? 'sent' : 'failed'
       });
 
       return new Response(
@@ -907,6 +913,8 @@ serve(async (req) => {
           pushSent,
           smsSent,
           whatsappSent,
+          smsError,
+          whatsappError,
           settings: {
             daysBeforeShabbat,
             dayName,
