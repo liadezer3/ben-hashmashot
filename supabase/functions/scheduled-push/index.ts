@@ -1067,6 +1067,8 @@ serve(async (req) => {
       let pushSent = 0;
       let smsSent = false;
       let whatsappSent = false;
+      let smsError: string | null = null;
+      let whatsappError: string | null = null;
 
       // Email
       if (pref.email_enabled && pref.email) {
@@ -1097,24 +1099,36 @@ serve(async (req) => {
       // SMS
       if (pref.sms_enabled && userPhone) {
         const message = createSMSMessage(shabbatTimes, userCity);
-        smsSent = await sendSMS(userPhone, message);
+        const smsResult = await sendSMS(userPhone, message);
+        smsSent = smsResult.success;
+        smsError = smsResult.error;
         if (smsSent) totalSMSSent++;
       }
 
       // WhatsApp
       if (pref.whatsapp_enabled && userPhone) {
         const message = createWhatsAppMessage(shabbatTimes, userCity, holidays);
-        whatsappSent = await sendWhatsApp(userPhone, message);
+        const whatsappResult = await sendWhatsApp(userPhone, message);
+        whatsappSent = whatsappResult.success;
+        whatsappError = whatsappResult.error;
         if (whatsappSent) totalWhatsAppSent++;
       }
 
-      // Log to history
-      if (emailSent || pushSent > 0 || smsSent || whatsappSent) {
+      const attemptedAnyChannel =
+        Boolean(pref.email_enabled && pref.email) ||
+        Boolean(pref.push_enabled) ||
+        Boolean(pref.sms_enabled && userPhone) ||
+        Boolean(pref.whatsapp_enabled && userPhone);
+
+      if (attemptedAnyChannel) {
+        const smsErrorSuffix = smsError ? ` (${smsError.slice(0, 120)})` : '';
+        const whatsappErrorSuffix = whatsappError ? ` (${whatsappError.slice(0, 120)})` : '';
+
         await supabase.from('notification_history').insert({
           user_id: userId,
           notification_type: `${notificationType}_auto`,
-          message: `Email: ${emailSent} | Push: ${pushSent} | SMS: ${smsSent} | WhatsApp: ${whatsappSent}`,
-          status: 'sent'
+          message: `Email: ${emailSent} | Push: ${pushSent} | SMS: ${smsSent}${smsErrorSuffix} | WhatsApp: ${whatsappSent}${whatsappErrorSuffix}`,
+          status: (emailSent || pushSent > 0 || smsSent || whatsappSent) ? 'sent' : 'failed'
         });
       }
     }
