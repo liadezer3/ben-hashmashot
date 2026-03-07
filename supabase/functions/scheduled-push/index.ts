@@ -181,18 +181,18 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 }
 
 // ========== SMS (Twilio) ==========
-async function sendSMS(to: string, message: string): Promise<boolean> {
+async function sendSMS(to: string, message: string): Promise<ChannelResult> {
   try {
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const fromNumber = Deno.env.get('TWILIO_PHONE_FROM');
 
     if (!accountSid || !authToken || !fromNumber) {
-      console.log('Twilio SMS credentials not configured');
-      return false;
+      const error = 'Twilio SMS credentials not configured';
+      console.log(error);
+      return { success: false, error };
     }
 
-    // Format phone number if needed
     let formattedPhone = to.replace(/[\s\-]/g, '');
     if (!formattedPhone.startsWith('+')) {
       formattedPhone = '+' + formattedPhone;
@@ -216,31 +216,33 @@ async function sendSMS(to: string, message: string): Promise<boolean> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Twilio SMS error:', errorText);
-      return false;
+      const error = `Twilio SMS error (${response.status}): ${errorText}`;
+      console.error(error);
+      return { success: false, error };
     }
 
     console.log(`SMS sent successfully to ${to}`);
-    return true;
+    return { success: true, error: null };
   } catch (error: any) {
-    console.error('Error sending SMS:', error.message || error);
-    return false;
+    const errorMessage = `Error sending SMS: ${error?.message || error}`;
+    console.error(errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
 // ========== WHATSAPP (Twilio) ==========
-async function sendWhatsApp(to: string, message: string): Promise<boolean> {
+async function sendWhatsApp(to: string, message: string): Promise<ChannelResult> {
   try {
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
 
     if (!accountSid || !authToken || !fromWhatsApp) {
-      console.log('Twilio WhatsApp credentials not configured');
-      return false;
+      const error = 'Twilio WhatsApp credentials not configured';
+      console.log(error);
+      return { success: false, error };
     }
 
-    // Format phone number if needed
     let formattedPhone = to.replace(/[\s\-]/g, '');
     if (!formattedPhone.startsWith('+')) {
       formattedPhone = '+' + formattedPhone;
@@ -264,15 +266,17 @@ async function sendWhatsApp(to: string, message: string): Promise<boolean> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Twilio WhatsApp error:', errorText);
-      return false;
+      const error = `Twilio WhatsApp error (${response.status}): ${errorText}`;
+      console.error(error);
+      return { success: false, error };
     }
 
     console.log(`WhatsApp sent successfully to ${to}`);
-    return true;
+    return { success: true, error: null };
   } catch (error: any) {
-    console.error('Error sending WhatsApp:', error.message || error);
-    return false;
+    const errorMessage = `Error sending WhatsApp: ${error?.message || error}`;
+    console.error(errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
