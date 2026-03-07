@@ -172,15 +172,20 @@ export const checkWebPushSubscription = async (): Promise<boolean> => {
 // Send test notification using edge function
 export const sendTestWebPushNotification = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.functions.invoke('send-web-push', {
-      body: { 
+    const { error } = await supabase.functions.invoke('send-web-push', {
+      body: {
         test: true,
         title: '🕯️ בדיקת התראה',
         body: 'התראות Web Push פועלות כראוי!'
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      const edgeError = error as any;
+      const payload = await edgeError?.context?.json?.().catch(() => null);
+      throw new Error(payload?.error || error.message || 'שגיאה בשליחת התראת Push');
+    }
+
     return true;
   } catch (error) {
     console.error('Failed to send test notification:', error);
