@@ -51,6 +51,11 @@ interface HolidayInfo {
   type: 'holiday' | 'fast' | 'rosh_chodesh';
 }
 
+interface ChannelResult {
+  success: boolean;
+  error: string | null;
+}
+
 // City to GeoID mapping
 const CITY_GEO_IDS: Record<string, string> = {
   "Jerusalem": "281184",
