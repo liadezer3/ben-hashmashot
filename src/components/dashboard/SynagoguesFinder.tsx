@@ -32,12 +32,21 @@ export const SynagoguesFinder = () => {
         body: { lat: latitude, lng: longitude },
       });
 
-      if (error) throw error;
+      if (error) {
+        const edgeError = error as any;
+        const payload = await edgeError?.context?.json?.().catch(() => null);
+        const message = payload?.error || error.message;
+        throw new Error(message);
+      }
+
       setSynagogues(data?.results || []);
       setSearched(true);
     } catch (err: any) {
+      const errorMessage = String(err?.message || "");
       if (err?.code === 1) {
         toast.error("יש לאשר גישה למיקום כדי למצוא בתי כנסת קרובים");
+      } else if (errorMessage.includes("Google Places key is invalid") || errorMessage.includes("REQUEST_DENIED")) {
+        toast.error("שירות בתי הכנסת לא זמין כרגע (מפתח Google Places לא תקין)");
       } else {
         toast.error("שגיאה בחיפוש בתי כנסת");
       }

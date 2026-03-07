@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -12,14 +12,31 @@ serve(async (req) => {
     const GOOGLE_PLACES_API_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY");
     if (!GOOGLE_PLACES_API_KEY) throw new Error("GOOGLE_PLACES_API_KEY is not configured");
 
-    const { lat, lng } = await req.json();
-    if (!lat || !lng) throw new Error("lat and lng are required");
+    const { lat: rawLat, lng: rawLng } = await req.json();
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error("lat and lng are required");
+    }
 
     // Search for synagogues nearby using Google Places API
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=3000&type=synagogue&language=he&key=${GOOGLE_PLACES_API_KEY}`;
 
     const response = await fetch(url);
     const data = await response.json();
+
+    if (data.status === "REQUEST_DENIED") {
+      console.error("Google Places error:", data.status, data.error_message);
+      return new Response(
+        JSON.stringify({
+          error: "Google Places key is invalid or not authorized",
+          code: data.status,
+          details: data.error_message ?? null,
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
       console.error("Google Places error:", data.status, data.error_message);

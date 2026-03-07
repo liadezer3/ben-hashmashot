@@ -482,8 +482,10 @@ export const NotificationSettings = () => {
       const dayName = dayNames[timeSettings.daysBeforeShabbat] || dayNames[0];
 
       let resultMessage = `${dayName} בשעה ${timeSettings.shabbatReminderTime}`;
-      if (data?.pushSent > 0) resultMessage += ` | Push ✓`;
-      if (data?.emailSent) resultMessage += ` | Email ✓`;
+      resultMessage += data?.pushSent > 0 ? ` | Push ✓` : ` | Push ✗`;
+      resultMessage += data?.emailSent ? ` | Email ✓` : ` | Email ✗`;
+      resultMessage += data?.smsSent ? ` | SMS ✓` : ` | SMS ✗`;
+      resultMessage += data?.whatsappSent ? ` | WhatsApp ✓` : ` | WhatsApp ✗`;
 
       updateTestResult('scheduled', { 
         status: 'success', 
