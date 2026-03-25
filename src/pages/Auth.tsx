@@ -141,9 +141,9 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">זמני שבת וחג בדיקה</CardTitle>
+          <CardTitle className="text-2xl text-center">זמני שבת וחג</CardTitle>
           <CardDescription className="text-center">
-            התחבר או הירשם כדי להמשיך
+            התחבר או הירשם כדי להמשיך111
           </CardDescription>
         </CardHeader>
         <CardContent>
