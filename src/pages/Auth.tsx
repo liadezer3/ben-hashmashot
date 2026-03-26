@@ -143,7 +143,7 @@ const Auth = () => {
         <CardHeader>
           <CardTitle className="text-2xl text-center">זמני שבת וחג</CardTitle>
           <CardDescription className="text-center">
-            התחבר או הירשם כדי להמשיך111
+            התחבר או הירשם כדי להמשיך
           </CardDescription>
         </CardHeader>
         <CardContent>
