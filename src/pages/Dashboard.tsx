@@ -9,6 +9,7 @@ import { ShabbatStreak } from "@/components/dashboard/ShabbatStreak";
 import { LastYearMemory } from "@/components/dashboard/LastYearMemory";
 import { SynagoguesFinder } from "@/components/dashboard/SynagoguesFinder";
 import { SmartReminders } from "@/components/dashboard/SmartReminders";
+import NotificationCenter from "@/components/NotificationCenter";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ const Dashboard = () => {
         <AnnualStats userId={userId} />
         <LastYearMemory userId={userId} />
         <SynagoguesFinder />
+        <NotificationCenter />
       </main>
     </div>
   );

@@ -25,6 +25,7 @@ import {
   ChefHat,
   FileText,
   ShoppingCart,
+  Megaphone,
   Mail
 } from "lucide-react";
 
@@ -53,6 +54,7 @@ import { GuestInvitations } from "@/components/GuestInvitations";
 import { AIRecipes } from "@/components/AIRecipes";
 import { ShabbatSummary } from "@/components/ShabbatSummary";
 import { FamilyShoppingLists } from "@/components/FamilyShoppingLists";
+import NotificationCenter from "@/components/NotificationCenter";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -170,6 +172,10 @@ const Settings = () => {
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">סיכום</span>
             </TabsTrigger>
+            <TabsTrigger value="notification-center" className="gap-1 text-sm">
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">מרכז התראות</span>
+            </TabsTrigger>
             <TabsTrigger value="more" className="gap-1 text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">עוד</span>
@@ -236,6 +242,10 @@ const Settings = () => {
 
           <TabsContent value="summary" className="space-y-6">
             <ShabbatSummary userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="notification-center" className="space-y-6">
+            <NotificationCenter />
           </TabsContent>
 
           <TabsContent value="more" className="space-y-6">

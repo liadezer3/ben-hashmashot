@@ -53,12 +53,12 @@ export const useShabbatAutomation = (
   // Erev Shabbat state
   const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
   const [isScheduled, setIsScheduled] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Motzei Shabbat state
   const [motzeiScheduledTime, setMotzeiScheduledTime] = useState<Date | null>(null);
   const [isMotzeiScheduled, setIsMotzeiScheduled] = useState(false);
-  const motzeiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const motzeiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear Erev Shabbat automation
   const clearScheduledAutomation = useCallback(() => {
