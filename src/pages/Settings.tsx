@@ -25,6 +25,7 @@ import {
   ChefHat,
   FileText,
   ShoppingCart,
+  Megaphone,
   Mail
 } from "lucide-react";
 
