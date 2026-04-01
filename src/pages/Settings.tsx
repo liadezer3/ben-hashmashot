@@ -172,6 +172,10 @@ const Settings = () => {
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">סיכום</span>
             </TabsTrigger>
+            <TabsTrigger value="notification-center" className="gap-1 text-sm">
+              <Megaphone className="w-4 h-4" />
+              <span className="hidden sm:inline">מרכז התראות</span>
+            </TabsTrigger>
             <TabsTrigger value="more" className="gap-1 text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">עוד</span>
