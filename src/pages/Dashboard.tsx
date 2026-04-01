@@ -45,6 +45,7 @@ const Dashboard = () => {
         <AnnualStats userId={userId} />
         <LastYearMemory userId={userId} />
         <SynagoguesFinder />
+        <NotificationCenter />
       </main>
     </div>
   );

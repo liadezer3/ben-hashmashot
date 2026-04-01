@@ -244,6 +244,10 @@ const Settings = () => {
             <ShabbatSummary userId={userId} />
           </TabsContent>
 
+          <TabsContent value="notification-center" className="space-y-6">
+            <NotificationCenter />
+          </TabsContent>
+
           <TabsContent value="more" className="space-y-6">
             <AppReviews />
             <AppPromotion />
