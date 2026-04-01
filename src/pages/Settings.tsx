@@ -54,6 +54,7 @@ import { GuestInvitations } from "@/components/GuestInvitations";
 import { AIRecipes } from "@/components/AIRecipes";
 import { ShabbatSummary } from "@/components/ShabbatSummary";
 import { FamilyShoppingLists } from "@/components/FamilyShoppingLists";
+import NotificationCenter from "@/components/NotificationCenter";
 
 const Settings = () => {
   const navigate = useNavigate();
