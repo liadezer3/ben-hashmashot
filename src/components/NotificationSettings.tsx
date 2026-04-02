@@ -767,25 +767,6 @@ export const NotificationSettings = () => {
               />
             </div>
 
-            {/* SMS Auto Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 text-blue-500" />
-                <div className="flex-1">
-                  <Label htmlFor="sms-toggle" className="text-foreground cursor-pointer">
-                    התראות SMS אוטומטיות
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    💰 דורש הגדרת Twilio (בתשלום)
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="sms-toggle"
-                checked={settings.sms}
-                onCheckedChange={() => handleToggle("sms")}
-              />
-            </div>
 
             {/* Manual WhatsApp Share */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
