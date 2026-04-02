@@ -136,11 +136,6 @@ export const NextNotificationDisplay = ({ settings, timeSettings }: NextNotifica
               <Bell className="w-3 h-3" /> Push
             </span>
           )}
-          {settings.sms && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-xs text-secondary-foreground">
-              <MessageSquare className="w-3 h-3" /> SMS
-            </span>
-          )}
           {settings.whatsapp && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-xs text-secondary-foreground">
               <img src={whatsappIcon} alt="" className="w-3 h-3" /> WhatsApp
