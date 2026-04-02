@@ -1030,14 +1030,7 @@ serve(async (req) => {
         }
       }
 
-      // SMS
-      if (pref.sms_enabled && userPhone) {
-        const message = createSMSMessage(shabbatTimes, userCity);
-        const smsResult = await sendSMS(userPhone, message);
-        smsSent = smsResult.success;
-        smsError = smsResult.error;
-        if (smsSent) totalSMSSent++;
-      }
+      // SMS removed - no longer supported
 
       // WhatsApp
       if (pref.whatsapp_enabled && userPhone) {

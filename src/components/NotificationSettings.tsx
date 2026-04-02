@@ -186,7 +186,7 @@ export const NotificationSettings = () => {
         email: contactInfo.email,
         email_enabled: settings.email,
         whatsapp_enabled: settings.whatsapp,
-        sms_enabled: settings.sms,
+        sms_enabled: false,
         push_enabled: settings.push,
         morning_time: timeSettings.morningTime,
         hours_before_shabbat: timeSettings.hoursBeforeShabbat,
