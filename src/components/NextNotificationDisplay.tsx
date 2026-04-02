@@ -6,7 +6,7 @@ interface NextNotificationDisplayProps {
   settings: {
     email: boolean;
     whatsapp: boolean;
-    sms: boolean;
+    sms?: boolean;
     push: boolean;
   };
   timeSettings: {
