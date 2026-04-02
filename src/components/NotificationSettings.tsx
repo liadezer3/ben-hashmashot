@@ -77,7 +77,6 @@ export const NotificationSettings = () => {
   const [settings, setSettings] = useState({
     email: false,
     whatsapp: false,
-    sms: false,
     push: true,
   });
 
