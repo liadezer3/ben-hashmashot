@@ -145,7 +145,6 @@ export const NotificationSettings = () => {
       setSettings({
         email: data.email_enabled ?? false,
         whatsapp: data.whatsapp_enabled ?? false,
-        sms: data.sms_enabled ?? false,
         push: data.push_enabled ?? true,
       });
       setContactInfo({
