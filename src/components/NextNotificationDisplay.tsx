@@ -81,7 +81,7 @@ export const NextNotificationDisplay = ({ settings, timeSettings }: NextNotifica
   };
 
   // Check if any notification channel is enabled
-  const hasAnyChannelEnabled = settings.email || settings.whatsapp || settings.sms || settings.push;
+  const hasAnyChannelEnabled = settings.email || settings.whatsapp || settings.push;
 
   if (!hasAnyChannelEnabled) {
     return (
