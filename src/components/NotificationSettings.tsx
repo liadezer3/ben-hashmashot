@@ -302,45 +302,6 @@ export const NotificationSettings = () => {
     }
   };
 
-  const handleOpenSMS = async () => {
-    updateTestResult('sms', { status: 'sending' });
-    
-    try {
-      const message = await generateSMSMessage(userCity);
-      const encodedMessage = encodeURIComponent(message);
-      
-      // SMS URI scheme - works on mobile devices
-      if (contactInfo.phone) {
-        const cleanPhone = contactInfo.phone.replace(/[\s\-\+]/g, '');
-        window.open(`sms:${cleanPhone}?body=${encodedMessage}`, '_blank');
-      } else {
-        window.open(`sms:?body=${encodedMessage}`, '_blank');
-      }
-      
-      updateTestResult('sms', { 
-        status: 'success', 
-        message: 'SMS נפתח - לחץ שלח',
-        timestamp: new Date()
-      });
-
-      toast({
-        title: "נפתח SMS!",
-        description: "לחץ 'שלח' כדי לשלוח את ההודעה",
-      });
-    } catch (error: any) {
-      console.error('SMS error:', error);
-      updateTestResult('sms', { 
-        status: 'error', 
-        message: "לא הצלחנו לפתוח SMS",
-        timestamp: new Date()
-      });
-      toast({
-        title: "שגיאה",
-        description: "לא הצלחנו לפתוח SMS",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleShareWhatsApp = async () => {
     const message = await generateWhatsAppMessage(userCity);
