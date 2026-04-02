@@ -99,13 +99,11 @@ export const NotificationSettings = () => {
   const [testResults, setTestResults] = useState<{
     email: TestResult;
     whatsapp: TestResult;
-    sms: TestResult;
     push: TestResult;
     scheduled: TestResult;
   }>({
     email: { status: 'idle' },
     whatsapp: { status: 'idle' },
-    sms: { status: 'idle' },
     push: { status: 'idle' },
     scheduled: { status: 'idle' },
   });
