@@ -545,7 +545,7 @@ export const NotificationSettings = () => {
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              משמש לשליחת WhatsApp ו-SMS
+              משמש לשליחת WhatsApp
             </p>
           </div>
 
