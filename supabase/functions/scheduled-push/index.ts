@@ -180,98 +180,49 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   }
 }
 
-// ========== SMS (Twilio) ==========
-async function sendSMS(to: string, message: string): Promise<ChannelResult> {
-  try {
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromNumber = Deno.env.get('TWILIO_PHONE_FROM');
-
-    if (!accountSid || !authToken || !fromNumber) {
-      const error = 'Twilio SMS credentials not configured';
-      console.log(error);
-      return { success: false, error };
-    }
-
-    let formattedPhone = to.replace(/[\s\-]/g, '');
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
-    }
-
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: formattedPhone,
-          From: fromNumber,
-          Body: message,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const error = `Twilio SMS error (${response.status}): ${errorText}`;
-      console.error(error);
-      return { success: false, error };
-    }
-
-    console.log(`SMS sent successfully to ${to}`);
-    return { success: true, error: null };
-  } catch (error: any) {
-    const errorMessage = `Error sending SMS: ${error?.message || error}`;
-    console.error(errorMessage);
-    return { success: false, error: errorMessage };
-  }
-}
-
-// ========== WHATSAPP (Twilio) ==========
+// ========== WHATSAPP (Meta Cloud API) ==========
 async function sendWhatsApp(to: string, message: string): Promise<ChannelResult> {
   try {
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
+    const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+    const accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
 
-    if (!accountSid || !authToken || !fromWhatsApp) {
-      const error = 'Twilio WhatsApp credentials not configured';
+    if (!phoneNumberId || !accessToken) {
+      const error = 'Meta WhatsApp credentials not configured (WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_ACCESS_TOKEN)';
       console.log(error);
       return { success: false, error };
     }
 
-    let formattedPhone = to.replace(/[\s\-]/g, '');
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
+    let formattedPhone = to.replace(/[\s\-\+]/g, '');
+    // Ensure phone starts with country code (no leading +)
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '972' + formattedPhone.substring(1);
     }
 
     const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
       {
         method: 'POST',
         headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          To: `whatsapp:${formattedPhone}`,
-          From: fromWhatsApp.startsWith('whatsapp:') ? fromWhatsApp : `whatsapp:${fromWhatsApp}`,
-          Body: message,
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: formattedPhone,
+          type: 'text',
+          text: { body: message }
         }),
       }
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      const error = `Twilio WhatsApp error (${response.status}): ${errorText}`;
+      const errorData = await response.text();
+      const error = `Meta WhatsApp error (${response.status}): ${errorData}`;
       console.error(error);
       return { success: false, error };
     }
 
-    console.log(`WhatsApp sent successfully to ${to}`);
+    console.log(`WhatsApp sent successfully to ${to} via Meta API`);
     return { success: true, error: null };
   } catch (error: any) {
     const errorMessage = `Error sending WhatsApp: ${error?.message || error}`;
