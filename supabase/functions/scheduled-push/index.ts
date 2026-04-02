@@ -560,12 +560,7 @@ function formatHolidays(holidays: HolidayInfo[]): string {
   return lines.join('\n');
 }
 
-function createSMSMessage(shabbatTimes: ShabbatTimes | null, city: string): string {
-  if (shabbatTimes) {
-    return `שבת שלום! פרשת ${shabbatTimes.parasha} - הדלקת נרות: ${shabbatTimes.candle_lighting_time}, צאת שבת: ${shabbatTimes.havdalah_time}. ${APP_URL}`;
-  }
-  return `שבת שלום! בדוק זמני שבת: ${APP_URL}`;
-}
+// SMS removed - using Meta WhatsApp Cloud API instead
 
 function createWhatsAppMessage(shabbatTimes: ShabbatTimes | null, city: string, holidays: HolidayInfo[] = []): string {
   const holidayText = formatHolidays(holidays);
