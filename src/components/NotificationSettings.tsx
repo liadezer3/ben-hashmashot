@@ -17,39 +17,7 @@ import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { WebPushSettings } from "./WebPushSettings";
 import { NextNotificationDisplay } from "./NextNotificationDisplay";
 
-// Generate SMS message with Shabbat times
-const generateSMSMessage = async (city: string = "Jerusalem"): Promise<string> => {
-  try {
-    const response = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&M=on&lg=he`
-    );
-    
-    if (response.ok) {
-      const data = await response.json();
-      let candleLighting = "";
-      let havdalah = "";
-      let parasha = "";
-      
-      for (const item of data.items || []) {
-        if (item.category === "candles") {
-          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
-          candleLighting = timeMatch ? timeMatch[1] : "";
-        } else if (item.category === "havdalah") {
-          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
-          havdalah = timeMatch ? timeMatch[1] : "";
-        } else if (item.category === "parashat") {
-          parasha = item.hebrew || item.title || "";
-        }
-      }
-      
-      return `שבת שלום! פרשת ${parasha} - הדלקת נרות: ${candleLighting}, צאת שבת: ${havdalah}. בין השמשות: https://ben-hashmashot.lovable.app`;
-    }
-  } catch (error) {
-    console.error('Error fetching Shabbat times for SMS:', error);
-  }
-  
-  return `שבת שלום! בדוק זמני שבת: https://ben-hashmashot.lovable.app`;
-};
+// SMS removed - using Meta WhatsApp Cloud API instead
 
 type TestStatus = 'idle' | 'sending' | 'success' | 'error';
 
