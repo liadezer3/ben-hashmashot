@@ -180,98 +180,49 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   }
 }
 
-// ========== SMS (Twilio) ==========
-async function sendSMS(to: string, message: string): Promise<ChannelResult> {
-  try {
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromNumber = Deno.env.get('TWILIO_PHONE_FROM');
-
-    if (!accountSid || !authToken || !fromNumber) {
-      const error = 'Twilio SMS credentials not configured';
-      console.log(error);
-      return { success: false, error };
-    }
-
-    let formattedPhone = to.replace(/[\s\-]/g, '');
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
-    }
-
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: formattedPhone,
-          From: fromNumber,
-          Body: message,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const error = `Twilio SMS error (${response.status}): ${errorText}`;
-      console.error(error);
-      return { success: false, error };
-    }
-
-    console.log(`SMS sent successfully to ${to}`);
-    return { success: true, error: null };
-  } catch (error: any) {
-    const errorMessage = `Error sending SMS: ${error?.message || error}`;
-    console.error(errorMessage);
-    return { success: false, error: errorMessage };
-  }
-}
-
-// ========== WHATSAPP (Twilio) ==========
+// ========== WHATSAPP (Meta Cloud API) ==========
 async function sendWhatsApp(to: string, message: string): Promise<ChannelResult> {
   try {
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const fromWhatsApp = Deno.env.get('TWILIO_WHATSAPP_FROM');
+    const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
+    const accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
 
-    if (!accountSid || !authToken || !fromWhatsApp) {
-      const error = 'Twilio WhatsApp credentials not configured';
+    if (!phoneNumberId || !accessToken) {
+      const error = 'Meta WhatsApp credentials not configured (WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_ACCESS_TOKEN)';
       console.log(error);
       return { success: false, error };
     }
 
-    let formattedPhone = to.replace(/[\s\-]/g, '');
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
+    let formattedPhone = to.replace(/[\s\-\+]/g, '');
+    // Ensure phone starts with country code (no leading +)
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '972' + formattedPhone.substring(1);
     }
 
     const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
       {
         method: 'POST',
         headers: {
-          'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          To: `whatsapp:${formattedPhone}`,
-          From: fromWhatsApp.startsWith('whatsapp:') ? fromWhatsApp : `whatsapp:${fromWhatsApp}`,
-          Body: message,
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: formattedPhone,
+          type: 'text',
+          text: { body: message }
         }),
       }
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      const error = `Twilio WhatsApp error (${response.status}): ${errorText}`;
+      const errorData = await response.text();
+      const error = `Meta WhatsApp error (${response.status}): ${errorData}`;
       console.error(error);
       return { success: false, error };
     }
 
-    console.log(`WhatsApp sent successfully to ${to}`);
+    console.log(`WhatsApp sent successfully to ${to} via Meta API`);
     return { success: true, error: null };
   } catch (error: any) {
     const errorMessage = `Error sending WhatsApp: ${error?.message || error}`;
@@ -609,12 +560,7 @@ function formatHolidays(holidays: HolidayInfo[]): string {
   return lines.join('\n');
 }
 
-function createSMSMessage(shabbatTimes: ShabbatTimes | null, city: string): string {
-  if (shabbatTimes) {
-    return `שבת שלום! פרשת ${shabbatTimes.parasha} - הדלקת נרות: ${shabbatTimes.candle_lighting_time}, צאת שבת: ${shabbatTimes.havdalah_time}. ${APP_URL}`;
-  }
-  return `שבת שלום! בדוק זמני שבת: ${APP_URL}`;
-}
+// SMS removed - using Meta WhatsApp Cloud API instead
 
 function createWhatsAppMessage(shabbatTimes: ShabbatTimes | null, city: string, holidays: HolidayInfo[] = []): string {
   const holidayText = formatHolidays(holidays);
@@ -790,13 +736,7 @@ serve(async (req) => {
         }
       }
 
-      // Send test SMS if enabled
-      if (prefs?.sms_enabled && prefs?.phone) {
-        const message = createSMSMessage(shabbatTimes, city);
-        const smsResult = await sendSMS(prefs.phone, message);
-        smsSent = smsResult.success;
-        smsError = smsResult.error;
-      }
+      // SMS removed - no longer supported
 
       // Send test WhatsApp if enabled
       if (prefs?.whatsapp_enabled && prefs?.phone) {
@@ -883,13 +823,7 @@ serve(async (req) => {
         }
       }
 
-      // Send SMS if enabled
-      if (prefs?.sms_enabled && prefs?.phone) {
-        const message = createSMSMessage(shabbatTimes, city);
-        const smsResult = await sendSMS(prefs.phone, message);
-        smsSent = smsResult.success;
-        smsError = smsResult.error;
-      }
+      // SMS removed - no longer supported
 
       // Send WhatsApp if enabled
       if (prefs?.whatsapp_enabled && prefs?.phone) {
@@ -1096,14 +1030,7 @@ serve(async (req) => {
         }
       }
 
-      // SMS
-      if (pref.sms_enabled && userPhone) {
-        const message = createSMSMessage(shabbatTimes, userCity);
-        const smsResult = await sendSMS(userPhone, message);
-        smsSent = smsResult.success;
-        smsError = smsResult.error;
-        if (smsSent) totalSMSSent++;
-      }
+      // SMS removed - no longer supported
 
       // WhatsApp
       if (pref.whatsapp_enabled && userPhone) {

@@ -6,7 +6,7 @@ interface NextNotificationDisplayProps {
   settings: {
     email: boolean;
     whatsapp: boolean;
-    sms: boolean;
+    sms?: boolean;
     push: boolean;
   };
   timeSettings: {
@@ -81,7 +81,7 @@ export const NextNotificationDisplay = ({ settings, timeSettings }: NextNotifica
   };
 
   // Check if any notification channel is enabled
-  const hasAnyChannelEnabled = settings.email || settings.whatsapp || settings.sms || settings.push;
+  const hasAnyChannelEnabled = settings.email || settings.whatsapp || settings.push;
 
   if (!hasAnyChannelEnabled) {
     return (
@@ -134,11 +134,6 @@ export const NextNotificationDisplay = ({ settings, timeSettings }: NextNotifica
           {settings.push && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-xs text-primary">
               <Bell className="w-3 h-3" /> Push
-            </span>
-          )}
-          {settings.sms && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-xs text-secondary-foreground">
-              <MessageSquare className="w-3 h-3" /> SMS
             </span>
           )}
           {settings.whatsapp && (

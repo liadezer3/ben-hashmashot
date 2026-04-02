@@ -17,39 +17,7 @@ import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { WebPushSettings } from "./WebPushSettings";
 import { NextNotificationDisplay } from "./NextNotificationDisplay";
 
-// Generate SMS message with Shabbat times
-const generateSMSMessage = async (city: string = "Jerusalem"): Promise<string> => {
-  try {
-    const response = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&M=on&lg=he`
-    );
-    
-    if (response.ok) {
-      const data = await response.json();
-      let candleLighting = "";
-      let havdalah = "";
-      let parasha = "";
-      
-      for (const item of data.items || []) {
-        if (item.category === "candles") {
-          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
-          candleLighting = timeMatch ? timeMatch[1] : "";
-        } else if (item.category === "havdalah") {
-          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
-          havdalah = timeMatch ? timeMatch[1] : "";
-        } else if (item.category === "parashat") {
-          parasha = item.hebrew || item.title || "";
-        }
-      }
-      
-      return `שבת שלום! פרשת ${parasha} - הדלקת נרות: ${candleLighting}, צאת שבת: ${havdalah}. בין השמשות: https://ben-hashmashot.lovable.app`;
-    }
-  } catch (error) {
-    console.error('Error fetching Shabbat times for SMS:', error);
-  }
-  
-  return `שבת שלום! בדוק זמני שבת: https://ben-hashmashot.lovable.app`;
-};
+// SMS removed - using Meta WhatsApp Cloud API instead
 
 type TestStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -109,7 +77,6 @@ export const NotificationSettings = () => {
   const [settings, setSettings] = useState({
     email: false,
     whatsapp: false,
-    sms: false,
     push: true,
   });
 
@@ -132,13 +99,11 @@ export const NotificationSettings = () => {
   const [testResults, setTestResults] = useState<{
     email: TestResult;
     whatsapp: TestResult;
-    sms: TestResult;
     push: TestResult;
     scheduled: TestResult;
   }>({
     email: { status: 'idle' },
     whatsapp: { status: 'idle' },
-    sms: { status: 'idle' },
     push: { status: 'idle' },
     scheduled: { status: 'idle' },
   });
@@ -180,7 +145,6 @@ export const NotificationSettings = () => {
       setSettings({
         email: data.email_enabled ?? false,
         whatsapp: data.whatsapp_enabled ?? false,
-        sms: data.sms_enabled ?? false,
         push: data.push_enabled ?? true,
       });
       setContactInfo({
@@ -222,7 +186,7 @@ export const NotificationSettings = () => {
         email: contactInfo.email,
         email_enabled: settings.email,
         whatsapp_enabled: settings.whatsapp,
-        sms_enabled: settings.sms,
+        sms_enabled: false,
         push_enabled: settings.push,
         morning_time: timeSettings.morningTime,
         hours_before_shabbat: timeSettings.hoursBeforeShabbat,
@@ -338,45 +302,6 @@ export const NotificationSettings = () => {
     }
   };
 
-  const handleOpenSMS = async () => {
-    updateTestResult('sms', { status: 'sending' });
-    
-    try {
-      const message = await generateSMSMessage(userCity);
-      const encodedMessage = encodeURIComponent(message);
-      
-      // SMS URI scheme - works on mobile devices
-      if (contactInfo.phone) {
-        const cleanPhone = contactInfo.phone.replace(/[\s\-\+]/g, '');
-        window.open(`sms:${cleanPhone}?body=${encodedMessage}`, '_blank');
-      } else {
-        window.open(`sms:?body=${encodedMessage}`, '_blank');
-      }
-      
-      updateTestResult('sms', { 
-        status: 'success', 
-        message: 'SMS נפתח - לחץ שלח',
-        timestamp: new Date()
-      });
-
-      toast({
-        title: "נפתח SMS!",
-        description: "לחץ 'שלח' כדי לשלוח את ההודעה",
-      });
-    } catch (error: any) {
-      console.error('SMS error:', error);
-      updateTestResult('sms', { 
-        status: 'error', 
-        message: "לא הצלחנו לפתוח SMS",
-        timestamp: new Date()
-      });
-      toast({
-        title: "שגיאה",
-        description: "לא הצלחנו לפתוח SMS",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleShareWhatsApp = async () => {
     const message = await generateWhatsAppMessage(userCity);
@@ -599,33 +524,6 @@ export const NotificationSettings = () => {
               </div>
             </div>
 
-            {/* SMS Test */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 text-blue-500" />
-                <div>
-                  <span className="text-sm font-medium">SMS</span>
-                  {testResults.sms.status !== 'idle' && (
-                    <p className="text-xs text-muted-foreground">
-                      {testResults.sms.message} {testResults.sms.timestamp && `(${formatTimestamp(testResults.sms.timestamp)})`}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">💡 חינמי - נפתח אפליקציית SMS</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(testResults.sms.status)}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenSMS}
-                  disabled={testResults.sms.status === 'sending'}
-                  className="border-blue-500 hover:bg-blue-500/10"
-                >
-                  {testResults.sms.status === 'sending' ? 'פותח...' : 'בדיקה'}
-                </Button>
-              </div>
-            </div>
 
           </div>
         </div>
@@ -647,7 +545,7 @@ export const NotificationSettings = () => {
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              משמש לשליחת WhatsApp ו-SMS
+              משמש לשליחת WhatsApp
             </p>
           </div>
 
@@ -858,7 +756,7 @@ export const NotificationSettings = () => {
                     התראות WhatsApp אוטומטיות
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    💰 דורש הגדרת Twilio (בתשלום)
+                    📱 שליחה אוטומטית דרך Meta WhatsApp Cloud API
                   </p>
                 </div>
               </div>
@@ -869,25 +767,6 @@ export const NotificationSettings = () => {
               />
             </div>
 
-            {/* SMS Auto Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 text-blue-500" />
-                <div className="flex-1">
-                  <Label htmlFor="sms-toggle" className="text-foreground cursor-pointer">
-                    התראות SMS אוטומטיות
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    💰 דורש הגדרת Twilio (בתשלום)
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="sms-toggle"
-                checked={settings.sms}
-                onCheckedChange={() => handleToggle("sms")}
-              />
-            </div>
 
             {/* Manual WhatsApp Share */}
             <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
