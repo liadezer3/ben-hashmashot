@@ -756,7 +756,7 @@ export const NotificationSettings = () => {
                     התראות WhatsApp אוטומטיות
                   </Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    💰 דורש הגדרת Twilio (בתשלום)
+                    📱 שליחה אוטומטית דרך Meta WhatsApp Cloud API
                   </p>
                 </div>
               </div>
