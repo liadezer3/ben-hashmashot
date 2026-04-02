@@ -524,33 +524,6 @@ export const NotificationSettings = () => {
               </div>
             </div>
 
-            {/* SMS Test */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 text-blue-500" />
-                <div>
-                  <span className="text-sm font-medium">SMS</span>
-                  {testResults.sms.status !== 'idle' && (
-                    <p className="text-xs text-muted-foreground">
-                      {testResults.sms.message} {testResults.sms.timestamp && `(${formatTimestamp(testResults.sms.timestamp)})`}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">💡 חינמי - נפתח אפליקציית SMS</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(testResults.sms.status)}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenSMS}
-                  disabled={testResults.sms.status === 'sending'}
-                  className="border-blue-500 hover:bg-blue-500/10"
-                >
-                  {testResults.sms.status === 'sending' ? 'פותח...' : 'בדיקה'}
-                </Button>
-              </div>
-            </div>
 
           </div>
         </div>
