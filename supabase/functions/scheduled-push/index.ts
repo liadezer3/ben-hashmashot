@@ -823,13 +823,7 @@ serve(async (req) => {
         }
       }
 
-      // Send SMS if enabled
-      if (prefs?.sms_enabled && prefs?.phone) {
-        const message = createSMSMessage(shabbatTimes, city);
-        const smsResult = await sendSMS(prefs.phone, message);
-        smsSent = smsResult.success;
-        smsError = smsResult.error;
-      }
+      // SMS removed - no longer supported
 
       // Send WhatsApp if enabled
       if (prefs?.whatsapp_enabled && prefs?.phone) {
