@@ -26,7 +26,9 @@ import {
   FileText,
   ShoppingCart,
   Megaphone,
-  Mail
+  Mail,
+  Flame,
+  CalendarHeart
 } from "lucide-react";
 
 // Import all feature components
@@ -55,6 +57,9 @@ import { AIRecipes } from "@/components/AIRecipes";
 import { ShabbatSummary } from "@/components/ShabbatSummary";
 import { FamilyShoppingLists } from "@/components/FamilyShoppingLists";
 import NotificationCenter from "@/components/NotificationCenter";
+import OmerCounter from "@/components/OmerCounter";
+import CandleLightingTracker from "@/components/CandleLightingTracker";
+import FamilyEventsCalendar from "@/components/FamilyEventsCalendar";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -176,6 +181,18 @@ const Settings = () => {
               <Megaphone className="w-4 h-4" />
               <span className="hidden sm:inline">מרכז התראות</span>
             </TabsTrigger>
+            <TabsTrigger value="omer" className="gap-1 text-sm">
+              <Flame className="w-4 h-4" />
+              <span className="hidden sm:inline">ספירת העומר</span>
+            </TabsTrigger>
+            <TabsTrigger value="candles" className="gap-1 text-sm">
+              <Flame className="w-4 h-4" />
+              <span className="hidden sm:inline">הדלקת נרות</span>
+            </TabsTrigger>
+            <TabsTrigger value="family-events" className="gap-1 text-sm">
+              <CalendarHeart className="w-4 h-4" />
+              <span className="hidden sm:inline">אירועים</span>
+            </TabsTrigger>
             <TabsTrigger value="more" className="gap-1 text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">עוד</span>
@@ -246,6 +263,18 @@ const Settings = () => {
 
           <TabsContent value="notification-center" className="space-y-6">
             <NotificationCenter />
+          </TabsContent>
+
+          <TabsContent value="omer" className="space-y-6">
+            <OmerCounter userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="candles" className="space-y-6">
+            <CandleLightingTracker userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="family-events" className="space-y-6">
+            <FamilyEventsCalendar userId={userId} />
           </TabsContent>
 
           <TabsContent value="more" className="space-y-6">
