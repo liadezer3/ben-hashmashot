@@ -156,6 +156,16 @@ const Index = () => {
           <ParshaContent />
         )}
 
+        {/* Omer Counter - during Omer period */}
+        {showReligiousContent && (
+          <OmerCounter userId={userId} />
+        )}
+
+        {/* Candle Lighting Tracker */}
+        {showReligiousContent && (
+          <CandleLightingTracker userId={userId} />
+        )}
+
         {/* Quick Links to Other Features */}
         <Card className="p-4">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
