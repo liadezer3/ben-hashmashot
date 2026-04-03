@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShabbatTimes } from "@/components/ShabbatTimes";
 import { Header } from "@/components/Header";
 import ParshaContent from "@/components/ParshaContent";
+import OmerCounter from "@/components/OmerCounter";
+import CandleLightingTracker from "@/components/CandleLightingTracker";
 import ShabbatTaskList from "@/components/ShabbatTaskList";
 import { HebrewDateDisplay } from "@/components/HebrewDateDisplay";
 import { PutDownPhoneTimer } from "@/components/PutDownPhoneTimer";
