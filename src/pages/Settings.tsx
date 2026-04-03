@@ -57,6 +57,9 @@ import { AIRecipes } from "@/components/AIRecipes";
 import { ShabbatSummary } from "@/components/ShabbatSummary";
 import { FamilyShoppingLists } from "@/components/FamilyShoppingLists";
 import NotificationCenter from "@/components/NotificationCenter";
+import OmerCounter from "@/components/OmerCounter";
+import CandleLightingTracker from "@/components/CandleLightingTracker";
+import FamilyEventsCalendar from "@/components/FamilyEventsCalendar";
 
 const Settings = () => {
   const navigate = useNavigate();
