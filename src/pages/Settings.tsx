@@ -26,7 +26,9 @@ import {
   FileText,
   ShoppingCart,
   Megaphone,
-  Mail
+  Mail,
+  Flame,
+  CalendarHeart
 } from "lucide-react";
 
 // Import all feature components
