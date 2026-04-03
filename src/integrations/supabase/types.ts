@@ -86,6 +86,36 @@ export type Database = {
         }
         Relationships: []
       }
+      candle_lighting_log: {
+        Row: {
+          blessing_said: boolean | null
+          created_at: string
+          id: string
+          lit_at: string | null
+          notes: string | null
+          shabbat_date: string
+          user_id: string
+        }
+        Insert: {
+          blessing_said?: boolean | null
+          created_at?: string
+          id?: string
+          lit_at?: string | null
+          notes?: string | null
+          shabbat_date: string
+          user_id: string
+        }
+        Update: {
+          blessing_said?: boolean | null
+          created_at?: string
+          id?: string
+          lit_at?: string | null
+          notes?: string | null
+          shabbat_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_post_likes: {
         Row: {
           created_at: string
@@ -177,6 +207,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      family_events: {
+        Row: {
+          created_at: string
+          event_date: string
+          event_type: string
+          group_id: string | null
+          hebrew_date: string | null
+          id: string
+          is_recurring: boolean | null
+          notes: string | null
+          recurrence_type: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_date: string
+          event_type?: string
+          group_id?: string | null
+          hebrew_date?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          notes?: string | null
+          recurrence_type?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_date?: string
+          event_type?: string
+          group_id?: string | null
+          hebrew_date?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          notes?: string | null
+          recurrence_type?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "family_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       family_group_members: {
         Row: {
@@ -452,6 +535,33 @@ export type Database = {
           updated_at?: string
           user_id?: string
           whatsapp_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      omer_counts: {
+        Row: {
+          counted_at: string
+          created_at: string
+          day_number: number
+          id: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          counted_at?: string
+          created_at?: string
+          day_number: number
+          id?: string
+          user_id: string
+          year?: number
+        }
+        Update: {
+          counted_at?: string
+          created_at?: string
+          day_number?: number
+          id?: string
+          user_id?: string
+          year?: number
         }
         Relationships: []
       }
