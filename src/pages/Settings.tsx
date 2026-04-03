@@ -265,6 +265,18 @@ const Settings = () => {
             <NotificationCenter />
           </TabsContent>
 
+          <TabsContent value="omer" className="space-y-6">
+            <OmerCounter userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="candles" className="space-y-6">
+            <CandleLightingTracker userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="family-events" className="space-y-6">
+            <FamilyEventsCalendar userId={userId} />
+          </TabsContent>
+
           <TabsContent value="more" className="space-y-6">
             <AppReviews />
             <AppPromotion />
