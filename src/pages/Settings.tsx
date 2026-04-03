@@ -181,6 +181,18 @@ const Settings = () => {
               <Megaphone className="w-4 h-4" />
               <span className="hidden sm:inline">מרכז התראות</span>
             </TabsTrigger>
+            <TabsTrigger value="omer" className="gap-1 text-sm">
+              <Flame className="w-4 h-4" />
+              <span className="hidden sm:inline">ספירת העומר</span>
+            </TabsTrigger>
+            <TabsTrigger value="candles" className="gap-1 text-sm">
+              <Flame className="w-4 h-4" />
+              <span className="hidden sm:inline">הדלקת נרות</span>
+            </TabsTrigger>
+            <TabsTrigger value="family-events" className="gap-1 text-sm">
+              <CalendarHeart className="w-4 h-4" />
+              <span className="hidden sm:inline">אירועים</span>
+            </TabsTrigger>
             <TabsTrigger value="more" className="gap-1 text-sm">
               <Star className="w-4 h-4" />
               <span className="hidden sm:inline">עוד</span>
