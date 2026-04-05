@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import Widget from "./pages/Widget";
 import Dashboard from "./pages/Dashboard";
 import InvitePage from "./pages/InvitePage";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient();
 
