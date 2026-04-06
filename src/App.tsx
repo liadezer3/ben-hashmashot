@@ -16,7 +16,9 @@ import InvitePage from "./pages/InvitePage";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
