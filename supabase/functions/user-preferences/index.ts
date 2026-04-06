@@ -107,8 +107,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // GET — read preferences (auto-create if missing)
-    if (req.method === "GET") {
+    // Parse body - support both GET-style (no body / empty body) and PUT-style (with updates)
+    let body: Record<string, unknown> = {};
+    try {
+      const text = await req.text();
+      if (text) {
+        body = JSON.parse(text);
+      }
+    } catch {
+      // No body or invalid JSON — treat as read
+    }
+
+    const action = body.action as string | undefined;
+
+    // READ preferences (action=read or no body/action)
+    if (!action || action === "read") {
       let { data, error } = await supabase
         .from("user_preferences")
         .select("*")
@@ -131,17 +144,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // PUT — update preferences
-    if (req.method === "PUT") {
-      const body = await req.json();
-      
-      // Remove fields that shouldn't be updated directly
-      delete body.id;
-      delete body.user_id;
-      delete body.created_at;
-      delete body.updated_at;
+    // UPDATE preferences (action=update)
+    if (action === "update") {
+      const updates = { ...body };
+      delete updates.action;
+      delete updates.id;
+      delete updates.user_id;
+      delete updates.created_at;
+      delete updates.updated_at;
 
-      const validationError = validateUpdate(body);
+      const validationError = validateUpdate(updates);
       if (validationError) {
         return new Response(JSON.stringify({ error: validationError }), {
           status: 400,
@@ -149,10 +161,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Upsert: create if not exists, update if exists
       const { data, error } = await supabase
         .from("user_preferences")
-        .upsert({ ...body, user_id: user.id }, { onConflict: "user_id" })
+        .upsert({ ...updates, user_id: user.id }, { onConflict: "user_id" })
         .select()
         .single();
 
@@ -163,8 +174,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
+    return new Response(JSON.stringify({ error: "Invalid action" }), {
+      status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
