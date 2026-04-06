@@ -46,11 +46,9 @@ export const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
         observance_level: observance,
         channels,
       });
-      localStorage.setItem("onboarding_complete", "true");
       onComplete();
     } catch {
       // Still complete onboarding even if save fails
-      localStorage.setItem("onboarding_complete", "true");
       onComplete();
     }
   };
