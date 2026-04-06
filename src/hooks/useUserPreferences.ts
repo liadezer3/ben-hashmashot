@@ -63,7 +63,7 @@ export function useUserPreferences() {
       if (!session) throw new Error("Not authenticated");
 
       const res = await supabase.functions.invoke("user-preferences", {
-        method: "GET",
+        body: { action: "read" },
       });
       if (res.error) throw res.error;
       return res.data.data;
@@ -73,8 +73,7 @@ export function useUserPreferences() {
   const mutation = useMutation({
     mutationFn: async (updates: UserPreferencesUpdate) => {
       const res = await supabase.functions.invoke("user-preferences", {
-        method: "PUT",
-        body: updates,
+        body: { action: "update", ...updates },
       });
       if (res.error) throw res.error;
       return res.data.data as UserPreferences;
