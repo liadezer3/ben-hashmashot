@@ -68,8 +68,13 @@ const Index = () => {
         if (profile?.city) {
           setUserCity(profile.city);
         }
-        // Check if onboarding needed
-        if (!localStorage.getItem("onboarding_complete")) {
+        // Check if onboarding needed (per-user in DB)
+        const { data: prefs } = await supabase
+          .from('user_preferences')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (!prefs) {
           setShowOnboarding(true);
         }
         setLoading(false);
