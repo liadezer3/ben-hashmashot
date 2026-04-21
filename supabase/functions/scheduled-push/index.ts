@@ -254,7 +254,85 @@ async function sendWhatsApp(to: string, message: string): Promise<ChannelResult>
   }
 }
 
-// ========== WEB PUSH ==========
+// ========== SMS (Twilio) ==========
+async function sendSMS(to: string, message: string): Promise<ChannelResult> {
+  try {
+    const sid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const token = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const from = Deno.env.get('TWILIO_PHONE_FROM');
+    if (!sid || !token || !from) {
+      const error = 'Twilio SMS credentials not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_FROM)';
+      console.log(error);
+      return { success: false, error };
+    }
+
+    let formatted = to.replace(/[\s\-]/g, '');
+    if (!formatted.startsWith('+')) {
+      if (formatted.startsWith('0')) formatted = '+972' + formatted.substring(1);
+      else if (formatted.startsWith('972')) formatted = '+' + formatted;
+      else formatted = '+' + formatted;
+    }
+
+    const auth = btoa(`${sid}:${token}`);
+    const body = new URLSearchParams({ To: formatted, From: from, Body: message });
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      const error = `Twilio SMS error (${res.status}): ${errText}`;
+      console.error(error);
+      return { success: false, error };
+    }
+    console.log(`SMS sent successfully to ${formatted}`);
+    return { success: true, error: null };
+  } catch (error: any) {
+    const msg = `Error sending SMS: ${error?.message || error}`;
+    console.error(msg);
+    return { success: false, error: msg };
+  }
+}
+
+// ========== TELEGRAM (Bot API) ==========
+async function sendTelegram(chatId: string, message: string): Promise<ChannelResult> {
+  try {
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    if (!botToken) {
+      const error = 'TELEGRAM_BOT_TOKEN not configured';
+      console.log(error);
+      return { success: false, error };
+    }
+
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        disable_web_page_preview: false,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      const error = `Telegram error (${res.status}): ${JSON.stringify(data)}`;
+      console.error(error);
+      return { success: false, error };
+    }
+    console.log(`Telegram sent successfully to chat ${chatId}`);
+    return { success: true, error: null };
+  } catch (error: any) {
+    const msg = `Error sending Telegram: ${error?.message || error}`;
+    console.error(msg);
+    return { success: false, error: msg };
+  }
+}
+
+
 function base64UrlEncode(data: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < data.length; i++) {
