@@ -29,6 +29,10 @@ interface NotificationPreference {
   email_enabled: boolean | null;
   sms_enabled: boolean | null;
   whatsapp_enabled: boolean | null;
+  whatsapp_frequency: string | null;
+  whatsapp_morning_time: string | null;
+  whatsapp_days_before_shabbat: number | null;
+  whatsapp_reminder_time: string | null;
 }
 
 interface Profile {
@@ -880,10 +884,10 @@ serve(async (req) => {
     
     console.log(`Date check - Is Friday: ${isFriday}, Is Holiday Eve: ${isHolidayEve}${holidayName ? ` (${holidayName})` : ''}`);
 
-    // Get all users with any notification enabled
+    // Get all users with any notification enabled (including WhatsApp-specific frequency fields)
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, sms_enabled, whatsapp_enabled');
+      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_frequency, whatsapp_morning_time, whatsapp_days_before_shabbat, whatsapp_reminder_time');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
