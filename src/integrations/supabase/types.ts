@@ -520,14 +520,32 @@ export type Database = {
           custom_message: string | null
           days_before_shabbat: number | null
           email: string | null
+          email_days_before_shabbat: number | null
           email_enabled: boolean | null
+          email_frequency: string
+          email_morning_time: string | null
+          email_reminder_time: string | null
           hours_before_shabbat: number | null
           id: string
           morning_time: string | null
           phone: string | null
+          push_days_before_shabbat: number | null
           push_enabled: boolean | null
+          push_frequency: string
+          push_morning_time: string | null
+          push_reminder_time: string | null
           shabbat_reminder_time: string | null
+          sms_days_before_shabbat: number | null
           sms_enabled: boolean | null
+          sms_frequency: string
+          sms_morning_time: string | null
+          sms_reminder_time: string | null
+          telegram_chat_id: string | null
+          telegram_days_before_shabbat: number | null
+          telegram_enabled: boolean | null
+          telegram_frequency: string
+          telegram_morning_time: string | null
+          telegram_reminder_time: string | null
           updated_at: string
           user_id: string
           whatsapp_days_before_shabbat: number | null
@@ -541,14 +559,32 @@ export type Database = {
           custom_message?: string | null
           days_before_shabbat?: number | null
           email?: string | null
+          email_days_before_shabbat?: number | null
           email_enabled?: boolean | null
+          email_frequency?: string
+          email_morning_time?: string | null
+          email_reminder_time?: string | null
           hours_before_shabbat?: number | null
           id?: string
           morning_time?: string | null
           phone?: string | null
+          push_days_before_shabbat?: number | null
           push_enabled?: boolean | null
+          push_frequency?: string
+          push_morning_time?: string | null
+          push_reminder_time?: string | null
           shabbat_reminder_time?: string | null
+          sms_days_before_shabbat?: number | null
           sms_enabled?: boolean | null
+          sms_frequency?: string
+          sms_morning_time?: string | null
+          sms_reminder_time?: string | null
+          telegram_chat_id?: string | null
+          telegram_days_before_shabbat?: number | null
+          telegram_enabled?: boolean | null
+          telegram_frequency?: string
+          telegram_morning_time?: string | null
+          telegram_reminder_time?: string | null
           updated_at?: string
           user_id: string
           whatsapp_days_before_shabbat?: number | null
@@ -562,14 +598,32 @@ export type Database = {
           custom_message?: string | null
           days_before_shabbat?: number | null
           email?: string | null
+          email_days_before_shabbat?: number | null
           email_enabled?: boolean | null
+          email_frequency?: string
+          email_morning_time?: string | null
+          email_reminder_time?: string | null
           hours_before_shabbat?: number | null
           id?: string
           morning_time?: string | null
           phone?: string | null
+          push_days_before_shabbat?: number | null
           push_enabled?: boolean | null
+          push_frequency?: string
+          push_morning_time?: string | null
+          push_reminder_time?: string | null
           shabbat_reminder_time?: string | null
+          sms_days_before_shabbat?: number | null
           sms_enabled?: boolean | null
+          sms_frequency?: string
+          sms_morning_time?: string | null
+          sms_reminder_time?: string | null
+          telegram_chat_id?: string | null
+          telegram_days_before_shabbat?: number | null
+          telegram_enabled?: boolean | null
+          telegram_frequency?: string
+          telegram_morning_time?: string | null
+          telegram_reminder_time?: string | null
           updated_at?: string
           user_id?: string
           whatsapp_days_before_shabbat?: number | null
