@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { ShabbatTimes } from "@/components/ShabbatTimes";
 import { Header } from "@/components/Header";
@@ -37,6 +38,7 @@ import {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { showReligiousContent, isSecular } = useObservance();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -105,13 +107,13 @@ const Index = () => {
 
   // Quick links to other features
   const quickLinks = [
-    { icon: BarChart3, label: "דשבורד", href: "/dashboard", showAlways: true },
-    { icon: Smartphone, label: "Widget אופליין", href: "/widget", showAlways: true },
-    { icon: Bell, label: "התראות", href: "/settings?tab=notifications", showAlways: true },
-    { icon: MapPin, label: "מיקומים", href: "/settings?tab=locations", showAlways: true },
-    { icon: Users, label: "משפחה", href: "/settings?tab=family", showAlways: true },
-    { icon: Home, label: "בית חכם", href: "/settings?tab=smart-home", showAlways: true },
-    { icon: BookOpen, label: "תוכן תורני", href: "/settings?tab=torah", showAlways: !isSecular },
+    { icon: BarChart3, label: t("features.dashboard"), href: "/dashboard", showAlways: true },
+    { icon: Smartphone, label: t("features.widget"), href: "/widget", showAlways: true },
+    { icon: Bell, label: t("features.notifications"), href: "/settings?tab=notifications", showAlways: true },
+    { icon: MapPin, label: t("features.locations"), href: "/settings?tab=locations", showAlways: true },
+    { icon: Users, label: t("features.family"), href: "/settings?tab=family", showAlways: true },
+    { icon: Home, label: t("features.smartHome"), href: "/settings?tab=smart-home", showAlways: true },
+    { icon: BookOpen, label: t("features.torahContent"), href: "/settings?tab=torah", showAlways: !isSecular },
   ].filter(link => link.showAlways);
 
   return (
@@ -200,7 +202,7 @@ const Index = () => {
             className="w-full mt-4 gap-2"
             onClick={() => navigate('/settings')}
           >
-            לכל ההגדרות והתכונות
+            {t("features.allSettings")}
             <ChevronLeft className="w-4 h-4" />
           </Button>
         </Card>
@@ -208,7 +210,7 @@ const Index = () => {
 
       <footer className="border-t border-border mt-16 py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>זמני שבת וחגים מחושבים לפי לוח שנה עברי</p>
+          <p>{t("footer.calculatedBy")}</p>
         </div>
       </footer>
     </div>
