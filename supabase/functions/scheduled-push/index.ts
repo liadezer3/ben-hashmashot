@@ -29,10 +29,29 @@ interface NotificationPreference {
   email_enabled: boolean | null;
   sms_enabled: boolean | null;
   whatsapp_enabled: boolean | null;
+  telegram_enabled: boolean | null;
+  telegram_chat_id: string | null;
+  // per-channel frequency
+  email_frequency: string | null;
+  email_morning_time: string | null;
+  email_days_before_shabbat: number | null;
+  email_reminder_time: string | null;
+  push_frequency: string | null;
+  push_morning_time: string | null;
+  push_days_before_shabbat: number | null;
+  push_reminder_time: string | null;
+  sms_frequency: string | null;
+  sms_morning_time: string | null;
+  sms_days_before_shabbat: number | null;
+  sms_reminder_time: string | null;
   whatsapp_frequency: string | null;
   whatsapp_morning_time: string | null;
   whatsapp_days_before_shabbat: number | null;
   whatsapp_reminder_time: string | null;
+  telegram_frequency: string | null;
+  telegram_morning_time: string | null;
+  telegram_days_before_shabbat: number | null;
+  telegram_reminder_time: string | null;
 }
 
 interface Profile {
