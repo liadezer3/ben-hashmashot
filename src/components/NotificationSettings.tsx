@@ -4,18 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, Clock, ExternalLink, MessageSquare, CheckCircle2, XCircle, Loader2, Send, AlertCircle } from "lucide-react";
+import { Bell, Mail, Clock, ExternalLink, MessageSquare, CheckCircle2, XCircle, Loader2, Send, AlertCircle, Smartphone } from "lucide-react";
 import gmailIcon from "@/assets/gmail-icon.png";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  sendImmediateNotification, 
+import {
+  sendImmediateNotification,
   requestNotificationPermission,
-  isNativeApp 
+  isNativeApp
 } from "@/lib/localNotifications";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import { WebPushSettings } from "./WebPushSettings";
 import { NextNotificationDisplay } from "./NextNotificationDisplay";
+import { ChannelFrequencySettings, type ChannelFrequencyValue } from "./ChannelFrequencySettings";
+
+const DEFAULT_FREQ: ChannelFrequencyValue = {
+  frequency: "weekly",
+  morningTime: "08:00",
+  daysBeforeShabbat: 0,
+  reminderTime: "12:00",
+};
 
 // SMS removed - using Meta WhatsApp Cloud API instead
 
