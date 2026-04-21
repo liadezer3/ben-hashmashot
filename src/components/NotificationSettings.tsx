@@ -160,26 +160,54 @@ export const NotificationSettings = () => {
       .single();
 
     if (data && !error) {
+      const d = data as any;
       setSettings({
-        email: data.email_enabled ?? false,
-        whatsapp: data.whatsapp_enabled ?? false,
-        push: data.push_enabled ?? true,
+        email: d.email_enabled ?? false,
+        whatsapp: d.whatsapp_enabled ?? false,
+        push: d.push_enabled ?? true,
+        sms: d.sms_enabled ?? false,
+        telegram: d.telegram_enabled ?? false,
       });
       setContactInfo({
-        phone: data.phone || "",
-        email: data.email || "",
+        phone: d.phone || "",
+        email: d.email || "",
+        telegramChatId: d.telegram_chat_id || "",
       });
       setTimeSettings({
-        morningTime: data.morning_time || "08:00",
-        hoursBeforeShabbat: data.hours_before_shabbat || 2,
-        daysBeforeShabbat: (data as any).days_before_shabbat || 0,
-        shabbatReminderTime: (data as any).shabbat_reminder_time || "12:00",
+        morningTime: d.morning_time || "08:00",
+        hoursBeforeShabbat: d.hours_before_shabbat || 2,
+        daysBeforeShabbat: d.days_before_shabbat || 0,
+        shabbatReminderTime: d.shabbat_reminder_time || "12:00",
+      });
+      setEmailSettings({
+        frequency: d.email_frequency || "weekly",
+        morningTime: d.email_morning_time || "08:00",
+        daysBeforeShabbat: d.email_days_before_shabbat ?? 0,
+        reminderTime: d.email_reminder_time || "12:00",
+      });
+      setPushSettings({
+        frequency: d.push_frequency || "weekly",
+        morningTime: d.push_morning_time || "08:00",
+        daysBeforeShabbat: d.push_days_before_shabbat ?? 0,
+        reminderTime: d.push_reminder_time || "12:00",
+      });
+      setSmsSettings({
+        frequency: d.sms_frequency || "weekly",
+        morningTime: d.sms_morning_time || "08:00",
+        daysBeforeShabbat: d.sms_days_before_shabbat ?? 0,
+        reminderTime: d.sms_reminder_time || "12:00",
       });
       setWhatsappSettings({
-        frequency: (data as any).whatsapp_frequency || "weekly",
-        morningTime: (data as any).whatsapp_morning_time || "08:00",
-        daysBeforeShabbat: (data as any).whatsapp_days_before_shabbat ?? 0,
-        reminderTime: (data as any).whatsapp_reminder_time || "12:00",
+        frequency: d.whatsapp_frequency || "weekly",
+        morningTime: d.whatsapp_morning_time || "08:00",
+        daysBeforeShabbat: d.whatsapp_days_before_shabbat ?? 0,
+        reminderTime: d.whatsapp_reminder_time || "12:00",
+      });
+      setTelegramSettings({
+        frequency: d.telegram_frequency || "weekly",
+        morningTime: d.telegram_morning_time || "08:00",
+        daysBeforeShabbat: d.telegram_days_before_shabbat ?? 0,
+        reminderTime: d.telegram_reminder_time || "12:00",
       });
     }
   };
