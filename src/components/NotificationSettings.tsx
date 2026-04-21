@@ -86,11 +86,14 @@ export const NotificationSettings = () => {
     email: false,
     whatsapp: false,
     push: true,
+    sms: false,
+    telegram: false,
   });
 
   const [contactInfo, setContactInfo] = useState({
     phone: "",
     email: "",
+    telegramChatId: "",
   });
 
   const [timeSettings, setTimeSettings] = useState({
@@ -100,13 +103,12 @@ export const NotificationSettings = () => {
     shabbatReminderTime: "12:00",
   });
 
-  // WhatsApp-specific frequency settings (independent from email/push)
-  const [whatsappSettings, setWhatsappSettings] = useState({
-    frequency: "weekly" as "weekly" | "daily" | "holidays_only",
-    morningTime: "08:00",
-    daysBeforeShabbat: 0,
-    reminderTime: "12:00",
-  });
+  // Per-channel frequency settings (independent for each channel)
+  const [emailSettings, setEmailSettings] = useState<ChannelFrequencyValue>(DEFAULT_FREQ);
+  const [pushSettings, setPushSettings] = useState<ChannelFrequencyValue>(DEFAULT_FREQ);
+  const [smsSettings, setSmsSettings] = useState<ChannelFrequencyValue>(DEFAULT_FREQ);
+  const [whatsappSettings, setWhatsappSettings] = useState<ChannelFrequencyValue>(DEFAULT_FREQ);
+  const [telegramSettings, setTelegramSettings] = useState<ChannelFrequencyValue>(DEFAULT_FREQ);
 
   const [loading, setLoading] = useState(false);
   const [userCity, setUserCity] = useState("ירושלים");
