@@ -92,6 +92,14 @@ export const NotificationSettings = () => {
     shabbatReminderTime: "12:00",
   });
 
+  // WhatsApp-specific frequency settings (independent from email/push)
+  const [whatsappSettings, setWhatsappSettings] = useState({
+    frequency: "weekly" as "weekly" | "daily" | "holidays_only",
+    morningTime: "08:00",
+    daysBeforeShabbat: 0,
+    reminderTime: "12:00",
+  });
+
   const [loading, setLoading] = useState(false);
   const [userCity, setUserCity] = useState("ירושלים");
   
@@ -157,6 +165,12 @@ export const NotificationSettings = () => {
         daysBeforeShabbat: (data as any).days_before_shabbat || 0,
         shabbatReminderTime: (data as any).shabbat_reminder_time || "12:00",
       });
+      setWhatsappSettings({
+        frequency: (data as any).whatsapp_frequency || "weekly",
+        morningTime: (data as any).whatsapp_morning_time || "08:00",
+        daysBeforeShabbat: (data as any).whatsapp_days_before_shabbat ?? 0,
+        reminderTime: (data as any).whatsapp_reminder_time || "12:00",
+      });
     }
   };
 
@@ -192,6 +206,10 @@ export const NotificationSettings = () => {
         hours_before_shabbat: timeSettings.hoursBeforeShabbat,
         days_before_shabbat: timeSettings.daysBeforeShabbat,
         shabbat_reminder_time: timeSettings.shabbatReminderTime,
+        whatsapp_frequency: whatsappSettings.frequency,
+        whatsapp_morning_time: whatsappSettings.morningTime,
+        whatsapp_days_before_shabbat: whatsappSettings.daysBeforeShabbat,
+        whatsapp_reminder_time: whatsappSettings.reminderTime,
       } as any, {
         onConflict: 'user_id'
       });
