@@ -1035,12 +1035,36 @@ serve(async (req) => {
     let totalPushSent = 0;
     let totalSMSSent = 0;
     let totalWhatsAppSent = 0;
-    
+    let totalTelegramSent = 0;
+
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
     const usersToNotifyScheduled: string[] = [];
-    // WhatsApp-only buckets (independent frequency)
+    // Independent per-channel scheduling buckets
     const whatsappToNotify: string[] = [];
+    const smsToNotify: string[] = [];
+    const telegramToNotify: string[] = [];
+
+    // Generic helper: should we send to a channel right now?
+    function shouldSendChannel(
+      frequency: string,
+      morningTime: string,
+      daysBefore: number,
+      reminderTime: string,
+    ): boolean {
+      const targetDay = getNotificationTargetDay(daysBefore);
+      const isRelevant = currentDayOfWeek === targetDay || isHolidayEve;
+      if (frequency === 'daily') {
+        return isTimeMatch(morningTime, currentHour, currentMinute);
+      }
+      if (frequency === 'weekly') {
+        return isRelevant && isTimeMatch(reminderTime, currentHour, currentMinute);
+      }
+      if (frequency === 'holidays_only') {
+        return isHolidayEve && isTimeMatch(reminderTime, currentHour, currentMinute);
+      }
+      return false;
+    }
 
     // Check each user's preferences
     for (const pref of activePrefs) {
