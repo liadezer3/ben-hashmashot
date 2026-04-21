@@ -1,0 +1,77 @@
+{
+  "app": {
+    "title": "Shabbat & Holiday Times",
+    "subtitle": "Get automatic reminders before every Shabbat and holiday",
+    "name": "Bein HaShmashot"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "profile": "Profile",
+    "admin": "Admin",
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "signup": "Sign Up"
+  },
+  "header": {
+    "adminTitle": "User Management",
+    "language": "Language"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "all": "All",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "phases": {
+    "weekday": "Weekday",
+    "preShabbatEarly": "Early Shabbat Preparations",
+    "preShabbatPrep": "Preparing for Shabbat",
+    "preShabbatRush": "Final Rush Before Shabbat",
+    "shabbat": "Shabbat",
+    "motzeiShabbat": "Motzei Shabbat"
+  },
+  "features": {
+    "title": "More Features",
+    "dashboard": "Dashboard",
+    "widget": "Offline Widget",
+    "notifications": "Notifications",
+    "locations": "Locations",
+    "family": "Family",
+    "smartHome": "Smart Home",
+    "torahContent": "Torah Content",
+    "allSettings": "All Settings & Features"
+  },
+  "footer": {
+    "calculatedBy": "Shabbat and holiday times calculated by the Hebrew calendar"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signInWithGoogle": "Sign in with Google",
+    "or": "or",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full Name"
+  },
+  "shabbat": {
+    "candleLighting": "Candle Lighting",
+    "havdalah": "Havdalah",
+    "parsha": "Weekly Parsha",
+    "times": "Shabbat Times",
+    "kosherMode": "Kosher for Shabbat Mode"
+  }
+}
