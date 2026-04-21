@@ -29,6 +29,10 @@ interface NotificationPreference {
   email_enabled: boolean | null;
   sms_enabled: boolean | null;
   whatsapp_enabled: boolean | null;
+  whatsapp_frequency: string | null;
+  whatsapp_morning_time: string | null;
+  whatsapp_days_before_shabbat: number | null;
+  whatsapp_reminder_time: string | null;
 }
 
 interface Profile {
@@ -880,10 +884,10 @@ serve(async (req) => {
     
     console.log(`Date check - Is Friday: ${isFriday}, Is Holiday Eve: ${isHolidayEve}${holidayName ? ` (${holidayName})` : ''}`);
 
-    // Get all users with any notification enabled
+    // Get all users with any notification enabled (including WhatsApp-specific frequency fields)
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, sms_enabled, whatsapp_enabled');
+      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_frequency, whatsapp_morning_time, whatsapp_days_before_shabbat, whatsapp_reminder_time');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
@@ -938,13 +942,15 @@ serve(async (req) => {
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
     const usersToNotifyScheduled: string[] = [];
+    // WhatsApp-only buckets (independent frequency)
+    const whatsappToNotify: string[] = [];
 
     // Check each user's preferences
     for (const pref of activePrefs) {
       const userCity = profileMap.get(pref.user_id)?.city || 'Jerusalem';
       const userPhone = pref.phone || profileMap.get(pref.user_id)?.phone;
       
-      // Calculate target day for this user
+      // Calculate target day for this user (for email/push)
       const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
       const targetDay = getNotificationTargetDay(daysBeforeShabbat);
       const isRelevantDay = currentDayOfWeek === targetDay || isHolidayEve;
@@ -980,6 +986,34 @@ serve(async (req) => {
           if (shouldNotify) {
             usersToNotifyShabbat.push(pref.user_id);
           }
+        }
+      }
+
+      // ===== WhatsApp INDEPENDENT scheduling =====
+      if (pref.whatsapp_enabled && userPhone) {
+        const waFrequency = pref.whatsapp_frequency || 'weekly';
+        const waMorningTime = pref.whatsapp_morning_time || '08:00';
+        const waDaysBefore = pref.whatsapp_days_before_shabbat ?? 0;
+        const waReminderTime = pref.whatsapp_reminder_time || '12:00';
+        const waTargetDay = getNotificationTargetDay(waDaysBefore);
+        const waIsRelevantDay = currentDayOfWeek === waTargetDay || isHolidayEve;
+
+        let shouldSendWA = false;
+
+        if (waFrequency === 'daily') {
+          // Daily reminder at specified time
+          shouldSendWA = isTimeMatch(waMorningTime, currentHour, currentMinute);
+        } else if (waFrequency === 'weekly') {
+          // Weekly: send X days before Shabbat OR holiday eve at reminder time
+          shouldSendWA = waIsRelevantDay && isTimeMatch(waReminderTime, currentHour, currentMinute);
+        } else if (waFrequency === 'holidays_only') {
+          // Only on holiday eves at reminder time
+          shouldSendWA = isHolidayEve && isTimeMatch(waReminderTime, currentHour, currentMinute);
+        }
+
+        if (shouldSendWA) {
+          whatsappToNotify.push(pref.user_id);
+          console.log(`WhatsApp scheduled for user ${pref.user_id} (frequency: ${waFrequency})`);
         }
       }
     }
@@ -1032,14 +1066,8 @@ serve(async (req) => {
 
       // SMS removed - no longer supported
 
-      // WhatsApp
-      if (pref.whatsapp_enabled && userPhone) {
-        const message = createWhatsAppMessage(shabbatTimes, userCity, holidays);
-        const whatsappResult = await sendWhatsApp(userPhone, message);
-        whatsappSent = whatsappResult.success;
-        whatsappError = whatsappResult.error;
-        if (whatsappSent) totalWhatsAppSent++;
-      }
+      // WhatsApp is now sent independently via its own scheduling — skip here to avoid duplicates
+      // (Handled below in the dedicated whatsappToNotify loop)
 
       const attemptedAnyChannel =
         Boolean(pref.email_enabled && pref.email) ||
@@ -1092,6 +1120,30 @@ serve(async (req) => {
       const hoursBeforeShabbat = pref.hours_before_shabbat || 2;
       
       await sendToAllChannels(userId, pref as NotificationPreference, shabbat, holidays, 'shabbat', hoursBeforeShabbat);
+    }
+
+    // ===== Send INDEPENDENT WhatsApp notifications (separate from email/push) =====
+    for (const userId of whatsappToNotify) {
+      const pref = activePrefs.find(p => p.user_id === userId);
+      if (!pref) continue;
+
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userPhone = pref.phone || profileMap.get(userId)?.phone;
+      if (!userPhone) continue;
+
+      const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
+      const message = createWhatsAppMessage(shabbat, userCity, holidays);
+      const whatsappResult = await sendWhatsApp(userPhone, message);
+
+      if (whatsappResult.success) totalWhatsAppSent++;
+
+      const errSuffix = whatsappResult.error ? ` (${whatsappResult.error.slice(0, 120)})` : '';
+      await supabase.from('notification_history').insert({
+        user_id: userId,
+        notification_type: `whatsapp_${pref.whatsapp_frequency || 'weekly'}`,
+        message: `WhatsApp: ${whatsappResult.success}${errSuffix}`,
+        status: whatsappResult.success ? 'sent' : 'failed',
+      });
     }
 
     const totalSent = totalEmailsSent + totalPushSent + totalSMSSent + totalWhatsAppSent;
