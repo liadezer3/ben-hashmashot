@@ -1273,25 +1273,69 @@ serve(async (req) => {
       });
     }
 
-    const totalSent = totalEmailsSent + totalPushSent + totalSMSSent + totalWhatsAppSent;
-    console.log(`Total sent: ${totalSent} (Email: ${totalEmailsSent}, Push: ${totalPushSent}, SMS: ${totalSMSSent}, WhatsApp: ${totalWhatsAppSent})`);
+    // ===== Send INDEPENDENT SMS notifications =====
+    for (const userId of smsToNotify) {
+      const pref = activePrefs.find(p => p.user_id === userId);
+      if (!pref) continue;
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userPhone = pref.phone || profileMap.get(userId)?.phone;
+      if (!userPhone) continue;
+      const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
+      // Use the same WhatsApp-style text body for SMS (concise + Hebrew)
+      const message = createWhatsAppMessage(shabbat, userCity, holidays);
+      const result = await sendSMS(userPhone, message);
+      if (result.success) totalSMSSent++;
+      const errSuffix = result.error ? ` (${result.error.slice(0, 120)})` : '';
+      await supabase.from('notification_history').insert({
+        user_id: userId,
+        notification_type: `sms_${pref.sms_frequency || 'weekly'}`,
+        message: `SMS: ${result.success}${errSuffix}`,
+        status: result.success ? 'sent' : 'failed',
+      });
+    }
+
+    // ===== Send INDEPENDENT Telegram notifications =====
+    for (const userId of telegramToNotify) {
+      const pref = activePrefs.find(p => p.user_id === userId);
+      if (!pref) continue;
+      if (!pref.telegram_chat_id) continue;
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
+      const message = createWhatsAppMessage(shabbat, userCity, holidays);
+      const result = await sendTelegram(pref.telegram_chat_id, message);
+      if (result.success) totalTelegramSent++;
+      const errSuffix = result.error ? ` (${result.error.slice(0, 120)})` : '';
+      await supabase.from('notification_history').insert({
+        user_id: userId,
+        notification_type: `telegram_${pref.telegram_frequency || 'weekly'}`,
+        message: `Telegram: ${result.success}${errSuffix}`,
+        status: result.success ? 'sent' : 'failed',
+      });
+    }
+
+    const totalSent = totalEmailsSent + totalPushSent + totalSMSSent + totalWhatsAppSent + totalTelegramSent;
+    console.log(`Total sent: ${totalSent} (Email: ${totalEmailsSent}, Push: ${totalPushSent}, SMS: ${totalSMSSent}, WhatsApp: ${totalWhatsAppSent}, Telegram: ${totalTelegramSent})`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         sent: totalSent,
         breakdown: {
           email: totalEmailsSent,
           push: totalPushSent,
           sms: totalSMSSent,
-          whatsapp: totalWhatsAppSent
+          whatsapp: totalWhatsAppSent,
+          telegram: totalTelegramSent,
         },
         usersNotified: {
           morning: usersToNotifyMorning.length,
           scheduled: usersToNotifyScheduled.length,
-          shabbat: usersToNotifyShabbat.length
+          shabbat: usersToNotifyShabbat.length,
+          sms: smsToNotify.length,
+          whatsapp: whatsappToNotify.length,
+          telegram: telegramToNotify.length,
         },
-        message: `Sent ${totalSent} notifications`
+        message: `Sent ${totalSent} notifications`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
