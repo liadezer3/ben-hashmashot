@@ -1066,14 +1066,8 @@ serve(async (req) => {
 
       // SMS removed - no longer supported
 
-      // WhatsApp
-      if (pref.whatsapp_enabled && userPhone) {
-        const message = createWhatsAppMessage(shabbatTimes, userCity, holidays);
-        const whatsappResult = await sendWhatsApp(userPhone, message);
-        whatsappSent = whatsappResult.success;
-        whatsappError = whatsappResult.error;
-        if (whatsappSent) totalWhatsAppSent++;
-      }
+      // WhatsApp is now sent independently via its own scheduling — skip here to avoid duplicates
+      // (Handled below in the dedicated whatsappToNotify loop)
 
       const attemptedAnyChannel =
         Boolean(pref.email_enabled && pref.email) ||
@@ -1126,6 +1120,30 @@ serve(async (req) => {
       const hoursBeforeShabbat = pref.hours_before_shabbat || 2;
       
       await sendToAllChannels(userId, pref as NotificationPreference, shabbat, holidays, 'shabbat', hoursBeforeShabbat);
+    }
+
+    // ===== Send INDEPENDENT WhatsApp notifications (separate from email/push) =====
+    for (const userId of whatsappToNotify) {
+      const pref = activePrefs.find(p => p.user_id === userId);
+      if (!pref) continue;
+
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userPhone = pref.phone || profileMap.get(userId)?.phone;
+      if (!userPhone) continue;
+
+      const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
+      const message = createWhatsAppMessage(shabbat, userCity, holidays);
+      const whatsappResult = await sendWhatsApp(userPhone, message);
+
+      if (whatsappResult.success) totalWhatsAppSent++;
+
+      const errSuffix = whatsappResult.error ? ` (${whatsappResult.error.slice(0, 120)})` : '';
+      await supabase.from('notification_history').insert({
+        user_id: userId,
+        notification_type: `whatsapp_${pref.whatsapp_frequency || 'weekly'}`,
+        message: `WhatsApp: ${whatsappResult.success}${errSuffix}`,
+        status: whatsappResult.success ? 'sent' : 'failed',
+      });
     }
 
     const totalSent = totalEmailsSent + totalPushSent + totalSMSSent + totalWhatsAppSent;
