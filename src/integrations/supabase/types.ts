@@ -410,6 +410,36 @@ export type Database = {
         }
         Relationships: []
       }
+      habit_logs: {
+        Row: {
+          created_at: string
+          habit_key: string
+          id: string
+          log_date: string
+          notes: string | null
+          points: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          habit_key: string
+          id?: string
+          log_date?: string
+          notes?: string | null
+          points?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          habit_key?: string
+          id?: string
+          log_date?: string
+          notes?: string | null
+          points?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitation_guests: {
         Row: {
           created_at: string
@@ -862,6 +892,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_badges: {
+        Row: {
+          badge_key: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_key: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_key?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_preferences: {
         Row: {
