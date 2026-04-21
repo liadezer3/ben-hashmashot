@@ -981,10 +981,10 @@ serve(async (req) => {
     
     console.log(`Date check - Is Friday: ${isFriday}, Is Holiday Eve: ${isHolidayEve}${holidayName ? ` (${holidayName})` : ''}`);
 
-    // Get all users with any notification enabled (including WhatsApp-specific frequency fields)
+    // Get all users with any notification enabled (including per-channel frequency fields)
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_frequency, whatsapp_morning_time, whatsapp_days_before_shabbat, whatsapp_reminder_time');
+      .select('*');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
@@ -992,8 +992,8 @@ serve(async (req) => {
     }
 
     // Filter to users with at least one notification channel enabled
-    const activePrefs = (preferences || []).filter(p => 
-      p.email_enabled || p.push_enabled || p.sms_enabled || p.whatsapp_enabled
+    const activePrefs = (preferences || []).filter((p: any) =>
+      p.email_enabled || p.push_enabled || p.sms_enabled || p.whatsapp_enabled || p.telegram_enabled
     );
 
     console.log(`Found ${activePrefs.length} users with notifications enabled`);
