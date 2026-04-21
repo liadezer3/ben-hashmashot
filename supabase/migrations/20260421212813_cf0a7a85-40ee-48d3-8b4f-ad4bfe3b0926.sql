@@ -1,0 +1,20 @@
+
+ALTER TABLE public.notification_preferences
+  ADD COLUMN IF NOT EXISTS email_frequency text NOT NULL DEFAULT 'weekly',
+  ADD COLUMN IF NOT EXISTS email_morning_time time DEFAULT '08:00',
+  ADD COLUMN IF NOT EXISTS email_days_before_shabbat integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS email_reminder_time time DEFAULT '12:00',
+  ADD COLUMN IF NOT EXISTS push_frequency text NOT NULL DEFAULT 'weekly',
+  ADD COLUMN IF NOT EXISTS push_morning_time time DEFAULT '08:00',
+  ADD COLUMN IF NOT EXISTS push_days_before_shabbat integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS push_reminder_time time DEFAULT '12:00',
+  ADD COLUMN IF NOT EXISTS sms_frequency text NOT NULL DEFAULT 'weekly',
+  ADD COLUMN IF NOT EXISTS sms_morning_time time DEFAULT '08:00',
+  ADD COLUMN IF NOT EXISTS sms_days_before_shabbat integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS sms_reminder_time time DEFAULT '12:00',
+  ADD COLUMN IF NOT EXISTS telegram_enabled boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS telegram_chat_id text,
+  ADD COLUMN IF NOT EXISTS telegram_frequency text NOT NULL DEFAULT 'weekly',
+  ADD COLUMN IF NOT EXISTS telegram_morning_time time DEFAULT '08:00',
+  ADD COLUMN IF NOT EXISTS telegram_days_before_shabbat integer DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS telegram_reminder_time time DEFAULT '12:00';
