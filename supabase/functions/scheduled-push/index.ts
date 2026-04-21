@@ -29,10 +29,29 @@ interface NotificationPreference {
   email_enabled: boolean | null;
   sms_enabled: boolean | null;
   whatsapp_enabled: boolean | null;
+  telegram_enabled: boolean | null;
+  telegram_chat_id: string | null;
+  // per-channel frequency
+  email_frequency: string | null;
+  email_morning_time: string | null;
+  email_days_before_shabbat: number | null;
+  email_reminder_time: string | null;
+  push_frequency: string | null;
+  push_morning_time: string | null;
+  push_days_before_shabbat: number | null;
+  push_reminder_time: string | null;
+  sms_frequency: string | null;
+  sms_morning_time: string | null;
+  sms_days_before_shabbat: number | null;
+  sms_reminder_time: string | null;
   whatsapp_frequency: string | null;
   whatsapp_morning_time: string | null;
   whatsapp_days_before_shabbat: number | null;
   whatsapp_reminder_time: string | null;
+  telegram_frequency: string | null;
+  telegram_morning_time: string | null;
+  telegram_days_before_shabbat: number | null;
+  telegram_reminder_time: string | null;
 }
 
 interface Profile {
@@ -235,7 +254,85 @@ async function sendWhatsApp(to: string, message: string): Promise<ChannelResult>
   }
 }
 
-// ========== WEB PUSH ==========
+// ========== SMS (Twilio) ==========
+async function sendSMS(to: string, message: string): Promise<ChannelResult> {
+  try {
+    const sid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const token = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const from = Deno.env.get('TWILIO_PHONE_FROM');
+    if (!sid || !token || !from) {
+      const error = 'Twilio SMS credentials not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_FROM)';
+      console.log(error);
+      return { success: false, error };
+    }
+
+    let formatted = to.replace(/[\s\-]/g, '');
+    if (!formatted.startsWith('+')) {
+      if (formatted.startsWith('0')) formatted = '+972' + formatted.substring(1);
+      else if (formatted.startsWith('972')) formatted = '+' + formatted;
+      else formatted = '+' + formatted;
+    }
+
+    const auth = btoa(`${sid}:${token}`);
+    const body = new URLSearchParams({ To: formatted, From: from, Body: message });
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      const error = `Twilio SMS error (${res.status}): ${errText}`;
+      console.error(error);
+      return { success: false, error };
+    }
+    console.log(`SMS sent successfully to ${formatted}`);
+    return { success: true, error: null };
+  } catch (error: any) {
+    const msg = `Error sending SMS: ${error?.message || error}`;
+    console.error(msg);
+    return { success: false, error: msg };
+  }
+}
+
+// ========== TELEGRAM (Bot API) ==========
+async function sendTelegram(chatId: string, message: string): Promise<ChannelResult> {
+  try {
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    if (!botToken) {
+      const error = 'TELEGRAM_BOT_TOKEN not configured';
+      console.log(error);
+      return { success: false, error };
+    }
+
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        disable_web_page_preview: false,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      const error = `Telegram error (${res.status}): ${JSON.stringify(data)}`;
+      console.error(error);
+      return { success: false, error };
+    }
+    console.log(`Telegram sent successfully to chat ${chatId}`);
+    return { success: true, error: null };
+  } catch (error: any) {
+    const msg = `Error sending Telegram: ${error?.message || error}`;
+    console.error(msg);
+    return { success: false, error: msg };
+  }
+}
+
+
 function base64UrlEncode(data: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < data.length; i++) {
@@ -884,10 +981,10 @@ serve(async (req) => {
     
     console.log(`Date check - Is Friday: ${isFriday}, Is Holiday Eve: ${isHolidayEve}${holidayName ? ` (${holidayName})` : ''}`);
 
-    // Get all users with any notification enabled (including WhatsApp-specific frequency fields)
+    // Get all users with any notification enabled (including per-channel frequency fields)
     const { data: preferences, error: prefError } = await supabase
       .from('notification_preferences')
-      .select('user_id, phone, email, morning_time, hours_before_shabbat, days_before_shabbat, shabbat_reminder_time, push_enabled, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_frequency, whatsapp_morning_time, whatsapp_days_before_shabbat, whatsapp_reminder_time');
+      .select('*');
 
     if (prefError) {
       console.error('Error fetching preferences:', prefError);
@@ -895,8 +992,8 @@ serve(async (req) => {
     }
 
     // Filter to users with at least one notification channel enabled
-    const activePrefs = (preferences || []).filter(p => 
-      p.email_enabled || p.push_enabled || p.sms_enabled || p.whatsapp_enabled
+    const activePrefs = (preferences || []).filter((p: any) =>
+      p.email_enabled || p.push_enabled || p.sms_enabled || p.whatsapp_enabled || p.telegram_enabled
     );
 
     console.log(`Found ${activePrefs.length} users with notifications enabled`);
@@ -938,12 +1035,36 @@ serve(async (req) => {
     let totalPushSent = 0;
     let totalSMSSent = 0;
     let totalWhatsAppSent = 0;
-    
+    let totalTelegramSent = 0;
+
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
     const usersToNotifyScheduled: string[] = [];
-    // WhatsApp-only buckets (independent frequency)
+    // Independent per-channel scheduling buckets
     const whatsappToNotify: string[] = [];
+    const smsToNotify: string[] = [];
+    const telegramToNotify: string[] = [];
+
+    // Generic helper: should we send to a channel right now?
+    function shouldSendChannel(
+      frequency: string,
+      morningTime: string,
+      daysBefore: number,
+      reminderTime: string,
+    ): boolean {
+      const targetDay = getNotificationTargetDay(daysBefore);
+      const isRelevant = currentDayOfWeek === targetDay || isHolidayEve;
+      if (frequency === 'daily') {
+        return isTimeMatch(morningTime, currentHour, currentMinute);
+      }
+      if (frequency === 'weekly') {
+        return isRelevant && isTimeMatch(reminderTime, currentHour, currentMinute);
+      }
+      if (frequency === 'holidays_only') {
+        return isHolidayEve && isTimeMatch(reminderTime, currentHour, currentMinute);
+      }
+      return false;
+    }
 
     // Check each user's preferences
     for (const pref of activePrefs) {
@@ -989,31 +1110,37 @@ serve(async (req) => {
         }
       }
 
-      // ===== WhatsApp INDEPENDENT scheduling =====
+      // ===== Independent per-channel scheduling (WhatsApp / SMS / Telegram) =====
       if (pref.whatsapp_enabled && userPhone) {
-        const waFrequency = pref.whatsapp_frequency || 'weekly';
-        const waMorningTime = pref.whatsapp_morning_time || '08:00';
-        const waDaysBefore = pref.whatsapp_days_before_shabbat ?? 0;
-        const waReminderTime = pref.whatsapp_reminder_time || '12:00';
-        const waTargetDay = getNotificationTargetDay(waDaysBefore);
-        const waIsRelevantDay = currentDayOfWeek === waTargetDay || isHolidayEve;
-
-        let shouldSendWA = false;
-
-        if (waFrequency === 'daily') {
-          // Daily reminder at specified time
-          shouldSendWA = isTimeMatch(waMorningTime, currentHour, currentMinute);
-        } else if (waFrequency === 'weekly') {
-          // Weekly: send X days before Shabbat OR holiday eve at reminder time
-          shouldSendWA = waIsRelevantDay && isTimeMatch(waReminderTime, currentHour, currentMinute);
-        } else if (waFrequency === 'holidays_only') {
-          // Only on holiday eves at reminder time
-          shouldSendWA = isHolidayEve && isTimeMatch(waReminderTime, currentHour, currentMinute);
-        }
-
-        if (shouldSendWA) {
+        if (shouldSendChannel(
+          pref.whatsapp_frequency || 'weekly',
+          pref.whatsapp_morning_time || '08:00',
+          pref.whatsapp_days_before_shabbat ?? 0,
+          pref.whatsapp_reminder_time || '12:00',
+        )) {
           whatsappToNotify.push(pref.user_id);
-          console.log(`WhatsApp scheduled for user ${pref.user_id} (frequency: ${waFrequency})`);
+        }
+      }
+
+      if (pref.sms_enabled && userPhone) {
+        if (shouldSendChannel(
+          pref.sms_frequency || 'weekly',
+          pref.sms_morning_time || '08:00',
+          pref.sms_days_before_shabbat ?? 0,
+          pref.sms_reminder_time || '12:00',
+        )) {
+          smsToNotify.push(pref.user_id);
+        }
+      }
+
+      if (pref.telegram_enabled && pref.telegram_chat_id) {
+        if (shouldSendChannel(
+          pref.telegram_frequency || 'weekly',
+          pref.telegram_morning_time || '08:00',
+          pref.telegram_days_before_shabbat ?? 0,
+          pref.telegram_reminder_time || '12:00',
+        )) {
+          telegramToNotify.push(pref.user_id);
         }
       }
     }
@@ -1146,25 +1273,69 @@ serve(async (req) => {
       });
     }
 
-    const totalSent = totalEmailsSent + totalPushSent + totalSMSSent + totalWhatsAppSent;
-    console.log(`Total sent: ${totalSent} (Email: ${totalEmailsSent}, Push: ${totalPushSent}, SMS: ${totalSMSSent}, WhatsApp: ${totalWhatsAppSent})`);
+    // ===== Send INDEPENDENT SMS notifications =====
+    for (const userId of smsToNotify) {
+      const pref = activePrefs.find(p => p.user_id === userId);
+      if (!pref) continue;
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const userPhone = pref.phone || profileMap.get(userId)?.phone;
+      if (!userPhone) continue;
+      const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
+      // Use the same WhatsApp-style text body for SMS (concise + Hebrew)
+      const message = createWhatsAppMessage(shabbat, userCity, holidays);
+      const result = await sendSMS(userPhone, message);
+      if (result.success) totalSMSSent++;
+      const errSuffix = result.error ? ` (${result.error.slice(0, 120)})` : '';
+      await supabase.from('notification_history').insert({
+        user_id: userId,
+        notification_type: `sms_${pref.sms_frequency || 'weekly'}`,
+        message: `SMS: ${result.success}${errSuffix}`,
+        status: result.success ? 'sent' : 'failed',
+      });
+    }
+
+    // ===== Send INDEPENDENT Telegram notifications =====
+    for (const userId of telegramToNotify) {
+      const pref = activePrefs.find(p => p.user_id === userId);
+      if (!pref) continue;
+      if (!pref.telegram_chat_id) continue;
+      const userCity = profileMap.get(userId)?.city || 'Jerusalem';
+      const { shabbat, holidays } = await getShabbatAndHolidayTimes(userCity);
+      const message = createWhatsAppMessage(shabbat, userCity, holidays);
+      const result = await sendTelegram(pref.telegram_chat_id, message);
+      if (result.success) totalTelegramSent++;
+      const errSuffix = result.error ? ` (${result.error.slice(0, 120)})` : '';
+      await supabase.from('notification_history').insert({
+        user_id: userId,
+        notification_type: `telegram_${pref.telegram_frequency || 'weekly'}`,
+        message: `Telegram: ${result.success}${errSuffix}`,
+        status: result.success ? 'sent' : 'failed',
+      });
+    }
+
+    const totalSent = totalEmailsSent + totalPushSent + totalSMSSent + totalWhatsAppSent + totalTelegramSent;
+    console.log(`Total sent: ${totalSent} (Email: ${totalEmailsSent}, Push: ${totalPushSent}, SMS: ${totalSMSSent}, WhatsApp: ${totalWhatsAppSent}, Telegram: ${totalTelegramSent})`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         sent: totalSent,
         breakdown: {
           email: totalEmailsSent,
           push: totalPushSent,
           sms: totalSMSSent,
-          whatsapp: totalWhatsAppSent
+          whatsapp: totalWhatsAppSent,
+          telegram: totalTelegramSent,
         },
         usersNotified: {
           morning: usersToNotifyMorning.length,
           scheduled: usersToNotifyScheduled.length,
-          shabbat: usersToNotifyShabbat.length
+          shabbat: usersToNotifyShabbat.length,
+          sms: smsToNotify.length,
+          whatsapp: whatsappToNotify.length,
+          telegram: telegramToNotify.length,
         },
-        message: `Sent ${totalSent} notifications`
+        message: `Sent ${totalSent} notifications`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
