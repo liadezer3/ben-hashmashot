@@ -942,13 +942,15 @@ serve(async (req) => {
     const usersToNotifyMorning: string[] = [];
     const usersToNotifyShabbat: string[] = [];
     const usersToNotifyScheduled: string[] = [];
+    // WhatsApp-only buckets (independent frequency)
+    const whatsappToNotify: string[] = [];
 
     // Check each user's preferences
     for (const pref of activePrefs) {
       const userCity = profileMap.get(pref.user_id)?.city || 'Jerusalem';
       const userPhone = pref.phone || profileMap.get(pref.user_id)?.phone;
       
-      // Calculate target day for this user
+      // Calculate target day for this user (for email/push)
       const daysBeforeShabbat = pref.days_before_shabbat ?? 0;
       const targetDay = getNotificationTargetDay(daysBeforeShabbat);
       const isRelevantDay = currentDayOfWeek === targetDay || isHolidayEve;
@@ -984,6 +986,34 @@ serve(async (req) => {
           if (shouldNotify) {
             usersToNotifyShabbat.push(pref.user_id);
           }
+        }
+      }
+
+      // ===== WhatsApp INDEPENDENT scheduling =====
+      if (pref.whatsapp_enabled && userPhone) {
+        const waFrequency = pref.whatsapp_frequency || 'weekly';
+        const waMorningTime = pref.whatsapp_morning_time || '08:00';
+        const waDaysBefore = pref.whatsapp_days_before_shabbat ?? 0;
+        const waReminderTime = pref.whatsapp_reminder_time || '12:00';
+        const waTargetDay = getNotificationTargetDay(waDaysBefore);
+        const waIsRelevantDay = currentDayOfWeek === waTargetDay || isHolidayEve;
+
+        let shouldSendWA = false;
+
+        if (waFrequency === 'daily') {
+          // Daily reminder at specified time
+          shouldSendWA = isTimeMatch(waMorningTime, currentHour, currentMinute);
+        } else if (waFrequency === 'weekly') {
+          // Weekly: send X days before Shabbat OR holiday eve at reminder time
+          shouldSendWA = waIsRelevantDay && isTimeMatch(waReminderTime, currentHour, currentMinute);
+        } else if (waFrequency === 'holidays_only') {
+          // Only on holiday eves at reminder time
+          shouldSendWA = isHolidayEve && isTimeMatch(waReminderTime, currentHour, currentMinute);
+        }
+
+        if (shouldSendWA) {
+          whatsappToNotify.push(pref.user_id);
+          console.log(`WhatsApp scheduled for user ${pref.user_id} (frequency: ${waFrequency})`);
         }
       }
     }
