@@ -1,0 +1,77 @@
+{
+  "app": {
+    "title": "זמני שבת וחגים",
+    "subtitle": "קבלו התראות אוטומטיות לפני כל שבת וחג",
+    "name": "בין השמשות"
+  },
+  "nav": {
+    "home": "בית",
+    "dashboard": "דשבורד",
+    "settings": "הגדרות",
+    "profile": "פרופיל",
+    "admin": "ניהול",
+    "login": "התחבר",
+    "logout": "התנתק",
+    "signup": "הרשמה"
+  },
+  "header": {
+    "adminTitle": "ניהול משתמשים",
+    "language": "שפה"
+  },
+  "common": {
+    "save": "שמור",
+    "cancel": "בטל",
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "success": "הצלחה",
+    "back": "חזרה",
+    "next": "הבא",
+    "previous": "הקודם",
+    "close": "סגור",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "add": "הוסף",
+    "search": "חיפוש",
+    "all": "הכל",
+    "yes": "כן",
+    "no": "לא"
+  },
+  "phases": {
+    "weekday": "יום חול",
+    "preShabbatEarly": "הכנות מוקדמות לשבת",
+    "preShabbatPrep": "התכוננות לשבת",
+    "preShabbatRush": "לחץ אחרון לפני שבת",
+    "shabbat": "שבת קודש",
+    "motzeiShabbat": "מוצאי שבת"
+  },
+  "features": {
+    "title": "תכונות נוספות",
+    "dashboard": "דשבורד",
+    "widget": "Widget אופליין",
+    "notifications": "התראות",
+    "locations": "מיקומים",
+    "family": "משפחה",
+    "smartHome": "בית חכם",
+    "torahContent": "תוכן תורני",
+    "allSettings": "לכל ההגדרות והתכונות"
+  },
+  "footer": {
+    "calculatedBy": "זמני שבת וחגים מחושבים לפי לוח שנה עברי"
+  },
+  "auth": {
+    "signIn": "התחבר",
+    "signUp": "הרשמה",
+    "signInWithGoogle": "התחבר עם Google",
+    "or": "או",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "fullName": "שם מלא"
+  },
+  "shabbat": {
+    "candleLighting": "הדלקת נרות",
+    "havdalah": "הבדלה",
+    "parsha": "פרשת השבוע",
+    "times": "זמני שבת",
+    "kosherMode": "מצב כשר לשבת"
+  }
+}
