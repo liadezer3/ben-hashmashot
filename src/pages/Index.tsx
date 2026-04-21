@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { KosherShabbatMode } from "@/components/KosherShabbatMode";
 import { PhaseTransition } from "@/components/PhaseTransition";
 import { 
   BarChart3,
@@ -121,6 +122,13 @@ const Index = () => {
       {showOnboarding && (
         <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
       )}
+      <KosherShabbatMode
+        isActive={shabbatMode.phase === 'shabbat'}
+        candleLighting={candleLighting}
+        havdalah={havdalah}
+        parsha={currentParsha}
+        city={userCity}
+      />
       <PhaseTransition phase={shabbatMode.phase}>
       <div className={cn("min-h-screen transition-colors duration-500", phaseStyles.bgClass)}>
       <Header />

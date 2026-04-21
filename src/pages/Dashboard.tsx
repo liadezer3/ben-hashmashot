@@ -9,6 +9,7 @@ import { ShabbatStreak } from "@/components/dashboard/ShabbatStreak";
 import { LastYearMemory } from "@/components/dashboard/LastYearMemory";
 import { SynagoguesFinder } from "@/components/dashboard/SynagoguesFinder";
 import { SmartReminders } from "@/components/dashboard/SmartReminders";
+import { HabitsTracker } from "@/components/HabitsTracker";
 import NotificationCenter from "@/components/NotificationCenter";
 
 const Dashboard = () => {
@@ -41,6 +42,7 @@ const Dashboard = () => {
         </div>
 
         <SmartReminders userId={userId} />
+        <HabitsTracker userId={userId} />
         <ShabbatStreak userId={userId} />
         <AnnualStats userId={userId} />
         <LastYearMemory userId={userId} />
