@@ -530,7 +530,11 @@ export type Database = {
           sms_enabled: boolean | null
           updated_at: string
           user_id: string
+          whatsapp_days_before_shabbat: number | null
           whatsapp_enabled: boolean | null
+          whatsapp_frequency: string
+          whatsapp_morning_time: string | null
+          whatsapp_reminder_time: string | null
         }
         Insert: {
           created_at?: string
@@ -547,7 +551,11 @@ export type Database = {
           sms_enabled?: boolean | null
           updated_at?: string
           user_id: string
+          whatsapp_days_before_shabbat?: number | null
           whatsapp_enabled?: boolean | null
+          whatsapp_frequency?: string
+          whatsapp_morning_time?: string | null
+          whatsapp_reminder_time?: string | null
         }
         Update: {
           created_at?: string
@@ -564,7 +572,11 @@ export type Database = {
           sms_enabled?: boolean | null
           updated_at?: string
           user_id?: string
+          whatsapp_days_before_shabbat?: number | null
           whatsapp_enabled?: boolean | null
+          whatsapp_frequency?: string
+          whatsapp_morning_time?: string | null
+          whatsapp_reminder_time?: string | null
         }
         Relationships: []
       }
