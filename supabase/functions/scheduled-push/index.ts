@@ -1110,31 +1110,37 @@ serve(async (req) => {
         }
       }
 
-      // ===== WhatsApp INDEPENDENT scheduling =====
+      // ===== Independent per-channel scheduling (WhatsApp / SMS / Telegram) =====
       if (pref.whatsapp_enabled && userPhone) {
-        const waFrequency = pref.whatsapp_frequency || 'weekly';
-        const waMorningTime = pref.whatsapp_morning_time || '08:00';
-        const waDaysBefore = pref.whatsapp_days_before_shabbat ?? 0;
-        const waReminderTime = pref.whatsapp_reminder_time || '12:00';
-        const waTargetDay = getNotificationTargetDay(waDaysBefore);
-        const waIsRelevantDay = currentDayOfWeek === waTargetDay || isHolidayEve;
-
-        let shouldSendWA = false;
-
-        if (waFrequency === 'daily') {
-          // Daily reminder at specified time
-          shouldSendWA = isTimeMatch(waMorningTime, currentHour, currentMinute);
-        } else if (waFrequency === 'weekly') {
-          // Weekly: send X days before Shabbat OR holiday eve at reminder time
-          shouldSendWA = waIsRelevantDay && isTimeMatch(waReminderTime, currentHour, currentMinute);
-        } else if (waFrequency === 'holidays_only') {
-          // Only on holiday eves at reminder time
-          shouldSendWA = isHolidayEve && isTimeMatch(waReminderTime, currentHour, currentMinute);
-        }
-
-        if (shouldSendWA) {
+        if (shouldSendChannel(
+          pref.whatsapp_frequency || 'weekly',
+          pref.whatsapp_morning_time || '08:00',
+          pref.whatsapp_days_before_shabbat ?? 0,
+          pref.whatsapp_reminder_time || '12:00',
+        )) {
           whatsappToNotify.push(pref.user_id);
-          console.log(`WhatsApp scheduled for user ${pref.user_id} (frequency: ${waFrequency})`);
+        }
+      }
+
+      if (pref.sms_enabled && userPhone) {
+        if (shouldSendChannel(
+          pref.sms_frequency || 'weekly',
+          pref.sms_morning_time || '08:00',
+          pref.sms_days_before_shabbat ?? 0,
+          pref.sms_reminder_time || '12:00',
+        )) {
+          smsToNotify.push(pref.user_id);
+        }
+      }
+
+      if (pref.telegram_enabled && pref.telegram_chat_id) {
+        if (shouldSendChannel(
+          pref.telegram_frequency || 'weekly',
+          pref.telegram_morning_time || '08:00',
+          pref.telegram_days_before_shabbat ?? 0,
+          pref.telegram_reminder_time || '12:00',
+        )) {
+          telegramToNotify.push(pref.user_id);
         }
       }
     }
