@@ -798,26 +798,105 @@ export const NotificationSettings = () => {
             אפשרויות התראות אוטומטיות
           </h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-primary" />
-                <div className="flex-1">
-                  <Label htmlFor="email-toggle" className="text-foreground cursor-pointer">
-                    הודעת אימייל
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    קבלת זמני שבת אוטומטית במייל
-                  </p>
+            {/* Email auto + frequency */}
+            <div className="p-4 rounded-lg bg-background/50 border border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <Label htmlFor="email-toggle" className="text-foreground cursor-pointer">
+                      הודעת אימייל
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      קבלת זמני שבת אוטומטית במייל
+                    </p>
+                  </div>
                 </div>
+                <Switch
+                  id="email-toggle"
+                  checked={settings.email}
+                  onCheckedChange={() => handleToggle("email")}
+                />
               </div>
-              <Switch
-                id="email-toggle"
-                checked={settings.email}
-                onCheckedChange={() => handleToggle("email")}
-              />
+              {settings.email && (
+                <ChannelFrequencySettings
+                  idPrefix="email"
+                  channelLabel="אימייל"
+                  value={emailSettings}
+                  onChange={setEmailSettings}
+                  accentClassName="bg-primary/10 border-primary/20 text-primary"
+                />
+              )}
             </div>
 
-            {/* WhatsApp Auto Toggle */}
+            {/* Push (browser/native) auto + frequency */}
+            <div className="p-4 rounded-lg bg-background/50 border border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <Label htmlFor="push-toggle" className="text-foreground cursor-pointer">
+                      התראות דחיפה (Push)
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      דחיפה לדפדפן ולמכשיר נייד
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="push-toggle"
+                  checked={settings.push}
+                  onCheckedChange={() => handleToggle("push")}
+                />
+              </div>
+              {settings.push && (
+                <ChannelFrequencySettings
+                  idPrefix="push"
+                  channelLabel="Push"
+                  value={pushSettings}
+                  onChange={setPushSettings}
+                  accentClassName="bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400"
+                />
+              )}
+            </div>
+
+            {/* SMS auto + frequency */}
+            <div className="p-4 rounded-lg bg-background/50 border border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Smartphone className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <Label htmlFor="sms-toggle" className="text-foreground cursor-pointer">
+                      הודעות SMS
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      שליחת SMS דרך Twilio למספר הטלפון שלך
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="sms-toggle"
+                  checked={settings.sms}
+                  onCheckedChange={() => handleToggle("sms")}
+                />
+              </div>
+              {settings.sms && (
+                <>
+                  {!contactInfo.phone && (
+                    <p className="text-xs text-destructive">יש להזין מספר טלפון בפורמט בינלאומי כדי לקבל SMS</p>
+                  )}
+                  <ChannelFrequencySettings
+                    idPrefix="sms"
+                    channelLabel="SMS"
+                    value={smsSettings}
+                    onChange={setSmsSettings}
+                    accentClassName="bg-orange-500/10 border-orange-500/20 text-orange-700 dark:text-orange-400"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* WhatsApp auto + frequency */}
             <div className="p-4 rounded-lg bg-background/50 border border-border space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -837,96 +916,61 @@ export const NotificationSettings = () => {
                   onCheckedChange={() => handleToggle("whatsapp")}
                 />
               </div>
-
-              {/* WhatsApp Frequency Settings - shown only when enabled */}
               {settings.whatsapp && (
-                <div className="space-y-3 pt-3 border-t border-border/60">
-                  <div>
-                    <Label htmlFor="whatsapp-frequency" className="text-sm font-medium">
-                      תדירות שליחה
+                <ChannelFrequencySettings
+                  idPrefix="whatsapp"
+                  channelLabel="WhatsApp"
+                  value={whatsappSettings}
+                  onChange={setWhatsappSettings}
+                />
+              )}
+            </div>
+
+            {/* Telegram auto + frequency */}
+            <div className="p-4 rounded-lg bg-background/50 border border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="w-5 h-5 text-[#0088cc]" />
+                  <div className="flex-1">
+                    <Label htmlFor="telegram-toggle" className="text-foreground cursor-pointer">
+                      התראות Telegram
                     </Label>
-                    <select
-                      id="whatsapp-frequency"
-                      value={whatsappSettings.frequency}
-                      onChange={(e) =>
-                        setWhatsappSettings({ ...whatsappSettings, frequency: e.target.value as any })
-                      }
-                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="weekly">פעם בשבוע - לפני שבת</option>
-                      <option value="daily">כל יום - תזכורת בוקר</option>
-                      <option value="holidays_only">רק לפני חגים</option>
-                    </select>
-                  </div>
-
-                  {whatsappSettings.frequency === "daily" && (
-                    <div>
-                      <Label htmlFor="whatsapp-morning-time" className="text-sm">
-                        שעת שליחה יומית
-                      </Label>
-                      <Input
-                        id="whatsapp-morning-time"
-                        type="time"
-                        value={whatsappSettings.morningTime}
-                        onChange={(e) =>
-                          setWhatsappSettings({ ...whatsappSettings, morningTime: e.target.value })
-                        }
-                        className="mt-2"
-                      />
-                    </div>
-                  )}
-
-                  {(whatsappSettings.frequency === "weekly" || whatsappSettings.frequency === "holidays_only") && (
-                    <>
-                      <div>
-                        <Label htmlFor="whatsapp-days-before" className="text-sm">
-                          כמה ימים לפני שבת/חג
-                        </Label>
-                        <select
-                          id="whatsapp-days-before"
-                          value={whatsappSettings.daysBeforeShabbat}
-                          onChange={(e) =>
-                            setWhatsappSettings({
-                              ...whatsappSettings,
-                              daysBeforeShabbat: parseInt(e.target.value),
-                            })
-                          }
-                          className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        >
-                          <option value={0}>באותו יום</option>
-                          <option value={1}>יום לפני</option>
-                          <option value={2}>יומיים לפני</option>
-                          <option value={3}>3 ימים לפני</option>
-                        </select>
-                      </div>
-                      <div>
-                        <Label htmlFor="whatsapp-reminder-time" className="text-sm">
-                          שעת תזכורת
-                        </Label>
-                        <Input
-                          id="whatsapp-reminder-time"
-                          type="time"
-                          value={whatsappSettings.reminderTime}
-                          onChange={(e) =>
-                            setWhatsappSettings({ ...whatsappSettings, reminderTime: e.target.value })
-                          }
-                          className="mt-2"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  <div className="flex items-center gap-2 p-2 rounded bg-green-500/10 border border-green-500/20">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-xs text-green-700 dark:text-green-400">
-                      WhatsApp פעיל - {
-                        whatsappSettings.frequency === "daily" ? `כל יום בשעה ${whatsappSettings.morningTime}` :
-                        whatsappSettings.frequency === "holidays_only" ? `לפני חגים בשעה ${whatsappSettings.reminderTime}` :
-                        `שבועי בשעה ${whatsappSettings.reminderTime}`
-                      }
-                    </span>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      קבלת זמני שבת בטלגרם (דורש הגדרת בוט)
+                    </p>
                   </div>
                 </div>
+                <Switch
+                  id="telegram-toggle"
+                  checked={settings.telegram}
+                  onCheckedChange={() => handleToggle("telegram")}
+                />
+              </div>
+              {settings.telegram && (
+                <>
+                  <div>
+                    <Label htmlFor="telegram-chat-id" className="text-sm">
+                      Telegram Chat ID
+                    </Label>
+                    <Input
+                      id="telegram-chat-id"
+                      placeholder="123456789"
+                      value={contactInfo.telegramChatId}
+                      onChange={(e) => setContactInfo({ ...contactInfo, telegramChatId: e.target.value })}
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      פתחו צ'אט עם הבוט שלנו ושלחו /start כדי לקבל את ה-Chat ID
+                    </p>
+                  </div>
+                  <ChannelFrequencySettings
+                    idPrefix="telegram"
+                    channelLabel="Telegram"
+                    value={telegramSettings}
+                    onChange={setTelegramSettings}
+                    accentClassName="bg-[#0088cc]/10 border-[#0088cc]/20 text-[#0088cc]"
+                  />
+                </>
               )}
             </div>
 
