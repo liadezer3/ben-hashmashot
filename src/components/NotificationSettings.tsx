@@ -762,27 +762,116 @@ export const NotificationSettings = () => {
             </div>
 
             {/* WhatsApp Auto Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-background/50 border border-border">
-              <div className="flex items-center gap-3">
-                <img 
-                  src={whatsappIcon} 
-                  alt="WhatsApp" 
-                  className="w-5 h-5"
-                />
-                <div className="flex-1">
-                  <Label htmlFor="whatsapp-toggle" className="text-foreground cursor-pointer">
-                    התראות WhatsApp אוטומטיות
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    📱 שליחה אוטומטית דרך Meta WhatsApp Cloud API
-                  </p>
+            <div className="p-4 rounded-lg bg-background/50 border border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+                  <div className="flex-1">
+                    <Label htmlFor="whatsapp-toggle" className="text-foreground cursor-pointer">
+                      התראות WhatsApp אוטומטיות
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      📱 שליחה אוטומטית דרך Meta WhatsApp Cloud API
+                    </p>
+                  </div>
                 </div>
+                <Switch
+                  id="whatsapp-toggle"
+                  checked={settings.whatsapp}
+                  onCheckedChange={() => handleToggle("whatsapp")}
+                />
               </div>
-              <Switch
-                id="whatsapp-toggle"
-                checked={settings.whatsapp}
-                onCheckedChange={() => handleToggle("whatsapp")}
-              />
+
+              {/* WhatsApp Frequency Settings - shown only when enabled */}
+              {settings.whatsapp && (
+                <div className="space-y-3 pt-3 border-t border-border/60">
+                  <div>
+                    <Label htmlFor="whatsapp-frequency" className="text-sm font-medium">
+                      תדירות שליחה
+                    </Label>
+                    <select
+                      id="whatsapp-frequency"
+                      value={whatsappSettings.frequency}
+                      onChange={(e) =>
+                        setWhatsappSettings({ ...whatsappSettings, frequency: e.target.value as any })
+                      }
+                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="weekly">פעם בשבוע - לפני שבת</option>
+                      <option value="daily">כל יום - תזכורת בוקר</option>
+                      <option value="holidays_only">רק לפני חגים</option>
+                    </select>
+                  </div>
+
+                  {whatsappSettings.frequency === "daily" && (
+                    <div>
+                      <Label htmlFor="whatsapp-morning-time" className="text-sm">
+                        שעת שליחה יומית
+                      </Label>
+                      <Input
+                        id="whatsapp-morning-time"
+                        type="time"
+                        value={whatsappSettings.morningTime}
+                        onChange={(e) =>
+                          setWhatsappSettings({ ...whatsappSettings, morningTime: e.target.value })
+                        }
+                        className="mt-2"
+                      />
+                    </div>
+                  )}
+
+                  {(whatsappSettings.frequency === "weekly" || whatsappSettings.frequency === "holidays_only") && (
+                    <>
+                      <div>
+                        <Label htmlFor="whatsapp-days-before" className="text-sm">
+                          כמה ימים לפני שבת/חג
+                        </Label>
+                        <select
+                          id="whatsapp-days-before"
+                          value={whatsappSettings.daysBeforeShabbat}
+                          onChange={(e) =>
+                            setWhatsappSettings({
+                              ...whatsappSettings,
+                              daysBeforeShabbat: parseInt(e.target.value),
+                            })
+                          }
+                          className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value={0}>באותו יום</option>
+                          <option value={1}>יום לפני</option>
+                          <option value={2}>יומיים לפני</option>
+                          <option value={3}>3 ימים לפני</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label htmlFor="whatsapp-reminder-time" className="text-sm">
+                          שעת תזכורת
+                        </Label>
+                        <Input
+                          id="whatsapp-reminder-time"
+                          type="time"
+                          value={whatsappSettings.reminderTime}
+                          onChange={(e) =>
+                            setWhatsappSettings({ ...whatsappSettings, reminderTime: e.target.value })
+                          }
+                          className="mt-2"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex items-center gap-2 p-2 rounded bg-green-500/10 border border-green-500/20">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-xs text-green-700 dark:text-green-400">
+                      WhatsApp פעיל - {
+                        whatsappSettings.frequency === "daily" ? `כל יום בשעה ${whatsappSettings.morningTime}` :
+                        whatsappSettings.frequency === "holidays_only" ? `לפני חגים בשעה ${whatsappSettings.reminderTime}` :
+                        `שבועי בשעה ${whatsappSettings.reminderTime}`
+                      }
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
 
