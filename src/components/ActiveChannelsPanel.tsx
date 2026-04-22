@@ -242,21 +242,40 @@ export const ActiveChannelsPanel = () => {
             {CHANNELS.map((ch) => {
               const Icon = ch.icon;
               const enabled = channels[ch.key];
+              const isPush = ch.key === "push";
+              const pushBlocked = isPush && !pushSupported;
               return (
                 <div
                   key={ch.key}
                   className="flex items-center justify-between p-2 rounded-md hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${enabled ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm ${enabled ? "" : "text-muted-foreground"}`}>
-                      {ch.label}
-                    </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon className={`w-4 h-4 shrink-0 ${enabled ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="min-w-0">
+                      <div className={`text-sm ${enabled ? "" : "text-muted-foreground"}`}>
+                        {ch.label}
+                      </div>
+                      {pushBlocked && (
+                        <div className="text-[10px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> לא נתמך בדפדפן זה
+                        </div>
+                      )}
+                      {isPush && pushSupported && !pushSubscribed && enabled === false && (
+                        <div className="text-[10px] text-muted-foreground">
+                          הפעלה תבקש הרשאה מהדפדפן
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <Switch
-                    checked={enabled}
-                    onCheckedChange={(v) => handleToggle(ch.key, v)}
-                  />
+                  {isPush && togglingPush ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Switch
+                      checked={enabled}
+                      onCheckedChange={(v) => handleToggle(ch.key, v)}
+                      disabled={pushBlocked}
+                    />
+                  )}
                 </div>
               );
             })}
