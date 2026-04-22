@@ -39,7 +39,10 @@ export const ActiveChannelsPanel = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
+  const [togglingPush, setTogglingPush] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [pushSupported, setPushSupported] = useState(true);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
   const [channels, setChannels] = useState<Record<ChannelKey, boolean>>({
     push: false,
     email: false,
@@ -53,6 +56,9 @@ export const ActiveChannelsPanel = () => {
   }, []);
 
   const load = async () => {
+    const supported = isWebPushSupported();
+    setPushSupported(supported);
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
@@ -66,31 +72,95 @@ export const ActiveChannelsPanel = () => {
       .eq("user_id", user.id)
       .maybeSingle();
 
+    let actuallySubscribed = false;
+    if (supported) {
+      actuallySubscribed = await checkWebPushSubscription();
+      setPushSubscribed(actuallySubscribed);
+    }
+
     if (data) {
       const d = data as any;
       setChannels({
-        push: d.push_enabled ?? false,
+        push: actuallySubscribed && (d.push_enabled ?? true),
         email: d.email_enabled ?? false,
         whatsapp: d.whatsapp_enabled ?? false,
         sms: d.sms_enabled ?? false,
         telegram: d.telegram_enabled ?? false,
       });
+    } else {
+      setChannels((c) => ({ ...c, push: actuallySubscribed }));
     }
     setLoading(false);
   };
 
-  const handleToggle = async (key: ChannelKey, value: boolean) => {
-    if (!userId) return;
-    const prev = channels[key];
-    setChannels((c) => ({ ...c, [key]: value }));
-
-    const field = CHANNELS.find((c) => c.key === key)!.dbField;
-    const { error } = await supabase
+  const updatePrefField = async (field: string, value: boolean) => {
+    if (!userId) return { error: new Error("not authenticated") } as any;
+    return await supabase
       .from("notification_preferences")
       .upsert(
         { user_id: userId, [field]: value } as any,
         { onConflict: "user_id" }
       );
+  };
+
+  const handleTogglePush = async (value: boolean) => {
+    if (!pushSupported) {
+      toast({
+        title: "הדפדפן לא תומך",
+        description: "התראות Push אינן נתמכות בדפדפן זה. נסה Chrome / Edge / Firefox.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTogglingPush(true);
+    try {
+      if (value) {
+        const granted = await requestWebPushPermission();
+        if (!granted) {
+          toast({
+            title: "הרשאה נדחתה",
+            description: "יש לאפשר התראות בדפדפן (סמל המנעול → התראות → אפשר)",
+            variant: "destructive",
+          });
+          return;
+        }
+        const sub = await subscribeToWebPush(VAPID_PUBLIC_KEY);
+        if (!sub) throw new Error("נכשל יצירת מנוי Push");
+        const saved = await saveSubscriptionToDatabase(sub);
+        if (!saved) throw new Error("נכשלה שמירת המנוי במסד הנתונים");
+        await updatePrefField("push_enabled", true);
+        setPushSubscribed(true);
+        setChannels((c) => ({ ...c, push: true }));
+        toast({ title: "✅ התראות Push הופעלו" });
+      } else {
+        await unsubscribeFromWebPush();
+        await updatePrefField("push_enabled", false);
+        setPushSubscribed(false);
+        setChannels((c) => ({ ...c, push: false }));
+        toast({ title: "התראות Push כובו" });
+      }
+    } catch (e: any) {
+      toast({
+        title: "שגיאה",
+        description: e.message || "לא הצלחנו לעדכן את הרשמת ה-Push",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingPush(false);
+    }
+  };
+
+  const handleToggle = async (key: ChannelKey, value: boolean) => {
+    if (key === "push") {
+      await handleTogglePush(value);
+      return;
+    }
+    if (!userId) return;
+    const prev = channels[key];
+    setChannels((c) => ({ ...c, [key]: value }));
+
+    const field = CHANNELS.find((c) => c.key === key)!.dbField;
+    const { error } = await updatePrefField(field, value);
 
     if (error) {
       setChannels((c) => ({ ...c, [key]: prev }));
