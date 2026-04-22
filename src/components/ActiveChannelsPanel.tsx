@@ -2,10 +2,21 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Bell, Mail, MessageSquare, Smartphone, Send, Loader2, Settings as SettingsIcon } from "lucide-react";
+import { Bell, Mail, MessageSquare, Smartphone, Send, Loader2, Settings as SettingsIcon, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  isWebPushSupported,
+  requestWebPushPermission,
+  subscribeToWebPush,
+  unsubscribeFromWebPush,
+  checkWebPushSubscription,
+  saveSubscriptionToDatabase,
+} from "@/lib/webPushNotifications";
+
+const VAPID_PUBLIC_KEY =
+  "BIXklk4iVQgE4UUVB5eM5PrxpdvM2M_W6xKqg91b1HjF2PsnhbetNNVaxJdpgYp9uRhvu491o6HVdDZIkeWby8I";
 
 type ChannelKey = "push" | "email" | "whatsapp" | "sms" | "telegram";
 
@@ -17,7 +28,7 @@ interface ChannelDef {
 }
 
 const CHANNELS: ChannelDef[] = [
-  { key: "push", label: "התראות Push", icon: Bell, dbField: "push_enabled" },
+  { key: "push", label: "התראות בדפדפן (Push)", icon: Bell, dbField: "push_enabled" },
   { key: "email", label: "אימייל", icon: Mail, dbField: "email_enabled" },
   { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, dbField: "whatsapp_enabled" },
   { key: "sms", label: "SMS", icon: Smartphone, dbField: "sms_enabled" },
