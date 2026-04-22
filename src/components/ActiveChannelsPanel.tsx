@@ -2,10 +2,21 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Bell, Mail, MessageSquare, Smartphone, Send, Loader2, Settings as SettingsIcon } from "lucide-react";
+import { Bell, Mail, MessageSquare, Smartphone, Send, Loader2, Settings as SettingsIcon, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  isWebPushSupported,
+  requestWebPushPermission,
+  subscribeToWebPush,
+  unsubscribeFromWebPush,
+  checkWebPushSubscription,
+  saveSubscriptionToDatabase,
+} from "@/lib/webPushNotifications";
+
+const VAPID_PUBLIC_KEY =
+  "BIXklk4iVQgE4UUVB5eM5PrxpdvM2M_W6xKqg91b1HjF2PsnhbetNNVaxJdpgYp9uRhvu491o6HVdDZIkeWby8I";
 
 type ChannelKey = "push" | "email" | "whatsapp" | "sms" | "telegram";
 
@@ -17,7 +28,7 @@ interface ChannelDef {
 }
 
 const CHANNELS: ChannelDef[] = [
-  { key: "push", label: "התראות Push", icon: Bell, dbField: "push_enabled" },
+  { key: "push", label: "התראות בדפדפן (Push)", icon: Bell, dbField: "push_enabled" },
   { key: "email", label: "אימייל", icon: Mail, dbField: "email_enabled" },
   { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, dbField: "whatsapp_enabled" },
   { key: "sms", label: "SMS", icon: Smartphone, dbField: "sms_enabled" },
@@ -28,7 +39,10 @@ export const ActiveChannelsPanel = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
+  const [togglingPush, setTogglingPush] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [pushSupported, setPushSupported] = useState(true);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
   const [channels, setChannels] = useState<Record<ChannelKey, boolean>>({
     push: false,
     email: false,
@@ -42,6 +56,9 @@ export const ActiveChannelsPanel = () => {
   }, []);
 
   const load = async () => {
+    const supported = isWebPushSupported();
+    setPushSupported(supported);
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
@@ -55,31 +72,95 @@ export const ActiveChannelsPanel = () => {
       .eq("user_id", user.id)
       .maybeSingle();
 
+    let actuallySubscribed = false;
+    if (supported) {
+      actuallySubscribed = await checkWebPushSubscription();
+      setPushSubscribed(actuallySubscribed);
+    }
+
     if (data) {
       const d = data as any;
       setChannels({
-        push: d.push_enabled ?? false,
+        push: actuallySubscribed && (d.push_enabled ?? true),
         email: d.email_enabled ?? false,
         whatsapp: d.whatsapp_enabled ?? false,
         sms: d.sms_enabled ?? false,
         telegram: d.telegram_enabled ?? false,
       });
+    } else {
+      setChannels((c) => ({ ...c, push: actuallySubscribed }));
     }
     setLoading(false);
   };
 
-  const handleToggle = async (key: ChannelKey, value: boolean) => {
-    if (!userId) return;
-    const prev = channels[key];
-    setChannels((c) => ({ ...c, [key]: value }));
-
-    const field = CHANNELS.find((c) => c.key === key)!.dbField;
-    const { error } = await supabase
+  const updatePrefField = async (field: string, value: boolean) => {
+    if (!userId) return { error: new Error("not authenticated") } as any;
+    return await supabase
       .from("notification_preferences")
       .upsert(
         { user_id: userId, [field]: value } as any,
         { onConflict: "user_id" }
       );
+  };
+
+  const handleTogglePush = async (value: boolean) => {
+    if (!pushSupported) {
+      toast({
+        title: "הדפדפן לא תומך",
+        description: "התראות Push אינן נתמכות בדפדפן זה. נסה Chrome / Edge / Firefox.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTogglingPush(true);
+    try {
+      if (value) {
+        const granted = await requestWebPushPermission();
+        if (!granted) {
+          toast({
+            title: "הרשאה נדחתה",
+            description: "יש לאפשר התראות בדפדפן (סמל המנעול → התראות → אפשר)",
+            variant: "destructive",
+          });
+          return;
+        }
+        const sub = await subscribeToWebPush(VAPID_PUBLIC_KEY);
+        if (!sub) throw new Error("נכשל יצירת מנוי Push");
+        const saved = await saveSubscriptionToDatabase(sub);
+        if (!saved) throw new Error("נכשלה שמירת המנוי במסד הנתונים");
+        await updatePrefField("push_enabled", true);
+        setPushSubscribed(true);
+        setChannels((c) => ({ ...c, push: true }));
+        toast({ title: "✅ התראות Push הופעלו" });
+      } else {
+        await unsubscribeFromWebPush();
+        await updatePrefField("push_enabled", false);
+        setPushSubscribed(false);
+        setChannels((c) => ({ ...c, push: false }));
+        toast({ title: "התראות Push כובו" });
+      }
+    } catch (e: any) {
+      toast({
+        title: "שגיאה",
+        description: e.message || "לא הצלחנו לעדכן את הרשמת ה-Push",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingPush(false);
+    }
+  };
+
+  const handleToggle = async (key: ChannelKey, value: boolean) => {
+    if (key === "push") {
+      await handleTogglePush(value);
+      return;
+    }
+    if (!userId) return;
+    const prev = channels[key];
+    setChannels((c) => ({ ...c, [key]: value }));
+
+    const field = CHANNELS.find((c) => c.key === key)!.dbField;
+    const { error } = await updatePrefField(field, value);
 
     if (error) {
       setChannels((c) => ({ ...c, [key]: prev }));
@@ -161,21 +242,40 @@ export const ActiveChannelsPanel = () => {
             {CHANNELS.map((ch) => {
               const Icon = ch.icon;
               const enabled = channels[ch.key];
+              const isPush = ch.key === "push";
+              const pushBlocked = isPush && !pushSupported;
               return (
                 <div
                   key={ch.key}
                   className="flex items-center justify-between p-2 rounded-md hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${enabled ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-sm ${enabled ? "" : "text-muted-foreground"}`}>
-                      {ch.label}
-                    </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon className={`w-4 h-4 shrink-0 ${enabled ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="min-w-0">
+                      <div className={`text-sm ${enabled ? "" : "text-muted-foreground"}`}>
+                        {ch.label}
+                      </div>
+                      {pushBlocked && (
+                        <div className="text-[10px] text-destructive flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> לא נתמך בדפדפן זה
+                        </div>
+                      )}
+                      {isPush && pushSupported && !pushSubscribed && enabled === false && (
+                        <div className="text-[10px] text-muted-foreground">
+                          הפעלה תבקש הרשאה מהדפדפן
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <Switch
-                    checked={enabled}
-                    onCheckedChange={(v) => handleToggle(ch.key, v)}
-                  />
+                  {isPush && togglingPush ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Switch
+                      checked={enabled}
+                      onCheckedChange={(v) => handleToggle(ch.key, v)}
+                      disabled={pushBlocked}
+                    />
+                  )}
                 </div>
               );
             })}
