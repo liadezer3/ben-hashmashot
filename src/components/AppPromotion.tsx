@@ -21,7 +21,10 @@ const shareViaFacebook = (url: string): void => {
 
 export const AppPromotion = () => {
   const { toast } = useToast();
-  const appUrl = window.location.origin;
+  const websiteUrl = "https://ben-hashmashot.com";
+  const webAppUrl = "https://ben-hashmashot.lovable.app";
+  const playStoreUrl = "https://play.google.com/store/apps/details?id=app.lovable.1a071f31ad544459a40c7b437868751f";
+  const appUrl = websiteUrl;
   
   const promotionText = `🕯️ גילית את האפליקציה הכי שימושית לשבת!
 
@@ -29,16 +32,25 @@ export const AppPromotion = () => {
 
 📱 מה מקבלים?
 📅 זמני שבת מדויקים לפי המיקום שלך
-🔔 התראות אוטומטיות במייל, SMS ווואטסאפ
+🔔 התראות אוטומטיות במייל, SMS, וואטסאפ וטלגרם
 📋 רשימת משימות להכנה לשבת
 📖 דבר תורה שבועי מעודכן
 💝 יומן זיכרונות משפחתי
 ⭐ חגים קרובים ותאריכים חשובים
 👨‍👩‍👧‍👦 ניהול משפחה והתראות לכולם
 
-🔗 הצטרפו עכשיו: ${appUrl}
+🔗 הצטרפו עכשיו בכל אחת מהדרכים הבאות:
 
-שבת שלום! ✨`;
+🌐 האתר הרשמי:
+${websiteUrl}
+
+💻 גרסת ווב (פתיחה מיידית בדפדפן):
+${webAppUrl}
+
+📲 הורדה מחנות Google Play (אנדרואיד):
+${playStoreUrl}
+
+שבת שלום ומבורך! ✨`;
 
   const emailSubject = "גיליתי אפליקציה מדהימה לזמני שבת - חייבים לנסות!";
 
