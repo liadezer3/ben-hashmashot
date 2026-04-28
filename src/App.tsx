@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import InvitePage from "./pages/InvitePage";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Landing from "./pages/Landing";
 import { ContactBar } from "./components/ContactBar";
 import { ViralShareButton } from "./components/ViralShareButton";
 
@@ -42,6 +43,10 @@ const App = () => (
             <Route path="/invite/:code" element={<InvitePage />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/landing" element={<Landing />} />
+            <Route path="/sms-shabbat" element={<Landing />} />
+            <Route path="/whatsapp-shabbat" element={<Landing />} />
+            <Route path="/candle-lighting-reminder" element={<Landing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
