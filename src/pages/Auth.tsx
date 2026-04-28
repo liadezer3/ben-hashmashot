@@ -176,6 +176,29 @@ const Auth = () => {
             התחבר עם Google
           </Button>
 
+          <Button
+            variant="secondary"
+            className="w-full mb-4 flex items-center justify-center gap-2"
+            disabled={loading}
+            onClick={async () => {
+              setLoading(true);
+              const { error } = await supabase.auth.signInAnonymously();
+              setLoading(false);
+              if (error) {
+                toast({
+                  title: "שגיאה בכניסה כאורח",
+                  description: error.message,
+                  variant: "destructive",
+                });
+                return;
+              }
+              toast({ title: "ברוכים הבאים! 🌅", description: "נכנסתם כאורחים" });
+              navigate("/");
+            }}
+          >
+            👤 המשך כאורח (ללא הרשמה)
+          </Button>
+
           <div className="relative mb-4">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />

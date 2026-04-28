@@ -59,7 +59,7 @@ const Index = () => {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
-        navigate("/auth");
+        navigate("/landing");
       } else {
         setUserId(session.user.id);
         // Load user's city from profile
@@ -86,7 +86,7 @@ const Index = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
-        navigate("/auth");
+        navigate("/landing");
       } else {
         setUserId(session.user.id);
         setLoading(false);
