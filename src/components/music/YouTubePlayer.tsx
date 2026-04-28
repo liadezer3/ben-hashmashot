@@ -31,16 +31,19 @@ const YouTubePlayer = ({
 }: YouTubePlayerProps) => {
   return (
     <div className="space-y-4">
-      {/* YouTube embed */}
+      {/* YouTube embed - using search query for reliability */}
       <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
         <iframe
-          src={`https://www.youtube.com/embed/${video.id}?autoplay=${isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}&enablejsapi=1`}
+          src={`https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(video.title + ' שבת ניגון')}&autoplay=${isPlaying ? 1 : 0}&mute=${isMuted ? 1 : 0}`}
           title={video.title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           className="absolute inset-0 w-full h-full"
         />
       </div>
+      <p className="text-xs text-center text-muted-foreground">
+        💡 הסרטונים נטענים אוטומטית מחיפוש YouTube - לחץ על כפתור ההפעלה
+      </p>
 
       {/* Current track info */}
       <div className="text-center">
