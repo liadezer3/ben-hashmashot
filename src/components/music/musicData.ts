@@ -36,8 +36,8 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
       { id: 'gPQpL5horDc', title: 'אשת חיל - מרדכי בן דוד' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Shabbat Vibes' },
-      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'Jewish Music - Shabbat' },
+      { uri: '37i9dQZF1DWWEcRhUVtL8n', title: 'Shabbat Shalom - Spotify' },
+      { uri: '37i9dQZF1DX0XUfTFmNBRM', title: 'Jewish Spiritual Music' },
     ]
   },
   'friday-night': {
@@ -51,8 +51,8 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
       { id: 'I7MwBKHpaTk', title: 'ידיד נפש' },
     ],
     spotify: [
-      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'Friday Night Niggunim' },
-      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Shabbat Vibes' },
+      { uri: '37i9dQZF1DWWEcRhUVtL8n', title: 'Shabbat Shalom' },
+      { uri: '37i9dQZF1DX0XUfTFmNBRM', title: 'ניגוני ליל שבת' },
     ]
   },
   'shabbat-morning': {
@@ -66,8 +66,8 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
       { id: 'gPQpL5horDc', title: 'אשת חיל' },
     ],
     spotify: [
-      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'ניגוני שבת' },
-      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Shabbat Morning' },
+      { uri: '37i9dQZF1DWWEcRhUVtL8n', title: 'Shabbat Morning' },
+      { uri: '37i9dQZF1DX0XUfTFmNBRM', title: 'ניגוני שבת' },
     ]
   },
   'seuda-shlishit': {
@@ -81,7 +81,7 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
       { id: 'k0BWlvnBmIE', title: 'ניגוני שבת' },
     ],
     spotify: [
-      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'סעודה שלישית' },
+      { uri: '37i9dQZF1DX0XUfTFmNBRM', title: 'סעודה שלישית' },
     ]
   },
   'havdalah': {
@@ -94,7 +94,7 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
       { id: 'k0BWlvnBmIE', title: 'שבוע טוב' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'שירי הבדלה' },
+      { uri: '37i9dQZF1DWWEcRhUVtL8n', title: 'שירי הבדלה' },
     ]
   },
   'weekday': {
@@ -107,8 +107,8 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
       { id: 'gPQpL5horDc', title: 'מוזיקה יהודית' },
     ],
     spotify: [
-      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'מוזיקה יהודית' },
-      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Jewish Music' },
+      { uri: '37i9dQZF1DX0XUfTFmNBRM', title: 'מוזיקה יהודית' },
+      { uri: '37i9dQZF1DWWEcRhUVtL8n', title: 'Jewish Music' },
     ]
   }
 };
