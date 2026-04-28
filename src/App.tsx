@@ -16,6 +16,7 @@ import InvitePage from "./pages/InvitePage";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import { ContactBar } from "./components/ContactBar";
+import { ViralShareButton } from "./components/ViralShareButton";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -46,6 +47,7 @@ const App = () => (
           </Routes>
           </div>
           <ContactBar position="bottom" />
+          <ViralShareButton />
         </BrowserRouter>
       </ObservanceProvider>
     </TooltipProvider>
