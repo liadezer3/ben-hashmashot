@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { KosherShabbatMode } from "@/components/KosherShabbatMode";
 import { PhaseTransition } from "@/components/PhaseTransition";
+import { EnhancedFamilyHub } from "@/components/EnhancedFamilyHub";
 import { 
   BarChart3,
   Settings, 
@@ -173,6 +174,13 @@ const Index = () => {
 
         {/* Active notification channels with quick toggles + test all */}
         <ActiveChannelsPanel />
+
+        {/* Enhanced Family Hub: Sharing, Shopping, Guest Reminders */}
+        <EnhancedFamilyHub
+          userId={userId}
+          candleLighting={candleLighting}
+          havdalah={havdalah}
+        />
 
         {/* Candle Lighting Tracker */}
         {showReligiousContent && (
