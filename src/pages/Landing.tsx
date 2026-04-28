@@ -1,13 +1,20 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Bell, MessageSquare, Mail, Smartphone, Clock, MapPin, Users, Check, Star } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Bell, MapPin, MessageSquare, Send, Smartphone, Zap, Coffee, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.jpg";
+import whatsappIcon from "@/assets/whatsapp-icon.png";
 
 const Landing = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    document.title = "תזכורת כניסת שבת ב-SMS, וואטסאפ ומייל | בין השמשות";
+    document.title = "השבת לא תפתיע אותך יותר | בין השמשות - תזכורות חכמות לכניסת השבת";
 
     const setMeta = (name: string, content: string, attr: "name" | "property" = "name") => {
       let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
@@ -21,14 +28,17 @@ const Landing = () => {
 
     setMeta(
       "description",
-      "אל תשכחו להדליק נרות שבת! קבלו תזכורת אוטומטית על כניסת ויציאת שבת ישירות לנייד - SMS, וואטסאפ ומייל. חינם, מדויק לפי המיקום שלכם."
+      "תזכורות חכמות לכניסת השבת בדיוק לפי המיקום שלך. בלי הרשמה, בלי סיסמאות. וואטסאפ, טלגרם או פוש לנייד - קליק אחד ואתם מסודרים."
     );
-    setMeta("keywords", "תזכורת כניסת שבת, התראת שבת SMS, זמני שבת וואטסאפ, הדלקת נרות תזכורת, זמני כניסת שבת, יציאת שבת, אפליקציית שבת");
-    setMeta("og:title", "תזכורת כניסת שבת לנייד - אל תשכחו להדליק נרות", "property");
-    setMeta("og:description", "התראות אוטומטיות לכניסת ויציאת שבת ב-SMS, וואטסאפ ומייל. הצטרפו עכשיו בחינם.", "property");
+    setMeta("keywords", "תזכורת כניסת שבת, התראות שבת, זמני שבת, וואטסאפ שבת, טלגרם שבת, הדלקת נרות");
+    setMeta("og:title", "השבת לא תפתיע אותך יותר", "property");
+    setMeta(
+      "og:description",
+      "תזכורות חכמות לכניסת השבת. בלי הרשמה, בלי סיסמאות. קליק אחד ואתם מסודרים.",
+      "property"
+    );
     setMeta("og:type", "website", "property");
 
-    // Canonical
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonical) {
       canonical = document.createElement("link");
@@ -36,230 +46,192 @@ const Landing = () => {
       document.head.appendChild(canonical);
     }
     canonical.href = window.location.origin + "/landing";
-
-    // JSON-LD
-    const jsonLd = {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      name: "בין השמשות - תזכורת כניסת שבת",
-      description:
-        "מערכת התראות אוטומטית לכניסת ויציאת שבת וחגים ב-SMS, וואטסאפ ומייל לפי המיקום שלכם.",
-      applicationCategory: "LifestyleApplication",
-      operatingSystem: "Web, Android, iOS",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "ILS" },
-      aggregateRating: { "@type": "AggregateRating", ratingValue: "4.9", reviewCount: "127" },
-    };
-    let script = document.getElementById("landing-jsonld") as HTMLScriptElement | null;
-    if (!script) {
-      script = document.createElement("script");
-      script.id = "landing-jsonld";
-      script.type = "application/ld+json";
-      document.head.appendChild(script);
-    }
-    script.text = JSON.stringify(jsonLd);
-
-    // FAQ JSON-LD
-    const faqLd = {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: "איך אני מקבל תזכורת לכניסת שבת ב-SMS?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "נרשמים בחינם, בוחרים עיר וערוץ התראה (SMS / וואטסאפ / מייל / פוש), והמערכת שולחת התראה אוטומטית לפני כל כניסת שבת.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "האם השירות חינמי?",
-          acceptedAnswer: { "@type": "Answer", text: "כן, השימוש באפליקציה ובהתראות הוא חינם לחלוטין." },
-        },
-        {
-          "@type": "Question",
-          name: "איך לא לשכוח להדליק נרות שבת?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "מגדירים תזכורת אוטומטית 30 דקות (או כל זמן שתבחרו) לפני הדלקת נרות, והמערכת תשלח לכם התראה לוואטסאפ או SMS.",
-          },
-        },
-      ],
-    };
-    let faqScript = document.getElementById("landing-faq-jsonld") as HTMLScriptElement | null;
-    if (!faqScript) {
-      faqScript = document.createElement("script");
-      faqScript.id = "landing-faq-jsonld";
-      faqScript.type = "application/ld+json";
-      document.head.appendChild(faqScript);
-    }
-    faqScript.text = JSON.stringify(faqLd);
   }, []);
 
-  const channels = [
-    { icon: MessageSquare, title: "וואטסאפ", desc: "תזכורת ישירה לוואטסאפ לפני כניסת השבת" },
-    { icon: Smartphone, title: "SMS", desc: "הודעת SMS אוטומטית גם בלי אינטרנט" },
-    { icon: Mail, title: "אימייל", desc: "סיכום שבועי עם זמנים מדויקים ופרשת השבוע" },
-    { icon: Bell, title: "פוש לנייד", desc: "התראה מיידית באפליקציה ובדפדפן" },
-  ];
+  const handleGuestStart = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      toast({
+        title: "ברוכים הבאים! 🌅",
+        description: "נכנסתם כאורחים. בואו נגדיר התראות.",
+      });
+      navigate("/");
+    } catch (error: any) {
+      // Fallback: if anonymous auth not enabled, send to auth page
+      toast({
+        title: "מעבירים אתכם לכניסה מהירה",
+        description: "אפשר להירשם עם Google בלחיצה אחת.",
+      });
+      navigate("/auth");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const benefits = [
-    "מדויק לפי המיקום שלכם - בכל עיר בישראל ובעולם",
-    "אל תשכחו יותר להדליק נרות בזמן",
-    "תזכורות גם לחגים, ראש חודש וצומות",
-    "ניהול משפחתי - התראות לכל בני הבית",
-    "חינם לחלוטין, ללא פרסומות מציקות",
-    "פרשת השבוע ודבר תורה שבועי",
-  ];
-
-  const faqs = [
     {
-      q: "איך אני מקבל תזכורת לכניסת שבת ב-SMS?",
-      a: "נרשמים בחינם בלחיצה על 'התנסו עכשיו', בוחרים את העיר וערוצי ההתראה (SMS / וואטסאפ / מייל / פוש). מהרגע הזה תקבלו אוטומטית התראה לפני כל שבת וחג.",
+      icon: Zap,
+      emoji: "🚀",
+      title: "אפס חיכוך",
+      desc: "לא צריך שם משתמש, לא צריך אימייל ולא צריך להמציא סיסמה שוב. נכנסים ומתחילים.",
     },
     {
-      q: "האם אפשר לקבל תזכורת רק בוואטסאפ?",
-      a: "בהחלט. אפשר להפעיל ולכבות כל ערוץ התראה בנפרד דרך מסך ההגדרות.",
+      icon: Bell,
+      emoji: "🔔",
+      title: "התראות איפה שנוח לך",
+      desc: "וואטסאפ, טלגרם או התראות פוש לנייד – אנחנו נדאג שהתזכורת תגיע אליך בזמן.",
     },
     {
-      q: "איך לא לשכוח להדליק נרות שבת?",
-      a: "המערכת שולחת תזכורת לפי הזמן שאתם בוחרים - 5, 15, 30 דקות או שעה לפני הדלקת נרות. אפשרות נוספת: התראה גם לבן/בת זוג כדי שכל הבית יהיה מוכן בזמן.",
+      icon: MapPin,
+      emoji: "📍",
+      title: "דיוק מקסימלי",
+      desc: "המערכת מזהה אוטומטית איפה אתם נמצאים ומחשבת את זמני השבת המדויקים לרגע הזה.",
     },
     {
-      q: "האם השירות עולה כסף?",
-      a: "לא. כל הפיצ'רים הבסיסיים, כולל ההתראות בכל הערוצים, ניתנים בחינם.",
+      icon: Coffee,
+      emoji: "💆",
+      title: "להגיע לשבת ברוגע",
+      desc: 'במקום לבדוק כל רגע "מתי נכנס?", תנו לנו לעדכן אתכם 30 דקות לפני (או מתי שתחליטו).',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-primary/5 to-background">
-      {/* HERO */}
-      <section className="container mx-auto px-4 py-12 md:py-20 text-center">
-        <img
-          src={logo}
-          alt="לוגו אפליקציית בין השמשות - תזכורת כניסת שבת"
-          className="w-24 h-24 rounded-2xl mx-auto mb-6 shadow-xl"
-        />
-        <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
-          לא לשכוח <span className="text-primary">כניסת שבת</span> יותר.
-          <br />
-          תזכורת אוטומטית ישירות לנייד.
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-          קבלו התראה מדויקת על כניסת ויציאת שבת ב-<strong>וואטסאפ, SMS, מייל ופוש</strong> -
-          לפי המיקום שלכם, חינם לחלוטין.
-        </p>
+    <div className="min-h-screen bg-background">
+      {/* HERO - lots of whitespace */}
+      <section className="container mx-auto px-4 pt-16 md:pt-24 pb-12 max-w-4xl">
+        <div className="text-center space-y-8">
+          <img
+            src={logo}
+            alt="בין השמשות"
+            className="w-20 h-20 rounded-2xl mx-auto shadow-lg"
+          />
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-          <Link to="/auth">
-            <Button size="lg" className="text-lg px-8 py-6 shadow-lg gap-2">
-              <Bell className="w-5 h-5" />
-              התנסו עכשיו - הירשמו וקבלו התראה
-            </Button>
-          </Link>
-          <Link to="/">
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-              צפו בזמני שבת השבוע
-            </Button>
-          </Link>
-        </div>
+          <div className="space-y-6">
+            <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
+              השבת
+              <br />
+              <span className="text-primary">לא תפתיע אותך יותר.</span>
+            </h1>
 
-        <div className="flex items-center justify-center gap-2 mt-6 text-sm text-muted-foreground">
-          <div className="flex">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            ))}
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              תזכורות חכמות לכניסת השבת בדיוק לפי המיקום שלך.
+              <br />
+              בלי להירשם, בלי לזכור סיסמאות ובלי כאבי ראש.
+              <br />
+              <strong className="text-foreground">קליק אחד – ואתם מסודרים.</strong>
+            </p>
           </div>
-          <span>4.9/5 מ-127 משתמשים מרוצים</span>
-        </div>
-      </section>
 
-      {/* CHANNELS */}
-      <section className="container mx-auto px-4 py-12">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">
-          התראת כניסת שבת - בכל ערוץ שתבחרו
-        </h2>
-        <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">
-          בחרו את הדרך הנוחה לכם לקבל את התזכורת. אפשר גם לשלב כמה ערוצים יחד.
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {channels.map((c) => (
-            <Card key={c.title} className="p-5 text-center hover:shadow-lg transition-shadow">
-              <c.icon className="w-10 h-10 text-primary mx-auto mb-3" />
-              <h3 className="font-bold mb-1">{c.title}</h3>
-              <p className="text-sm text-muted-foreground">{c.desc}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
+          {/* Primary CTA */}
+          <div className="space-y-4 pt-4">
+            <Button
+              onClick={handleGuestStart}
+              disabled={loading}
+              size="lg"
+              className="text-lg md:text-xl px-10 py-7 h-auto shadow-2xl gap-3 rounded-full hover:scale-105 transition-transform"
+            >
+              <Bell className="w-6 h-6" />
+              הפעל התראות עכשיו (זה בחינם)
+            </Button>
 
-      {/* BENEFITS */}
-      <section className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-            למה משפחות בוחרות בבין השמשות?
-          </h2>
-          <div className="grid md:grid-cols-2 gap-3">
-            {benefits.map((b) => (
-              <div key={b} className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
-                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span>{b}</span>
+            {/* Channel logos under CTA */}
+            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground pt-2">
+              <span>זמין ב:</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+                  <span>וואטסאפ</span>
+                </div>
+                <span className="opacity-40">·</span>
+                <div className="flex items-center gap-1.5">
+                  <Send className="w-4 h-4 text-[#0088cc]" />
+                  <span>טלגרם</span>
+                </div>
+                <span className="opacity-40">·</span>
+                <div className="flex items-center gap-1.5">
+                  <Smartphone className="w-4 h-4 text-primary" />
+                  <span>פוש</span>
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="container mx-auto px-4 py-12">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">איך זה עובד?</h2>
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {[
-            { icon: Users, title: "1. הרשמה מהירה", desc: "נרשמים תוך 30 שניות עם מייל או חשבון Google" },
-            { icon: MapPin, title: "2. בוחרים מיקום וערוצים", desc: "מגדירים את העיר והדרך לקבל את התראת השבת" },
-            { icon: Clock, title: "3. מקבלים תזכורת", desc: "אוטומטית לפני כל שבת, חג וצום - תמיד בזמן" },
-          ].map((s) => (
-            <Card key={s.title} className="p-6 text-center">
-              <s.icon className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h3 className="font-bold text-lg mb-2">{s.title}</h3>
-              <p className="text-muted-foreground">{s.desc}</p>
+      {/* WHY - generous whitespace */}
+      <section className="container mx-auto px-4 py-20 max-w-5xl">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+          למה Ben-Hashmashot?
+        </h2>
+
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+          {benefits.map((b) => (
+            <Card
+              key={b.title}
+              className="p-8 border-border/50 hover:border-primary/30 transition-colors bg-card/50"
+            >
+              <div className="text-4xl mb-4">{b.emoji}</div>
+              <h3 className="text-xl font-bold mb-3">{b.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">{b.desc}</p>
             </Card>
           ))}
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="container mx-auto px-4 py-12">
-        <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">שאלות נפוצות</h2>
-        <div className="max-w-3xl mx-auto space-y-4">
-          {faqs.map((f) => (
-            <Card key={f.q} className="p-5">
-              <h3 className="font-bold text-lg mb-2 text-primary">{f.q}</h3>
-              <p className="text-muted-foreground leading-relaxed">{f.a}</p>
-            </Card>
+      {/* HOW IT WORKS - super simple */}
+      <section className="container mx-auto px-4 py-20 max-w-3xl">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">איך זה עובד?</h2>
+          <p className="text-muted-foreground text-lg">(רמז: זה פשוט מדי)</p>
+        </div>
+
+        <div className="space-y-4 max-w-md mx-auto">
+          {[
+            "נכנסים לאתר.",
+            "בוחרים איך לקבל את ההתראה.",
+            "נרגעים. זהו.",
+          ].map((step, i) => (
+            <div
+              key={step}
+              className="flex items-center gap-4 p-5 bg-card rounded-xl border border-border"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg flex-shrink-0">
+                {i + 1}
+              </div>
+              <span className="text-lg">{step}</span>
+            </div>
           ))}
         </div>
       </section>
 
       {/* FINAL CTA */}
-      <section className="container mx-auto px-4 py-16 text-center">
-        <Card className="max-w-2xl mx-auto p-8 md:p-12 bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/30">
-          <h2 className="text-2xl md:text-4xl font-bold mb-4">
-            מוכנים להפסיק לשכוח את כניסת השבת?
-          </h2>
-          <p className="text-lg text-muted-foreground mb-6">
-            הצטרפו עכשיו בחינם וקבלו את ההתראה הראשונה כבר השבת.
-          </p>
-          <Link to="/auth">
-            <Button size="lg" className="text-lg px-10 py-6 shadow-xl gap-2">
-              <Bell className="w-5 h-5" />
-              התנסו עכשיו - הירשמו חינם
-            </Button>
-          </Link>
-          <p className="text-xs text-muted-foreground mt-4">
-            ללא כרטיס אשראי · ללא התחייבות · ביטול בכל רגע
-          </p>
-        </Card>
+      <section className="container mx-auto px-4 py-20 max-w-2xl text-center space-y-8">
+        <Button
+          onClick={handleGuestStart}
+          disabled={loading}
+          size="lg"
+          className="text-lg md:text-xl px-10 py-7 h-auto shadow-2xl gap-3 rounded-full hover:scale-105 transition-transform"
+        >
+          <Bell className="w-6 h-6" />
+          הפעל התראות עכשיו (זה בחינם)
+        </Button>
+
+        <button
+          onClick={() => navigate("/auth")}
+          className="text-sm text-muted-foreground hover:text-primary underline-offset-4 hover:underline flex items-center gap-1 mx-auto"
+        >
+          רוצה לשמור את ההגדרות לטווח ארוך? התחברות עם Google
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
+        {/* Micro-copy */}
+        <p className="text-sm text-muted-foreground italic max-w-md mx-auto leading-relaxed pt-8 border-t border-border">
+          אנחנו לא אוספים נתונים מיותרים ולא מציקים.
+          <br />
+          המטרה שלנו היא רק לעזור לך להיכנס לשבת עם חיוך. 🕯️
+        </p>
       </section>
     </div>
   );
