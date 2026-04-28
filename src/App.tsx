@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import InvitePage from "./pages/InvitePage";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import { ContactBar } from "./components/ContactBar";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -27,6 +28,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ContactBar position="top" />
+          <div className="pt-8 pb-8">
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -41,6 +44,8 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </div>
+          <ContactBar position="bottom" />
         </BrowserRouter>
       </ObservanceProvider>
     </TooltipProvider>
