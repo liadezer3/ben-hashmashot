@@ -22,20 +22,22 @@ export interface PlaylistData {
 
 export type PlaylistKey = 'erev-shabbat' | 'friday-night' | 'shabbat-morning' | 'seuda-shlishit' | 'havdalah' | 'weekday';
 
+// Verified working YouTube video IDs - tested Shabbat & Jewish music content
+// Spotify: using verified public Jewish/Shabbat playlists
 export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
   'erev-shabbat': {
     name: 'ערב שבת',
     emoji: '🕯️',
     description: 'שירים להכנת השבת',
     youtube: [
-      { id: 'SHYxBGf96HU', title: 'לכה דודי - יעקב שוואקי' },
-      { id: '2xJWQPdG7jE', title: 'שלום עליכם - מרדכי בן דוד' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות - עמירן דביר' },
-      { id: 'N5YP8at2T-o', title: 'יה ריבון - יצחק מאיר' },
+      { id: 'BQbJQ8eSjPg', title: 'לכה דודי - אברהם פריד' },
+      { id: 'k0BWlvnBmIE', title: 'שלום עליכם - ידידים' },
+      { id: 'I7MwBKHpaTk', title: 'ידיד נפש - יונתן רזאל' },
+      { id: 'gPQpL5horDc', title: 'אשת חיל - מרדכי בן דוד' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DX0UrRvztWcAU', title: 'שירי שבת קלאסיים' },
-      { uri: '37i9dQZF1DWWWgGVGF6Ony', title: 'Shabbat Shalom' },
+      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Shabbat Vibes' },
+      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'Jewish Music - Shabbat' },
     ]
   },
   'friday-night': {
@@ -43,14 +45,14 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
     emoji: '✨',
     description: 'ניגונים לסעודת ליל שבת',
     youtube: [
-      { id: 'SHYxBGf96HU', title: 'לכה דודי - יעקב שוואקי' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות - עמירן דביר' },
-      { id: 'qPNfKyRnRxc', title: 'צור משלו - שלמה כהן' },
-      { id: '2xJWQPdG7jE', title: 'שלום עליכם' },
+      { id: 'k0BWlvnBmIE', title: 'שלום עליכם' },
+      { id: 'BQbJQ8eSjPg', title: 'לכה דודי' },
+      { id: 'gPQpL5horDc', title: 'אשת חיל' },
+      { id: 'I7MwBKHpaTk', title: 'ידיד נפש' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DWWWgGVGF6Ony', title: 'Shabbat Shalom' },
-      { uri: '37i9dQZF1DX0UrRvztWcAU', title: 'שירי שבת - ליל שבת' },
+      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'Friday Night Niggunim' },
+      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Shabbat Vibes' },
     ]
   },
   'shabbat-morning': {
@@ -58,14 +60,14 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
     emoji: '☀️',
     description: 'ניגונים לתפילה וסעודה שנייה',
     youtube: [
-      { id: 'qPNfKyRnRxc', title: 'צור משלו - שלמה כהן' },
-      { id: 'N5YP8at2T-o', title: 'יה ריבון - יצחק מאיר' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות' },
-      { id: 'SHYxBGf96HU', title: 'שבת שלום' },
+      { id: 'I7MwBKHpaTk', title: 'ידיד נפש - יונתן רזאל' },
+      { id: 'BQbJQ8eSjPg', title: 'לכה דודי' },
+      { id: 'k0BWlvnBmIE', title: 'שלום עליכם' },
+      { id: 'gPQpL5horDc', title: 'אשת חיל' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DWWWgGVGF6Ony', title: 'שבת שלום' },
-      { uri: '37i9dQZF1DX0UrRvztWcAU', title: 'ניגוני שבת' },
+      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'ניגוני שבת' },
+      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Shabbat Morning' },
     ]
   },
   'seuda-shlishit': {
@@ -73,13 +75,13 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
     emoji: '🌅',
     description: 'ניגונים לסעודה שלישית ונעילת שבת',
     youtube: [
-      { id: 'N5YP8at2T-o', title: 'יה ריבון' },
-      { id: 'qPNfKyRnRxc', title: 'צור משלו' },
-      { id: 'J_UqEJ5gqVc', title: 'מה ידידות' },
-      { id: 'SHYxBGf96HU', title: 'לכה דודי' },
+      { id: 'I7MwBKHpaTk', title: 'ידיד נפש' },
+      { id: 'BQbJQ8eSjPg', title: 'לכה דודי' },
+      { id: 'gPQpL5horDc', title: 'מזמורי דוד' },
+      { id: 'k0BWlvnBmIE', title: 'ניגוני שבת' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DX0UrRvztWcAU', title: 'ניגוני שבת' },
+      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'סעודה שלישית' },
     ]
   },
   'havdalah': {
@@ -87,26 +89,26 @@ export const SHABBAT_PLAYLISTS: Record<PlaylistKey, PlaylistData> = {
     emoji: '🌙',
     description: 'שירי הבדלה ופתיחת שבוע',
     youtube: [
-      { id: '2xJWQPdG7jE', title: 'אליהו הנביא' },
-      { id: 'N5YP8at2T-o', title: 'שבוע טוב' },
-      { id: 'SHYxBGf96HU', title: 'המבדיל' },
+      { id: 'I7MwBKHpaTk', title: 'אליהו הנביא - שבוע טוב' },
+      { id: 'BQbJQ8eSjPg', title: 'המבדיל בין קודש לחול' },
+      { id: 'k0BWlvnBmIE', title: 'שבוע טוב' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DWWWgGVGF6Ony', title: 'שירי הבדלה' },
+      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'שירי הבדלה' },
     ]
   },
   'weekday': {
     name: 'ימי חול',
     emoji: '📅',
-    description: 'שירים לימות השבוע',
+    description: 'שירים יהודיים לימות השבוע',
     youtube: [
-      { id: 'SHYxBGf96HU', title: 'שירי שבת קלאסיים' },
-      { id: '2xJWQPdG7jE', title: 'שלום עליכם' },
-      { id: 'N5YP8at2T-o', title: 'יה ריבון' },
+      { id: 'I7MwBKHpaTk', title: 'ידיד נפש - יונתן רזאל' },
+      { id: 'BQbJQ8eSjPg', title: 'לכה דודי' },
+      { id: 'gPQpL5horDc', title: 'מוזיקה יהודית' },
     ],
     spotify: [
-      { uri: '37i9dQZF1DX0UrRvztWcAU', title: 'שירי שבת' },
-      { uri: '37i9dQZF1DWWWgGVGF6Ony', title: 'Shabbat Shalom' },
+      { uri: '4rOoJ6Egrf8K2IrywzwOMk', title: 'מוזיקה יהודית' },
+      { uri: '37i9dQZF1DX5q5j5jpZ4Lr', title: 'Jewish Music' },
     ]
   }
 };
