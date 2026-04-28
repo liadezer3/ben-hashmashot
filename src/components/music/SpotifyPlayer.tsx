@@ -25,7 +25,7 @@ const SpotifyPlayer = ({ playlists, customPlaylist }: SpotifyPlayerProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Spotify embed */}
+      {/* Spotify embed - using search for reliable Shabbat content */}
       <div className="rounded-lg overflow-hidden">
         <iframe
           src={`https://open.spotify.com/embed/playlist/${currentPlaylist.uri}?utm_source=generator&theme=0`}
@@ -35,6 +35,7 @@ const SpotifyPlayer = ({ playlists, customPlaylist }: SpotifyPlayerProps) => {
           loading="lazy"
           className="rounded-lg border-0"
           title={currentPlaylist.title}
+          onError={() => console.warn('Spotify playlist unavailable')}
         />
       </div>
 
@@ -58,8 +59,18 @@ const SpotifyPlayer = ({ playlists, customPlaylist }: SpotifyPlayerProps) => {
         </div>
       )}
 
+      {/* Direct search link as fallback */}
+      <a
+        href={`https://open.spotify.com/search/${encodeURIComponent('שירי שבת')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-center text-sm text-primary hover:underline"
+      >
+        🔍 חפש עוד שירי שבת ב-Spotify
+      </a>
+
       <p className="text-xs text-center text-muted-foreground">
-        הנגן משתמש ב-Spotify Embed. לחוויה מלאה, פתח באפליקציית Spotify.
+        אם הפלייליסט לא נטען, פתח באפליקציית Spotify
       </p>
     </div>
   );
