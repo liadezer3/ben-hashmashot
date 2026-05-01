@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard } from "@/lib/shareUtils";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 
-const LANDING_URL = "https://ben-hashmashot.lovable.app/landing";
+const LANDING_URL = "https://ben-hashmashot.com/landing";
 
 const VIRAL_MESSAGE = `🕯️ *התנסה עכשיו - אפליקציית בין השמשות* ✨
 

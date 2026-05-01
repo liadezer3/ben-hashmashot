@@ -71,13 +71,13 @@ const generateWhatsAppMessage = async (city: string = "Jerusalem"): Promise<stri
 
 שבת שלום ומבורך! ✨
 
-📱 בין השמשות: https://ben-hashmashot.lovable.app`;
+📱 בין השמשות: https://ben-hashmashot.com`;
     }
   } catch (error) {
     console.error('Error fetching Shabbat times for WhatsApp:', error);
   }
   
-  return `🕯️ שבת שלום! בדוק את זמני השבת באפליקציה: https://ben-hashmashot.lovable.app`;
+  return `🕯️ שבת שלום! בדוק את זמני השבת באפליקציה: https://ben-hashmashot.com`;
 };
 
 export const NotificationSettings = () => {
