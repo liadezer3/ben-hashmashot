@@ -45,7 +45,7 @@ interface Guest {
   status: string;
 }
 
-const LANDING_URL = "https://ben-hashmashot.lovable.app/landing";
+const LANDING_URL = "https://ben-hashmashot.com/landing";
 
 const buildDefaultShareMessage = (groupName: string) =>
   `🕯️ *הזמנה לקהילת ${groupName}* ✨

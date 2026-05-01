@@ -959,6 +959,33 @@ export type Database = {
           },
         ]
       }
+      smart_home_settings: {
+        Row: {
+          created_at: string
+          ha_config: Json | null
+          hue_config: Json | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ha_config?: Json | null
+          hue_config?: Json | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ha_config?: Json | null
+          hue_config?: Json | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           badge_key: string
