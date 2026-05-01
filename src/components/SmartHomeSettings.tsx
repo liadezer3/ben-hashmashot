@@ -268,29 +268,81 @@ const SmartHomeSettings = () => {
     }
   }, [haSettings.config]);
 
-  const loadAllSettings = () => {
+  const loadAllSettings = async () => {
     try {
+      // Try to load from cloud (DB) first - persists across devices/logins
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: cloud } = await supabase
+          .from('smart_home_settings')
+          .select('hue_config, ha_config')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (cloud?.hue_config) {
+          setHueSettings(cloud.hue_config as unknown as HueSettings);
+        } else {
+          // Migrate from localStorage if it exists
+          const savedHue = localStorage.getItem(HUE_STORAGE_KEY);
+          if (savedHue) {
+            const parsed = JSON.parse(savedHue);
+            setHueSettings(parsed);
+            await supabase.from('smart_home_settings').upsert({
+              user_id: user.id,
+              hue_config: parsed,
+            }, { onConflict: 'user_id' });
+          }
+        }
+
+        if (cloud?.ha_config) {
+          setHASettings(cloud.ha_config as unknown as HASettings);
+        } else {
+          const savedHA = localStorage.getItem(HA_STORAGE_KEY);
+          if (savedHA) {
+            const parsed = JSON.parse(savedHA);
+            setHASettings(parsed);
+            await supabase.from('smart_home_settings').upsert({
+              user_id: user.id,
+              ha_config: parsed,
+            }, { onConflict: 'user_id' });
+          }
+        }
+        return;
+      }
+
+      // Not signed in - fall back to localStorage only
       const savedHue = localStorage.getItem(HUE_STORAGE_KEY);
-      if (savedHue) {
-        setHueSettings(JSON.parse(savedHue));
-      }
+      if (savedHue) setHueSettings(JSON.parse(savedHue));
       const savedHA = localStorage.getItem(HA_STORAGE_KEY);
-      if (savedHA) {
-        setHASettings(JSON.parse(savedHA));
-      }
+      if (savedHA) setHASettings(JSON.parse(savedHA));
     } catch (error) {
       console.error('Error loading settings:', error);
+    }
+  };
+
+  const persistToCloud = async (field: 'hue_config' | 'ha_config', value: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from('smart_home_settings').upsert({
+        user_id: user.id,
+        [field]: value,
+      }, { onConflict: 'user_id' });
+    } catch (error) {
+      console.error(`Error saving ${field} to cloud:`, error);
     }
   };
 
   const saveHueSettings = (newSettings: HueSettings) => {
     setHueSettings(newSettings);
     localStorage.setItem(HUE_STORAGE_KEY, JSON.stringify(newSettings));
+    persistToCloud('hue_config', newSettings);
   };
 
   const saveHASettings = (newSettings: HASettings) => {
     setHASettings(newSettings);
     localStorage.setItem(HA_STORAGE_KEY, JSON.stringify(newSettings));
+    persistToCloud('ha_config', newSettings);
   };
 
   // ============ Philips Hue Functions ============
