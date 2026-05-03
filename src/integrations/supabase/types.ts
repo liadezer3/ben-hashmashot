@@ -1102,6 +1102,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_family_group_by_invite: {
+        Args: { _code: string }
+        Returns: {
+          id: string
+          invite_code: string
+          name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
