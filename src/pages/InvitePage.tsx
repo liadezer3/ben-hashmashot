@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Clock, Utensils, Check, X, HelpCircle } from "lucide-react";
+import { MapPin, Clock, Utensils, Check, X, HelpCircle, Users, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -18,12 +18,21 @@ interface Invitation {
   havdalah: string;
 }
 
+interface FamilyGroup {
+  id: string;
+  name: string;
+  invite_code: string;
+}
+
 const InvitePage = () => {
   const { code } = useParams<{ code: string }>();
+  const navigate = useNavigate();
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [group, setGroup] = useState<FamilyGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [joining, setJoining] = useState(false);
 
   // RSVP form
   const [guestName, setGuestName] = useState("");
@@ -32,21 +41,38 @@ const InvitePage = () => {
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    if (!code) return;
-    const fetch = async () => {
-      const { data } = await supabase
+    if (!code || code === ":code") {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    const fetchData = async () => {
+      // 1) Try Shabbat invitation first
+      const { data: invData } = await supabase
         .from("shabbat_invitations")
         .select("*")
         .eq("invite_code", code)
-        .single();
-      if (data) {
-        setInvitation(data as Invitation);
+        .maybeSingle();
+
+      if (invData) {
+        setInvitation(invData as Invitation);
+        setLoading(false);
+        return;
+      }
+
+      // 2) Fallback: try family group invite code (via SECURITY DEFINER RPC)
+      const { data: groupData } = await supabase.rpc("get_family_group_by_invite", {
+        _code: code,
+      });
+
+      if (groupData && Array.isArray(groupData) && groupData.length > 0) {
+        setGroup(groupData[0] as FamilyGroup);
       } else {
         setNotFound(true);
       }
       setLoading(false);
     };
-    fetch();
+    fetchData();
   }, [code]);
 
   const respond = async (status: string) => {
@@ -72,10 +98,35 @@ const InvitePage = () => {
     }
   };
 
+  const joinGroup = async () => {
+    if (!group) return;
+    setJoining(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      // Save invite code and send to auth
+      sessionStorage.setItem("pending_invite_code", group.invite_code);
+      navigate("/auth");
+      return;
+    }
+    const { error } = await supabase.from("family_group_members").insert({
+      group_id: group.id,
+      user_id: user.id,
+      display_name: user.email?.split("@")[0] || "חבר חדש",
+      role: "member",
+    });
+    setJoining(false);
+    if (error && !error.message.includes("duplicate")) {
+      toast.error("שגיאה בהצטרפות לקבוצה");
+    } else {
+      toast.success(`הצטרפת לקהילת ${group.name}! 🎉`);
+      setTimeout(() => navigate("/"), 1200);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">טוען...</p>
+        <p className="text-muted-foreground">טוען הזמנה...</p>
       </div>
     );
   }
@@ -86,7 +137,8 @@ const InvitePage = () => {
         <Card className="max-w-md w-full text-center p-8">
           <p className="text-4xl mb-4">🤷</p>
           <h1 className="text-xl font-bold mb-2">ההזמנה לא נמצאה</h1>
-          <p className="text-muted-foreground">ייתכן שהלינק שגוי או שההזמנה נמחקה</p>
+          <p className="text-muted-foreground mb-4">ייתכן שהלינק שגוי או שההזמנה נמחקה</p>
+          <Button onClick={() => navigate("/landing")}>לדף הבית</Button>
         </Card>
       </div>
     );
@@ -104,6 +156,46 @@ const InvitePage = () => {
     );
   }
 
+  // Family group invite view
+  if (group) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <p className="text-4xl mb-2">👨‍👩‍👧‍👦</p>
+            <CardTitle className="text-2xl">הוזמנת לקהילה</CardTitle>
+            <p className="text-muted-foreground mt-2">
+              <span className="font-semibold text-foreground">{group.name}</span> ב'בין השמשות'
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span>תזכורות חכמות לכניסת שבת</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                <span>רשימות קניות ואירוח משותפות</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                <span>זמני שבת מדויקים לפי המיקום</span>
+              </div>
+            </div>
+            <Button onClick={joinGroup} disabled={joining} className="w-full" size="lg">
+              {joining ? "מצטרף..." : `הצטרף לקהילת ${group.name}`}
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              קוד הצטרפות: <span className="font-mono">{group.invite_code}</span>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Shabbat invitation view
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-4">
       <Card className="max-w-md w-full">
@@ -138,7 +230,7 @@ const InvitePage = () => {
             <p className="font-semibold text-center">אישור הגעה</p>
             <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="השם שלך *" dir="rtl" />
             <Input value={guestContact} onChange={(e) => setGuestContact(e.target.value)} placeholder="טלפון / אימייל (אופציונלי)" dir="rtl" />
-            
+
             <div className="flex items-center gap-2">
               <Utensils className="w-4 h-4 text-muted-foreground" />
               <Input value={dish} onChange={(e) => setDish(e.target.value)} placeholder="מה אביא? (סלט, קינוח...)" dir="rtl" />
