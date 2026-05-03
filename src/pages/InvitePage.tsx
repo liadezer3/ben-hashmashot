@@ -111,6 +111,7 @@ const InvitePage = () => {
     const { error } = await supabase.from("family_group_members").insert({
       group_id: group.id,
       user_id: user.id,
+      display_name: user.email?.split("@")[0] || "חבר חדש",
       role: "member",
     });
     setJoining(false);
