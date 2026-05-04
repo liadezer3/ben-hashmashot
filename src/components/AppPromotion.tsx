@@ -21,8 +21,8 @@ const shareViaFacebook = (url: string): void => {
 
 export const AppPromotion = () => {
   const { toast } = useToast();
-  const websiteUrl = "https://ben-hashmashot.com";
-  const webAppUrl = "https://ben-hashmashot.com";
+  const websiteUrl = "https://ben-hashmashot.lovable.app";
+  const webAppUrl = "https://ben-hashmashot.lovable.app";
   const playStoreUrl = "https://play.google.com/store/apps/details?id=app.lovable.1a071f31ad544459a40c7b437868751f";
   const appUrl = websiteUrl;
   
