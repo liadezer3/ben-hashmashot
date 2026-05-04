@@ -1099,7 +1099,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_app_reviews: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          rating: number | null
+          review_text: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          rating?: number | null
+          review_text?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          rating?: number | null
+          review_text?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_family_group_by_invite: {
@@ -1108,6 +1134,18 @@ export type Database = {
           id: string
           invite_code: string
           name: string
+        }[]
+      }
+      get_invitation_by_code: {
+        Args: { _code: string }
+        Returns: {
+          address: string
+          candle_lighting: string
+          havdalah: string
+          host_name: string
+          id: string
+          message: string
+          shabbat_date: string
         }[]
       }
       has_role: {
