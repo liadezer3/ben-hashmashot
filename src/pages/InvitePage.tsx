@@ -47,15 +47,13 @@ const InvitePage = () => {
       return;
     }
     const fetchData = async () => {
-      // 1) Try Shabbat invitation first
-      const { data: invData } = await supabase
-        .from("shabbat_invitations")
-        .select("*")
-        .eq("invite_code", code)
-        .maybeSingle();
+      // 1) Try Shabbat invitation first via secure RPC (no public table read)
+      const { data: invRows } = await supabase.rpc("get_invitation_by_code", {
+        _code: code,
+      });
 
-      if (invData) {
-        setInvitation(invData as Invitation);
+      if (invRows && Array.isArray(invRows) && invRows.length > 0) {
+        setInvitation(invRows[0] as Invitation);
         setLoading(false);
         return;
       }
