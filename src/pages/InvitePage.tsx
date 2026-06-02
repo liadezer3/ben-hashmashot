@@ -79,13 +79,13 @@ const InvitePage = () => {
       return;
     }
 
-    const { error } = await supabase.from("invitation_guests").insert({
-      invitation_id: invitation.id,
-      guest_name: guestName.trim(),
-      guest_contact: guestContact || null,
-      status,
-      dish_to_bring: dish || null,
-      notes: notes || null,
+    const { error } = await supabase.rpc("rsvp_to_invitation", {
+      p_invite_code: code as string,
+      p_guest_name: guestName.trim(),
+      p_status: status,
+      p_guest_contact: guestContact || null,
+      p_dish: dish || null,
+      p_notes: notes || null,
     });
 
     if (error) {

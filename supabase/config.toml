@@ -43,3 +43,7 @@ verify_jwt = false
 [functions.shabbat-summary]
 enabled = true
 verify_jwt = false
+
+[functions.google-services]
+enabled = true
+verify_jwt = false

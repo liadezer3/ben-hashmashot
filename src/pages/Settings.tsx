@@ -28,7 +28,8 @@ import {
   Megaphone,
   Mail,
   Flame,
-  CalendarHeart
+  CalendarHeart,
+  Globe
 } from "lucide-react";
 
 // Import all feature components
@@ -60,6 +61,7 @@ import NotificationCenter from "@/components/NotificationCenter";
 import OmerCounter from "@/components/OmerCounter";
 import CandleLightingTracker from "@/components/CandleLightingTracker";
 import FamilyEventsCalendar from "@/components/FamilyEventsCalendar";
+import { GoogleIntegrationsHub } from "@/components/GoogleIntegrationsHub";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -177,6 +179,10 @@ const Settings = () => {
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">סיכום</span>
             </TabsTrigger>
+            <TabsTrigger value="google" className="gap-1 text-sm">
+              <Globe className="w-4 h-4" />
+              <span className="hidden sm:inline">Google</span>
+            </TabsTrigger>
             <TabsTrigger value="notification-center" className="gap-1 text-sm">
               <Megaphone className="w-4 h-4" />
               <span className="hidden sm:inline">מרכז התראות</span>
@@ -259,6 +265,10 @@ const Settings = () => {
 
           <TabsContent value="summary" className="space-y-6">
             <ShabbatSummary userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="google" className="space-y-6">
+            <GoogleIntegrationsHub />
           </TabsContent>
 
           <TabsContent value="notification-center" className="space-y-6">
