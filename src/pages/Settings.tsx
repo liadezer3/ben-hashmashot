@@ -61,6 +61,7 @@ import NotificationCenter from "@/components/NotificationCenter";
 import OmerCounter from "@/components/OmerCounter";
 import CandleLightingTracker from "@/components/CandleLightingTracker";
 import FamilyEventsCalendar from "@/components/FamilyEventsCalendar";
+import { GoogleIntegrationsHub } from "@/components/GoogleIntegrationsHub";
 
 const Settings = () => {
   const navigate = useNavigate();
