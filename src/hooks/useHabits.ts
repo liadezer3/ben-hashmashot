@@ -116,10 +116,15 @@ export const useHabits = (userId: string | null) => {
       if (qualifies) earned.push(b.key);
     }
     if (earned.length > 0) {
-      const inserts = earned.map((badge_key) => ({ user_id: userId, badge_key }));
-      const { error } = await supabase.from("user_badges").insert(inserts);
+      // Badge issuance is validated server-side; client only triggers re-evaluation.
+      const { data: awarded, error } = await supabase.rpc("award_qualified_badges");
+      if (!error && awarded) {
+        const awardedKeys = awarded as string[];
+        setBadges((prev) => [...prev, ...awardedKeys.filter((k) => !prev.includes(k))]);
+        earned.length = 0;
+        earned.push(...awardedKeys);
+      }
       if (!error) {
-        setBadges((prev) => [...prev, ...earned]);
         earned.forEach((key) => {
           const badge = BADGES.find((b) => b.key === key);
           if (badge) {
