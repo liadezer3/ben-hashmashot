@@ -1128,6 +1128,7 @@ export type Database = {
       }
     }
     Functions: {
+      award_qualified_badges: { Args: never; Returns: string[] }
       get_family_group_by_invite: {
         Args: { _code: string }
         Returns: {
@@ -1165,6 +1166,17 @@ export type Database = {
       }
       join_family_group_by_code: {
         Args: { p_display_name: string; p_invite_code: string }
+        Returns: string
+      }
+      rsvp_to_invitation: {
+        Args: {
+          p_dish?: string
+          p_guest_contact?: string
+          p_guest_name: string
+          p_invite_code: string
+          p_notes?: string
+          p_status: string
+        }
         Returns: string
       }
     }
