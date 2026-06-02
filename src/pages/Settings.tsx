@@ -267,6 +267,10 @@ const Settings = () => {
             <ShabbatSummary userId={userId} />
           </TabsContent>
 
+          <TabsContent value="google" className="space-y-6">
+            <GoogleIntegrationsHub />
+          </TabsContent>
+
           <TabsContent value="notification-center" className="space-y-6">
             <NotificationCenter />
           </TabsContent>
