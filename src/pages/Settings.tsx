@@ -28,7 +28,8 @@ import {
   Megaphone,
   Mail,
   Flame,
-  CalendarHeart
+  CalendarHeart,
+  Globe
 } from "lucide-react";
 
 // Import all feature components
