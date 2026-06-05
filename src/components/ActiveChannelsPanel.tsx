@@ -14,11 +14,19 @@ import {
   checkWebPushSubscription,
   saveSubscriptionToDatabase,
 } from "@/lib/webPushNotifications";
+import {
+  isLocalNotificationsSupported,
+  enableLocalNotifications,
+  checkLocalNotificationsEnabled,
+  sendLocalTestNotification,
+} from "@/lib/localNotifications";
 
 const VAPID_PUBLIC_KEY =
   "BIXklk4iVQgE4UUVB5eM5PrxpdvM2M_W6xKqg91b1HjF2PsnhbetNNVaxJdpgYp9uRhvu491o6HVdDZIkeWby8I";
 
-type ChannelKey = "push" | "email" | "whatsapp" | "sms" | "telegram";
+const LOCAL_PREF_KEY = "local_notifications_enabled";
+
+type ChannelKey = "push" | "local" | "email" | "whatsapp" | "sms" | "telegram";
 
 interface ChannelDef {
   key: ChannelKey;
@@ -29,6 +37,7 @@ interface ChannelDef {
 
 const CHANNELS: ChannelDef[] = [
   { key: "push", label: "התראות בדפדפן (Push)", icon: Bell, dbField: "push_enabled" },
+  { key: "local", label: "התראות מקומיות במכשיר", icon: Smartphone, dbField: "" },
   { key: "email", label: "אימייל", icon: Mail, dbField: "email_enabled" },
   { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, dbField: "whatsapp_enabled" },
   { key: "sms", label: "SMS", icon: Smartphone, dbField: "sms_enabled" },
