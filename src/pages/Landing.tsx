@@ -139,7 +139,7 @@ const Landing = () => {
             {/* Channel logos under CTA */}
             <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground pt-2">
               <span>זמין ב:</span>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
                 <div className="flex items-center gap-1.5">
                   <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
                   <span>וואטסאפ</span>
@@ -153,6 +153,16 @@ const Landing = () => {
                 <div className="flex items-center gap-1.5">
                   <Smartphone className="w-4 h-4 text-primary" />
                   <span>פוש</span>
+                </div>
+                <span className="opacity-40">·</span>
+                <div className="flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-primary" />
+                  <span>אימייל</span>
+                </div>
+                <span className="opacity-40">·</span>
+                <div className="flex items-center gap-1.5">
+                  <BellRing className="w-4 h-4 text-primary" />
+                  <span>התראות מקומיות</span>
                 </div>
               </div>
             </div>
