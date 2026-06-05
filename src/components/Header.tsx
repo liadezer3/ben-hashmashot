@@ -1,4 +1,4 @@
-import { User, Shield } from "lucide-react";
+import { User, Shield, Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
