@@ -90,17 +90,26 @@ export const ActiveChannelsPanel = () => {
       setPushSubscribed(actuallySubscribed);
     }
 
+    const localOk = isLocalNotificationsSupported();
+    setLocalSupported(localOk);
+    let localEnabled = false;
+    if (localOk) {
+      const granted = await checkLocalNotificationsEnabled();
+      localEnabled = granted && localStorage.getItem(LOCAL_PREF_KEY) === "true";
+    }
+
     if (data) {
       const d = data as any;
       setChannels({
         push: actuallySubscribed && (d.push_enabled ?? true),
+        local: localEnabled,
         email: d.email_enabled ?? false,
         whatsapp: d.whatsapp_enabled ?? false,
         sms: d.sms_enabled ?? false,
         telegram: d.telegram_enabled ?? false,
       });
     } else {
-      setChannels((c) => ({ ...c, push: actuallySubscribed }));
+      setChannels((c) => ({ ...c, push: actuallySubscribed, local: localEnabled }));
     }
     setLoading(false);
   };
