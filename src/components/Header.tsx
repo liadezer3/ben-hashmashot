@@ -1,4 +1,4 @@
-import { User, Shield } from "lucide-react";
+import { User, Shield, Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +108,13 @@ export const Header = () => {
           <p className="text-primary-foreground/90 text-lg">
             {t("app.subtitle")}
           </p>
+          <a
+            href="mailto:liadezer3@gmail.com"
+            className="text-primary-foreground/80 text-sm hover:underline flex items-center gap-1"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            liadezer3@gmail.com
+          </a>
         </div>
       </div>
     </header>

@@ -1,3 +1,4 @@
+import { Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -223,8 +224,15 @@ const Index = () => {
       </main>
 
       <footer className="border-t border-border mt-16 py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground space-y-2">
           <p>{t("footer.calculatedBy")}</p>
+          <a
+            href="mailto:liadezer3@gmail.com"
+            className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            liadezer3@gmail.com
+          </a>
         </div>
       </footer>
     </div>
