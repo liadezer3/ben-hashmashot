@@ -24,6 +24,14 @@ export const ContactBar = ({ position }: ContactBarProps) => {
           <Phone className="w-3.5 h-3.5" />
           +972 50-915-1878
         </a>
+        <span className="opacity-60">|</span>
+        <a
+          href="mailto:liadezer3@gmail.com"
+          className="flex items-center gap-1 hover:underline font-medium"
+        >
+          <Mail className="w-3.5 h-3.5" />
+          liadezer3@gmail.com
+        </a>
       </div>
     </div>
   );

@@ -108,6 +108,13 @@ export const Header = () => {
           <p className="text-primary-foreground/90 text-lg">
             {t("app.subtitle")}
           </p>
+          <a
+            href="mailto:liadezer3@gmail.com"
+            className="text-primary-foreground/80 text-sm hover:underline flex items-center gap-1"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            liadezer3@gmail.com
+          </a>
         </div>
       </div>
     </header>
