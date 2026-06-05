@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Bell, MapPin, MessageSquare, Send, Smartphone, Zap, Coffee, ArrowLeft } from "lucide-react";
+import { Bell, MapPin, MessageSquare, Send, Smartphone, Zap, Coffee, ArrowLeft, Mail, BellRing } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 
