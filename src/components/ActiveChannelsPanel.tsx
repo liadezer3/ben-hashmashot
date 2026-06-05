@@ -52,8 +52,11 @@ export const ActiveChannelsPanel = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [pushSupported, setPushSupported] = useState(true);
   const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [localSupported, setLocalSupported] = useState(true);
+  const [togglingLocal, setTogglingLocal] = useState(false);
   const [channels, setChannels] = useState<Record<ChannelKey, boolean>>({
     push: false,
+    local: false,
     email: false,
     whatsapp: false,
     sms: false,
