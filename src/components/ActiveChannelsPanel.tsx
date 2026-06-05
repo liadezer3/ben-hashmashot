@@ -14,11 +14,19 @@ import {
   checkWebPushSubscription,
   saveSubscriptionToDatabase,
 } from "@/lib/webPushNotifications";
+import {
+  isLocalNotificationsSupported,
+  enableLocalNotifications,
+  checkLocalNotificationsEnabled,
+  sendLocalTestNotification,
+} from "@/lib/localNotifications";
 
 const VAPID_PUBLIC_KEY =
   "BIXklk4iVQgE4UUVB5eM5PrxpdvM2M_W6xKqg91b1HjF2PsnhbetNNVaxJdpgYp9uRhvu491o6HVdDZIkeWby8I";
 
-type ChannelKey = "push" | "email" | "whatsapp" | "sms" | "telegram";
+const LOCAL_PREF_KEY = "local_notifications_enabled";
+
+type ChannelKey = "push" | "local" | "email" | "whatsapp" | "sms" | "telegram";
 
 interface ChannelDef {
   key: ChannelKey;
@@ -29,6 +37,7 @@ interface ChannelDef {
 
 const CHANNELS: ChannelDef[] = [
   { key: "push", label: "התראות בדפדפן (Push)", icon: Bell, dbField: "push_enabled" },
+  { key: "local", label: "התראות מקומיות במכשיר", icon: Smartphone, dbField: "" },
   { key: "email", label: "אימייל", icon: Mail, dbField: "email_enabled" },
   { key: "whatsapp", label: "WhatsApp", icon: MessageSquare, dbField: "whatsapp_enabled" },
   { key: "sms", label: "SMS", icon: Smartphone, dbField: "sms_enabled" },
@@ -43,8 +52,11 @@ export const ActiveChannelsPanel = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [pushSupported, setPushSupported] = useState(true);
   const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [localSupported, setLocalSupported] = useState(true);
+  const [togglingLocal, setTogglingLocal] = useState(false);
   const [channels, setChannels] = useState<Record<ChannelKey, boolean>>({
     push: false,
+    local: false,
     email: false,
     whatsapp: false,
     sms: false,
@@ -78,17 +90,26 @@ export const ActiveChannelsPanel = () => {
       setPushSubscribed(actuallySubscribed);
     }
 
+    const localOk = isLocalNotificationsSupported();
+    setLocalSupported(localOk);
+    let localEnabled = false;
+    if (localOk) {
+      const granted = await checkLocalNotificationsEnabled();
+      localEnabled = granted && localStorage.getItem(LOCAL_PREF_KEY) === "true";
+    }
+
     if (data) {
       const d = data as any;
       setChannels({
         push: actuallySubscribed && (d.push_enabled ?? true),
+        local: localEnabled,
         email: d.email_enabled ?? false,
         whatsapp: d.whatsapp_enabled ?? false,
         sms: d.sms_enabled ?? false,
         telegram: d.telegram_enabled ?? false,
       });
     } else {
-      setChannels((c) => ({ ...c, push: actuallySubscribed }));
+      setChannels((c) => ({ ...c, push: actuallySubscribed, local: localEnabled }));
     }
     setLoading(false);
   };
@@ -150,9 +171,54 @@ export const ActiveChannelsPanel = () => {
     }
   };
 
+  const handleToggleLocal = async (value: boolean) => {
+    if (!localSupported) {
+      toast({
+        title: "לא נתמך",
+        description: "התראות מקומיות אינן נתמכות במכשיר/דפדפן זה.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTogglingLocal(true);
+    try {
+      if (value) {
+        const granted = await enableLocalNotifications();
+        if (!granted) {
+          toast({
+            title: "הרשאה נדחתה",
+            description: "יש לאפשר התראות במכשיר כדי לקבל התראות מקומיות.",
+            variant: "destructive",
+          });
+          return;
+        }
+        localStorage.setItem(LOCAL_PREF_KEY, "true");
+        setChannels((c) => ({ ...c, local: true }));
+        await sendLocalTestNotification("בין השמשות", "התראות מקומיות הופעלו ✅");
+        toast({ title: "✅ התראות מקומיות הופעלו" });
+      } else {
+        localStorage.setItem(LOCAL_PREF_KEY, "false");
+        setChannels((c) => ({ ...c, local: false }));
+        toast({ title: "התראות מקומיות כובו" });
+      }
+    } catch (e: any) {
+      toast({
+        title: "שגיאה",
+        description: e.message || "לא הצלחנו לעדכן את ההתראות המקומיות",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingLocal(false);
+    }
+  };
+
   const handleToggle = async (key: ChannelKey, value: boolean) => {
     if (key === "push") {
       await handleTogglePush(value);
+      return;
+    }
+    if (key === "local") {
+      await handleToggleLocal(value);
       return;
     }
     if (!userId) return;
@@ -243,7 +309,10 @@ export const ActiveChannelsPanel = () => {
               const Icon = ch.icon;
               const enabled = channels[ch.key];
               const isPush = ch.key === "push";
+              const isLocal = ch.key === "local";
               const pushBlocked = isPush && !pushSupported;
+              const localBlocked = isLocal && !localSupported;
+              const blocked = pushBlocked || localBlocked;
               return (
                 <div
                   key={ch.key}
@@ -255,9 +324,9 @@ export const ActiveChannelsPanel = () => {
                       <div className={`text-sm ${enabled ? "" : "text-muted-foreground"}`}>
                         {ch.label}
                       </div>
-                      {pushBlocked && (
+                      {blocked && (
                         <div className="text-[10px] text-destructive flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> לא נתמך בדפדפן זה
+                          <AlertCircle className="w-3 h-3" /> לא נתמך במכשיר זה
                         </div>
                       )}
                       {isPush && pushSupported && !pushSubscribed && enabled === false && (
@@ -265,15 +334,20 @@ export const ActiveChannelsPanel = () => {
                           הפעלה תבקש הרשאה מהדפדפן
                         </div>
                       )}
+                      {isLocal && localSupported && enabled === false && (
+                        <div className="text-[10px] text-muted-foreground">
+                          התראות על המכשיר, פועלות גם ללא חיבור
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {isPush && togglingPush ? (
+                  {(isPush && togglingPush) || (isLocal && togglingLocal) ? (
                     <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   ) : (
                     <Switch
                       checked={enabled}
                       onCheckedChange={(v) => handleToggle(ch.key, v)}
-                      disabled={pushBlocked}
+                      disabled={blocked}
                     />
                   )}
                 </div>

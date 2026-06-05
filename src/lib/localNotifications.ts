@@ -120,3 +120,49 @@ export const sendImmediateNotification = async (
     throw error;
   }
 };
+
+// ---- Web + Native unified helpers for on-device (local) notifications ----
+
+export const isLocalNotificationsSupported = () =>
+  isNativeApp() || (typeof window !== "undefined" && "Notification" in window);
+
+export const enableLocalNotifications = async (): Promise<boolean> => {
+  if (isNativeApp()) {
+    return await requestNotificationPermission();
+  }
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return false;
+  }
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
+  const result = await Notification.requestPermission();
+  return result === "granted";
+};
+
+export const checkLocalNotificationsEnabled = async (): Promise<boolean> => {
+  if (isNativeApp()) {
+    return await checkNotificationPermission();
+  }
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return false;
+  }
+  return Notification.permission === "granted";
+};
+
+export const sendLocalTestNotification = async (
+  title: string,
+  body: string
+): Promise<void> => {
+  if (isNativeApp()) {
+    await sendImmediateNotification(title, body);
+    return;
+  }
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    throw new Error("Local notifications not supported");
+  }
+  if (Notification.permission !== "granted") {
+    const ok = await enableLocalNotifications();
+    if (!ok) throw new Error("Notification permission not granted");
+  }
+  new Notification(title, { body, icon: "/favicon.ico" });
+};
