@@ -309,7 +309,10 @@ export const ActiveChannelsPanel = () => {
               const Icon = ch.icon;
               const enabled = channels[ch.key];
               const isPush = ch.key === "push";
+              const isLocal = ch.key === "local";
               const pushBlocked = isPush && !pushSupported;
+              const localBlocked = isLocal && !localSupported;
+              const blocked = pushBlocked || localBlocked;
               return (
                 <div
                   key={ch.key}
@@ -321,9 +324,9 @@ export const ActiveChannelsPanel = () => {
                       <div className={`text-sm ${enabled ? "" : "text-muted-foreground"}`}>
                         {ch.label}
                       </div>
-                      {pushBlocked && (
+                      {blocked && (
                         <div className="text-[10px] text-destructive flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> לא נתמך בדפדפן זה
+                          <AlertCircle className="w-3 h-3" /> לא נתמך במכשיר זה
                         </div>
                       )}
                       {isPush && pushSupported && !pushSubscribed && enabled === false && (
@@ -331,15 +334,20 @@ export const ActiveChannelsPanel = () => {
                           הפעלה תבקש הרשאה מהדפדפן
                         </div>
                       )}
+                      {isLocal && localSupported && enabled === false && (
+                        <div className="text-[10px] text-muted-foreground">
+                          התראות על המכשיר, פועלות גם ללא חיבור
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {isPush && togglingPush ? (
+                  {(isPush && togglingPush) || (isLocal && togglingLocal) ? (
                     <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   ) : (
                     <Switch
                       checked={enabled}
                       onCheckedChange={(v) => handleToggle(ch.key, v)}
-                      disabled={pushBlocked}
+                      disabled={blocked}
                     />
                   )}
                 </div>
