@@ -171,9 +171,54 @@ export const ActiveChannelsPanel = () => {
     }
   };
 
+  const handleToggleLocal = async (value: boolean) => {
+    if (!localSupported) {
+      toast({
+        title: "לא נתמך",
+        description: "התראות מקומיות אינן נתמכות במכשיר/דפדפן זה.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setTogglingLocal(true);
+    try {
+      if (value) {
+        const granted = await enableLocalNotifications();
+        if (!granted) {
+          toast({
+            title: "הרשאה נדחתה",
+            description: "יש לאפשר התראות במכשיר כדי לקבל התראות מקומיות.",
+            variant: "destructive",
+          });
+          return;
+        }
+        localStorage.setItem(LOCAL_PREF_KEY, "true");
+        setChannels((c) => ({ ...c, local: true }));
+        await sendLocalTestNotification("בין השמשות", "התראות מקומיות הופעלו ✅");
+        toast({ title: "✅ התראות מקומיות הופעלו" });
+      } else {
+        localStorage.setItem(LOCAL_PREF_KEY, "false");
+        setChannels((c) => ({ ...c, local: false }));
+        toast({ title: "התראות מקומיות כובו" });
+      }
+    } catch (e: any) {
+      toast({
+        title: "שגיאה",
+        description: e.message || "לא הצלחנו לעדכן את ההתראות המקומיות",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingLocal(false);
+    }
+  };
+
   const handleToggle = async (key: ChannelKey, value: boolean) => {
     if (key === "push") {
       await handleTogglePush(value);
+      return;
+    }
+    if (key === "local") {
+      await handleToggleLocal(value);
       return;
     }
     if (!userId) return;
