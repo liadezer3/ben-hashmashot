@@ -254,42 +254,42 @@ async function sendWhatsApp(to: string, message: string): Promise<ChannelResult>
   }
 }
 
-// ========== SMS (Twilio) ==========
+// ========== SMS (Brevo - Twilio alternative) ==========
 async function sendSMS(to: string, message: string): Promise<ChannelResult> {
   try {
-    const sid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const token = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const from = Deno.env.get('TWILIO_PHONE_FROM');
-    if (!sid || !token || !from) {
-      const error = 'Twilio SMS credentials not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_FROM)';
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const brevoKey = Deno.env.get('BREVO_API_KEY');
+    if (!lovableApiKey || !brevoKey) {
+      const error = 'Brevo SMS credentials not configured (LOVABLE_API_KEY / BREVO_API_KEY)';
       console.log(error);
       return { success: false, error };
     }
 
-    let formatted = to.replace(/[\s\-]/g, '');
-    if (!formatted.startsWith('+')) {
-      if (formatted.startsWith('0')) formatted = '+972' + formatted.substring(1);
-      else if (formatted.startsWith('972')) formatted = '+' + formatted;
-      else formatted = '+' + formatted;
-    }
+    // Brevo expects international format WITHOUT the leading "+"
+    let formatted = to.replace(/[\s\-\+()]/g, '');
+    if (formatted.startsWith('0')) formatted = '972' + formatted.substring(1);
 
-    const auth = btoa(`${sid}:${token}`);
-    const body = new URLSearchParams({ To: formatted, From: from, Body: message });
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    const res = await fetch('https://connector-gateway.lovable.dev/brevo/v3/transactionalSMS/sms', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'X-Connection-Api-Key': brevoKey,
+        'Content-Type': 'application/json',
       },
-      body,
+      body: JSON.stringify({
+        sender: 'BenShabat',
+        recipient: formatted,
+        content: message,
+        type: 'transactional',
+      }),
     });
     if (!res.ok) {
       const errText = await res.text();
-      const error = `Twilio SMS error (${res.status}): ${errText}`;
+      const error = `Brevo SMS error (${res.status}): ${errText}`;
       console.error(error);
       return { success: false, error };
     }
-    console.log(`SMS sent successfully to ${formatted}`);
+    console.log(`SMS sent successfully to ${formatted} via Brevo`);
     return { success: true, error: null };
   } catch (error: any) {
     const msg = `Error sending SMS: ${error?.message || error}`;
