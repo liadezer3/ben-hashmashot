@@ -838,14 +838,11 @@ serve(async (req) => {
       }
 
       // SMS via Brevo
-      if (prefs?.sms_enabled && (prefs?.phone || profileMap?.get?.(user.id)?.phone)) {
-        const smsPhone = prefs.phone;
-        if (smsPhone) {
-          const message = createWhatsAppMessage(shabbatTimes, city, holidays);
-          const smsResult = await sendSMS(smsPhone, message);
-          smsSent = smsResult.success;
-          smsError = smsResult.error;
-        }
+      if (prefs?.sms_enabled && prefs?.phone) {
+        const message = createWhatsAppMessage(shabbatTimes, city, holidays);
+        const smsResult = await sendSMS(prefs.phone, message);
+        smsSent = smsResult.success;
+        smsError = smsResult.error;
       }
 
       // Send test WhatsApp if enabled
