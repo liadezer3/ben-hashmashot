@@ -14,6 +14,16 @@ const PARSHA_LIST = [
   "דברים", "ואתחנן", "עקב", "ראה", "שופטים", "כי תצא", "כי תבוא", "ניצבים", "וילך", "האזינו", "וזאת הברכה"
 ];
 
+// Defense-in-depth: strip any HTML tags / control chars from AI output and cap length
+const sanitizeContent = (raw: unknown): string => {
+  if (typeof raw !== "string") return "";
+  return raw
+    .replace(/<[^>]*>/g, "") // remove any HTML tags
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "") // strip control chars
+    .slice(0, 5000)
+    .trim();
+};
+
 // Simple function to get approximate current parsha based on week of year
 const getCurrentParsha = () => {
   const now = new Date();
@@ -36,7 +46,7 @@ const ParshaContent = () => {
       });
 
       if (error) throw error;
-      setContent(data.content);
+      setContent(sanitizeContent(data?.content));
     } catch (error: any) {
       console.error('Error generating content:', error);
       toast({
