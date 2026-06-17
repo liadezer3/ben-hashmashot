@@ -16,6 +16,7 @@ import InvitePage from "./pages/InvitePage";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Landing from "./pages/Landing";
+import Unsubscribe from "./pages/Unsubscribe";
 import { ContactBar } from "./components/ContactBar";
 import { ViralShareButton } from "./components/ViralShareButton";
 
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/whatsapp-shabbat" element={<Landing />} />
             <Route path="/candle-lighting-reminder" element={<Landing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </div>
