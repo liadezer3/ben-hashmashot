@@ -79,12 +79,28 @@ const ParshaContent = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {AUDIENCES.map((a) => (
+            <Button
+              key={a.key}
+              variant={audience === a.key ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setAudience(a.key);
+                if (content || loading) generateContent(a.key);
+              }}
+            >
+              {a.label}
+            </Button>
+          ))}
+        </div>
+
         {!content && !loading && (
           <div className="text-center py-6">
             <p className="text-muted-foreground mb-4">
               קבל דבר תורה מותאם אישית עם קישור לאקטואליה
             </p>
-            <Button onClick={generateContent} className="gap-2">
+            <Button onClick={() => generateContent()} className="gap-2">
               <Sparkles className="h-4 w-4" />
               צור דבר תורה
             </Button>
@@ -109,7 +125,7 @@ const ParshaContent = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={generateContent}
+              onClick={() => generateContent()}
               className="gap-2"
             >
               <RefreshCw className="h-3 w-3" />
