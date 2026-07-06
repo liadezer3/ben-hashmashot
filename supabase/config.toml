@@ -1,5 +1,18 @@
 project_id = "jpxyczlocqmfumkakdyx"
 
+[functions.calendar-feed]
+enabled = true
+verify_jwt = false
+
+[functions.time-optimizer]
+enabled = true
+verify_jwt = false
+
+[functions.friday-concierge]
+enabled = true
+verify_jwt = false
+
+
 [functions.send-notifications]
 enabled = true
 verify_jwt = false
