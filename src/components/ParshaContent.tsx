@@ -32,17 +32,27 @@ const getCurrentParsha = () => {
   return PARSHA_LIST[weekNumber % PARSHA_LIST.length];
 };
 
+type Audience = "general" | "kids" | "business" | "table";
+
+const AUDIENCES: { key: Audience; label: string }[] = [
+  { key: "general", label: "כללי" },
+  { key: "kids", label: "לילדים" },
+  { key: "business", label: "עסקי" },
+  { key: "table", label: "לשולחן שבת" },
+];
+
 const ParshaContent = () => {
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentParsha] = useState(getCurrentParsha());
+  const [audience, setAudience] = useState<Audience>("general");
   const { toast } = useToast();
 
-  const generateContent = async () => {
+  const generateContent = async (aud: Audience = audience) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-parsha-content', {
-        body: { parsha: currentParsha }
+        body: { parsha: currentParsha, audience: aud }
       });
 
       if (error) throw error;
