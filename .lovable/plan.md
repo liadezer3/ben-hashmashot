@@ -1,73 +1,49 @@
-אישרתי שהבעיה חיצונית לקוד: כרגע `ben-hashmashot.com` עדיין משתמש ב־NS של Netlify/NSOne:
+# תוכנית שדרוג — בן השמשות
 
-```text
-dns1.p06.nsone.net
-dns2.p06.nsone.net
-dns3.p06.nsone.net
-dns4.p06.nsone.net
-```
+בדקתי את הקוד הקיים. חלק גדול מהרשימה **כבר קיים** באפליקציה, ולכן התוכנית מתמקדת רק בפערים האמיתיים.
 
-וה־A records עדיין מצביעים לכתובות של Netlify:
+## מה כבר קיים (לא נבנה מחדש)
+- **טלגרם + Web Push** — קיימים ב-`scheduled-push` וב-`WebPushSettings` ✓
+- **בית חכם** — `SmartHomeSettings` (Home Assistant / Philips Hue) ✓
+- **מנגנון משפחות** — `FamilyGroups` / `EnhancedFamilyHub` ✓
+- **תקציר פרשה AI** — `generate-parsha-content` (אך ללא התאמת קהל) — נרחיב
+- **הוספה ליומן** — `CalendarAddButton` (חד־פעמי בלבד) — נרחיב למנוי דינמי
+- **תוכן הלכתי** — `SefariaContent` + שקיעה ב-`ShabbatTimes` (אך ללא לוח זמני יום מלא)
 
-```text
-35.157.26.135
-63.176.8.218
-```
+## מה חסר ויוטמע
 
-## תוכנית תיקון
+### 1. אופטימיזציית זמנים חכמה (AI Time Optimization)
+- Edge Function חדש `time-optimizer` שמקבל מיקום + זמן כניסת שבת, מושך מזג אוויר (Open-Meteo, ללא מפתח) ומחשב "חלון יציאה מומלץ".
+- ניתוח AI (Lovable AI Gateway, `google/gemini-3-flash-preview`) שמנסח המלצה קצרה בעברית ("מומלץ להקדים ב-20 דקות").
+- קומפוננטה `SmartDepartureCard` בעמוד הבית, מוצגת בשלבי ההכנה לשבת.
 
-1. **להחזיר את ספק ה־DNS ל־Cloudflare אצל רשם הדומיין**
-   - להיכנס למקום שבו נרכש הדומיין / מנוהל ה־Registrar.
-   - למחוק את ארבעת ה־Nameservers של Netlify/NSOne:
-     ```text
-     dns1.p06.nsone.net
-     dns2.p06.nsone.net
-     dns3.p06.nsone.net
-     dns4.p06.nsone.net
-     ```
-   - להגדיר במקום אותם את שני ה־Nameservers של Cloudflare:
-     ```text
-     rustam.ns.cloudflare.com
-     adel.ns.cloudflare.com
-     ```
+### 2. קונסיירז' ערב שבת (AI Friday Concierge)
+- Edge Function `friday-concierge` — צ'אט מבוסס LLM שמקבל את משימות המשתמש ומחזיר לו"ז מותאם לפי זמן כניסת השבת של אותו שבוע.
+- קומפוננטת צ'אט `FridayConcierge` (עם `react-markdown` לתצוגה) בלשונית ייעודית / בעמוד הבית.
 
-2. **לוודא שב־Cloudflare קיימים רשומות האתר הנכונות**
-   לאחר שה־NS חוזרים ל־Cloudflare, Cloudflare הוא זה שינהל את הרשומות בפועל. שם צריך לוודא ש־`ben-hashmashot.com` ו־`www.ben-hashmashot.com` מפנים ל־Lovable, לא ל־Netlify.
+### 3. תקצירי פרשה מותאמים לקהל
+- הרחבת `generate-parsha-content` בפרמטר `audience` (`kids` / `business` / `table` / `general`).
+- בורר קהל ב-`ParshaContent` + אפשרות שליחה במייל/וואטסאפ של התקציר הנבחר.
 
-   אם משתמשים בחיבור רגיל ל־Lovable:
-   ```text
-   A     @      185.158.133.1
-   A     www    185.158.133.1
-   ```
+### 4. מנוי יומן דינמי (Auto-updating Calendar)
+- Edge Function `calendar-feed` שמחזיר קובץ `.ics` מנוי (webcal) עם אירועי שבת מתעדכנים ל-52 שבועות קדימה לפי מיקום המשתמש.
+- כפתור "הרשמה ליומן דינמי" ב-`CalendarAddButton` (קישור `webcal://` ל-Google/Apple/Outlook).
 
-   אם משתמשים במצב Cloudflare Proxy ב־Lovable, צריך להשלים את חיבור הדומיין דרך Lovable עם האפשרות:
-   ```text
-   Domain uses Cloudflare or a similar proxy
-   ```
-   ואז להשתמש ברשומות ש־Lovable יציג במסך החיבור.
+### 5. כפתור ניווט Waze / Google Maps
+- הוספת כפתור "נוסעים לשבת? ניווט הביתה" בתזכורות ובעמוד הבית, שבונה קישור `waze://`/`https://waze.com/ul` ו-Google Maps ליעד הבית של המשתמש, עם חישוב האם יגיע לפני כניסת שבת.
 
-3. **לחבר מחדש את הדומיינים בפרויקט Lovable**
-   כרגע לפי פרטי הפרויקט אין Custom Domain מחובר. צריך להוסיף מחדש:
-   ```text
-   ben-hashmashot.com
-   www.ben-hashmashot.com
-   ```
-   דרך:
-   ```text
-   Project Settings → Domains → Connect Domain
-   ```
+### 6. לוח זמני הלכה יומי מלא
+- קומפוננטה `DailyHalachicTimes` המחשבת מקומית עם `@hebcal/core` (כבר בשימוש): עלות השחר, הנץ, סוף זמן ק"ש, חצות, מנחה גדולה, פלג המנחה, שקיעה, צאת הכוכבים.
+- מוצגת למשתמשים דתיים/מסורתיים (`showReligiousContent`) עם בחירת תזכורות יומיות.
 
-4. **בדיקת תקינות אחרי העדכון**
-   לאחר שינוי ה־NS אצל הרשם, נבדוק שוב שה־DNS חזר ל־Cloudflare:
-   ```text
-   ben-hashmashot.com NS → rustam.ns.cloudflare.com, adel.ns.cloudflare.com
-   ```
-   ואז נבדוק שהאתר כבר לא מגיע ל־Netlify וששני הכתובות עולות:
-   ```text
-   https://ben-hashmashot.com
-   https://www.ben-hashmashot.com
-   ```
+## פרטים טכניים
+- כל קריאות ה-AI דרך Lovable AI Gateway (`LOVABLE_API_KEY` כבר מוגדר), ברירת מחדל `google/gemini-3-flash-preview`.
+- מזג אוויר: Open-Meteo (חינם, ללא מפתח). ניווט: קישורי URL בצד לקוח בלבד.
+- Edge Functions חדשים יתווספו ל-`supabase/config.toml` עם `verify_jwt` מתאים.
+- נדרש שדה `home_address`/יעד בית ב-`user_preferences` עבור הניווט — יתווסף במיגרציה (כולל GRANTs).
+- אין שינויי סכימה מעבר לכך; כל שאר התכונות משתמשות בטבלאות קיימות.
 
-## חשוב
-
-את שינוי ה־NS עצמו אי אפשר לבצע מתוך קוד האתר או מתוך Supabase/Lovable אם הדומיין לא נרכש דרך Lovable; הוא חייב להתבצע במסך ניהול הדומיין אצל הרשם שבו הדומיין רשום. אחרי שתעדכן שם את שני ה־Nameservers של Cloudflare, אוכל לבדוק לך שהשינוי נקלט ולהנחות בדיוק אילו רשומות לשים ב־Cloudflare.
+## סדר עבודה מוצע
+שלב א': זמני הלכה יומיים + מנוי יומן דינמי (מקומי, ללא AI).
+שלב ב': תקצירי פרשה מותאמים + כפתור ניווט.
+שלב ג': אופטימיזציית זמנים AI + קונסיירז' ערב שבת.
