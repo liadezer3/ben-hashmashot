@@ -165,16 +165,34 @@ const Index = () => {
           onTimesLoaded={handleTimesLoaded}
         />
         
-        {/* Tasks - Only show during preparation phases */}
-        {(shabbatMode.phase === 'pre-shabbat-early' || 
-          shabbatMode.phase === 'pre-shabbat-prep' || 
+        {/* Prep-phase helpers: smart departure window + navigation home */}
+        {(shabbatMode.phase === 'pre-shabbat-early' ||
+          shabbatMode.phase === 'pre-shabbat-prep' ||
           shabbatMode.phase === 'pre-shabbat-rush') && (
-          <ShabbatTaskList userId={userId} />
+          <>
+            <ShabbatTaskList userId={userId} />
+            <SmartDepartureCard city={userCity} candleLighting={candleLighting} />
+            <FridayConcierge
+              city={userCity}
+              candleLighting={candleLighting}
+              havdalah={havdalah}
+              parsha={currentParsha}
+            />
+            <NavigateHomeButton
+              candleLighting={candleLighting}
+              minutesToCandles={shabbatMode.minutesToCandles}
+            />
+          </>
         )}
 
         {/* Parsha Content - Only for religious/traditional users, not during Shabbat */}
         {showReligiousContent && shabbatMode.phase !== 'shabbat' && (
           <ParshaContent />
+        )}
+
+        {/* Full daily halachic times - religious/traditional users */}
+        {showReligiousContent && shabbatMode.phase !== 'shabbat' && (
+          <DailyHalachicTimes city={userCity} />
         )}
 
         {/* Active notification channels with quick toggles + test all */}
