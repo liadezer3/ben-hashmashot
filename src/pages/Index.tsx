@@ -21,6 +21,10 @@ import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { KosherShabbatMode } from "@/components/KosherShabbatMode";
 import { PhaseTransition } from "@/components/PhaseTransition";
 import { EnhancedFamilyHub } from "@/components/EnhancedFamilyHub";
+import { SmartDepartureCard } from "@/components/SmartDepartureCard";
+import { NavigateHomeButton } from "@/components/NavigateHomeButton";
+import { FridayConcierge } from "@/components/FridayConcierge";
+import { DailyHalachicTimes } from "@/components/DailyHalachicTimes";
 import { 
   BarChart3,
   Settings, 
