@@ -1084,16 +1084,22 @@ export type Database = {
       }
       "זמני שבת וחג": {
         Row: {
+          City: string | null
           created_at: string
           id: number
+          Phone: string | null
         }
         Insert: {
+          City?: string | null
           created_at?: string
           id?: number
+          Phone?: string | null
         }
         Update: {
+          City?: string | null
           created_at?: string
           id?: number
+          Phone?: string | null
         }
         Relationships: []
       }
