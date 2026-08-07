@@ -86,6 +86,93 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_conversations: {
+        Row: {
+          channel: string
+          content: string
+          created_at: string
+          external_id: string
+          id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          content: string
+          created_at?: string
+          external_id: string
+          id?: string
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          content?: string
+          created_at?: string
+          external_id?: string
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      bot_link_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bot_links: {
+        Row: {
+          channel: string
+          created_at: string
+          external_id: string
+          id: string
+          linked_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          external_id: string
+          id?: string
+          linked_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          external_id?: string
+          id?: string
+          linked_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       candle_lighting_log: {
         Row: {
           blessing_said: boolean | null
@@ -1135,6 +1222,7 @@ export type Database = {
     }
     Functions: {
       award_qualified_badges: { Args: never; Returns: string[] }
+      create_bot_link_code: { Args: never; Returns: string }
       get_family_group_by_invite: {
         Args: { _code: string }
         Returns: {
@@ -1172,6 +1260,10 @@ export type Database = {
       }
       join_family_group_by_code: {
         Args: { p_display_name: string; p_invite_code: string }
+        Returns: string
+      }
+      redeem_bot_link_code: {
+        Args: { p_channel: string; p_code: string; p_external_id: string }
         Returns: string
       }
       rsvp_to_invitation: {
