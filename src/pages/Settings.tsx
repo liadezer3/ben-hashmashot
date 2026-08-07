@@ -34,6 +34,8 @@ import {
 
 // Import all feature components
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { BotConnectionCard } from "@/components/BotConnectionCard";
+
 import { NotificationHistory } from "@/components/NotificationHistory";
 import { SavedLocations } from "@/components/SavedLocations";
 import { FamilyMembers } from "@/components/FamilyMembers";
