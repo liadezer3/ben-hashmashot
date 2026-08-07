@@ -1,5 +1,11 @@
 project_id = "jpxyczlocqmfumkakdyx"
 
+[functions.bot-webhook]
+enabled = true
+verify_jwt = false
+
+
+
 [functions.calendar-feed]
 enabled = true
 verify_jwt = false
