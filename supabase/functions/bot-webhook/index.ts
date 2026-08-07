@@ -431,6 +431,30 @@ serve(async (req) => {
 
   // WhatsApp webhook verification (GET)
   if (req.method === "GET") {
+    // Self-registration of the Telegram webhook (idempotent, uses the server-side token only)
+    if (url.searchParams.get("action") === "register") {
+      if (!TELEGRAM_BOT_TOKEN) {
+        return Response.json({ ok: false, error: "TELEGRAM_BOT_TOKEN not configured" });
+      }
+      const secret = await deriveTelegramSecret(TELEGRAM_BOT_TOKEN);
+      const set = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: `${SUPABASE_URL}/functions/v1/bot-webhook`,
+          secret_token: secret,
+          allowed_updates: ["message", "edited_message"],
+          drop_pending_updates: true,
+        }),
+      });
+      const setResult = await set.json();
+      const infoRes = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo`,
+      );
+      const info = await infoRes.json();
+      return Response.json({ setWebhook: setResult, webhookInfo: info });
+    }
+
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
@@ -440,6 +464,7 @@ serve(async (req) => {
     }
     return new Response("Forbidden", { status: 403 });
   }
+
 
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
