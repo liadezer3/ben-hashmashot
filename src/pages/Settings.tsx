@@ -211,8 +211,10 @@ const Settings = () => {
 
           <TabsContent value="notifications" className="space-y-6">
             <NotificationSettings />
+            <BotConnectionCard />
             <WebPushSettings />
             <NotificationHistory />
+
           </TabsContent>
 
           <TabsContent value="locations" className="space-y-6">
