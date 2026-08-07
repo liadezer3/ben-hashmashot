@@ -431,7 +431,15 @@ serve(async (req) => {
 
   // WhatsApp webhook verification (GET)
   if (req.method === "GET") {
+    // Dry-run of the AI brain (no message is sent anywhere)
+    if (url.searchParams.get("action") === "selftest") {
+      const q = url.searchParams.get("q") || "מתי כניסת שבת בתל אביב ומה פרשת השבוע?";
+      const answer = await think([], q, null, "ירושלים");
+      return Response.json({ question: q, answer });
+    }
+
     // Self-registration of the Telegram webhook (idempotent, uses the server-side token only)
+
     if (url.searchParams.get("action") === "register") {
       if (!TELEGRAM_BOT_TOKEN) {
         return Response.json({ ok: false, error: "TELEGRAM_BOT_TOKEN not configured" });
