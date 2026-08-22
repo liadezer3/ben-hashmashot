@@ -56,6 +56,7 @@ const App = () => (
           </div>
           <ContactBar position="bottom" />
           <ViralShareButton />
+          <VoiceCommandBar />
         </BrowserRouter>
       </ObservanceProvider>
     </TooltipProvider>
