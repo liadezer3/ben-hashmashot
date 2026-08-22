@@ -75,11 +75,17 @@ export const VoiceCommandBar = () => {
     async (question: string) => {
       setThinking(true);
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          respond("כדי לשאול שאלות חופשיות צריך להתחבר לחשבון");
+          return;
+        }
         const { data, error } = await supabase.functions.invoke("voice-assistant", {
           body: { message: question, city },
         });
         if (error) throw error;
         respond(data?.response || "לא הצלחתי להבין, נסה שוב");
+
       } catch (e) {
         console.error("voice command AI fallback failed", e);
         respond("לא הצלחתי לענות כרגע. נסה לומר \"עזרה\" כדי לשמוע מה אני יודע לעשות");
