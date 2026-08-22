@@ -19,6 +19,7 @@ import Landing from "./pages/Landing";
 import Unsubscribe from "./pages/Unsubscribe";
 import { ContactBar } from "./components/ContactBar";
 import { ViralShareButton } from "./components/ViralShareButton";
+import { VoiceCommandBar } from "./components/VoiceCommandBar";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -55,6 +56,7 @@ const App = () => (
           </div>
           <ContactBar position="bottom" />
           <ViralShareButton />
+          <VoiceCommandBar />
         </BrowserRouter>
       </ObservanceProvider>
     </TooltipProvider>
