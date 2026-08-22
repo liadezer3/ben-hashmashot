@@ -49,15 +49,22 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.38.4');
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!);
-    const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const token = authHeader.replace('Bearer ', '').trim();
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub || claimsData.claims.role !== 'authenticated') {
+      console.error('Auth failed in voice-assistant:', claimsError?.message);
+      return new Response(JSON.stringify({ error: 'נדרשת התחברות כדי להשתמש בעוזר הקולי' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
