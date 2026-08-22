@@ -67,13 +67,13 @@ import { GoogleIntegrationsHub } from "@/components/GoogleIntegrationsHub";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string>("Jerusalem");
   const { showReligiousContent } = useObservance();
-  
-  const defaultTab = searchParams.get('tab') || 'notifications';
+
+  const activeTab = searchParams.get('tab') || 'notifications';
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
