@@ -125,7 +125,11 @@ const Settings = () => {
           <h1 className="text-2xl font-bold">הגדרות ותכונות</h1>
         </div>
 
-        <Tabs defaultValue={defaultTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setSearchParams({ tab: value }, { replace: true })}
+          className="space-y-6"
+        >
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="preferences" className="gap-1 text-sm">
               <SlidersHorizontal className="w-4 h-4" />
