@@ -132,7 +132,7 @@ export const getShabbatZmanim = (
   });
 
   const candles = events.filter((e) => (e.getFlags() & flags.LIGHT_CANDLES) || (e.getFlags() & flags.LIGHT_CANDLES_TZEIS));
-  const havdalot = events.filter((e) => e.getFlags() & flags.CHAG_CANDLES ? false : (e.getFlags() & flags.YOM_TOV_ENDS) !== 0);
+  const havdalot = events.filter((e) => (e.getFlags() & flags.YOM_TOV_ENDS) !== 0);
   const parshaEvents = events.filter((e) => (e.getFlags() & flags.PARSHA_HASHAVUA) !== 0);
 
   const upcoming = <T extends { eventTime?: Date }>(list: T[]): T | undefined =>
