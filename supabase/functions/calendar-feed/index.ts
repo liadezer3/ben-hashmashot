@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { israelZmanimParams } from "../_shared/israelZmanim.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +47,7 @@ serve(async (req) => {
     // Fetch 12 months of Shabbat + holiday candle-lighting / havdalah times.
     const now = new Date();
     const hebcalUrl =
-      `https://www.hebcal.com/hebcal?v=1&cfg=json&geonameid=${geoId}` +
+      `https://www.hebcal.com/hebcal?v=1&cfg=json&geonameid=${geoId}${israelZmanimParams(city)}` +
       `&maj=on&min=off&mod=off&nx=off&year=now&month=x&ss=on&mf=on&c=on&b=18&M=on&s=on&lg=h`;
 
     const res = await fetch(hebcalUrl);

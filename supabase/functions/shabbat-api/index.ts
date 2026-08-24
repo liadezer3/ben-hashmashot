@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { israelZmanimParams } from "../_shared/israelZmanim.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,7 +48,7 @@ serve(async (req) => {
     
     // Fetch from Hebcal API
     const hebcalResponse = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=h`
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=h${israelZmanimParams(city)}`
     );
     
     if (!hebcalResponse.ok) {

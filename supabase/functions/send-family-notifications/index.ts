@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { israelZmanimParams } from "../_shared/israelZmanim.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,7 +52,7 @@ const getShabbatTimes = async (city: string = "Jerusalem"): Promise<ShabbatTimes
   try {
     const geoId = getCityGeoId(city);
     const response = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=he`
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=he${israelZmanimParams(city)}`
     );
     const data = await response.json();
     

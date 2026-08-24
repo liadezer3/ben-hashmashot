@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { israelZmanimParams } from "../_shared/israelZmanim.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,7 +36,7 @@ async function getShabbatTimes(city: string = "Jerusalem"): Promise<ShabbatTimes
 
     const geoId = cityGeoIds[city] || "281184";
     const response = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on`
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on${israelZmanimParams(city)}`
     );
 
     if (!response.ok) return null;

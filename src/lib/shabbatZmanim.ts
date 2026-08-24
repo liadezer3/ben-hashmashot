@@ -131,8 +131,8 @@ export const getShabbatZmanim = (
     useElevation: false,
   });
 
-  const candles = events.filter((e) => (e.getFlags() & flags.LIGHT_CANDLES) || (e.getFlags() & flags.LIGHT_CANDLES_TZEIS));
-  const havdalot = events.filter((e) => (e.getFlags() & flags.YOM_TOV_ENDS) !== 0);
+  const candles = events.filter((e) => e.getDesc() === "Candle lighting");
+  const havdalot = events.filter((e) => e.getDesc() === "Havdalah");
   const parshaEvents = events.filter((e) => (e.getFlags() & flags.PARSHA_HASHAVUA) !== 0);
 
   const upcoming = <T extends { eventTime?: Date }>(list: T[]): T | undefined =>
