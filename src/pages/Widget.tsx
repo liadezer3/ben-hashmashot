@@ -6,6 +6,7 @@
  import { useHebrewDate } from '@/hooks/useHebrewDate';
  import { cn } from '@/lib/utils';
  import { Link } from 'react-router-dom';
+ import { getShabbatZmanim } from '@/lib/shabbatZmanim';
  
  // Default halachot for Shabbat
  const DEFAULT_HALACHOT = [
