@@ -38,6 +38,7 @@ import { BotConnectionCard } from "@/components/BotConnectionCard";
 
 import { NotificationHistory } from "@/components/NotificationHistory";
 import { SavedLocations } from "@/components/SavedLocations";
+import { ZmanimLocationSettings } from "@/components/ZmanimLocationSettings";
 import { FamilyMembers } from "@/components/FamilyMembers";
 import { FamilyGroups } from "@/components/FamilyGroups";
 import SmartHomeSettings from "@/components/SmartHomeSettings";

@@ -18,6 +18,8 @@ import { WebPushSettings } from "./WebPushSettings";
 import { NextNotificationDisplay } from "./NextNotificationDisplay";
 import { ChannelFrequencySettings, type ChannelFrequencyValue } from "./ChannelFrequencySettings";
 
+import { getShabbatZmanim } from "@/lib/shabbatZmanim";
+
 const DEFAULT_FREQ: ChannelFrequencyValue = {
   frequency: "weekly",
   morningTime: "08:00",

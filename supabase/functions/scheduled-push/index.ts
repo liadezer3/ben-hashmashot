@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { israelZmanimParams } from "../_shared/israelZmanim.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,7 +106,7 @@ async function getShabbatAndHolidayTimes(city: string = "Jerusalem"): Promise<{ 
   try {
     const geoId = CITY_GEO_IDS[city] || "281184";
     const response = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=he`
+      `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=he${israelZmanimParams(city)}`
     );
 
     if (!response.ok) return { shabbat: null, holidays: [] };
