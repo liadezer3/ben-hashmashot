@@ -225,6 +225,7 @@ const Settings = () => {
 
           <TabsContent value="locations" className="space-y-6">
             <SavedLocations />
+            <ZmanimLocationSettings />
             <TraditionSelector />
             <UpcomingHolidays />
           </TabsContent>

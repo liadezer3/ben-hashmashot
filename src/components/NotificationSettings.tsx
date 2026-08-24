@@ -35,48 +35,26 @@ interface TestResult {
   timestamp?: Date;
 }
 
-// Generate WhatsApp message with Shabbat times
+// Generate WhatsApp message with Shabbat times (local Israeli-standard calculation)
 const generateWhatsAppMessage = async (city: string = "Jerusalem"): Promise<string> => {
   try {
-    // Fetch current Shabbat times
-    const response = await fetch(
-      `https://www.hebcal.com/shabbat?cfg=json&geonameid=281184&M=on&lg=he`
-    );
-    
-    if (response.ok) {
-      const data = await response.json();
-      let candleLighting = "";
-      let havdalah = "";
-      let parasha = "";
-      
-      for (const item of data.items || []) {
-        if (item.category === "candles") {
-          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
-          candleLighting = timeMatch ? timeMatch[1] : "";
-        } else if (item.category === "havdalah") {
-          const timeMatch = item.title?.match(/(\d{1,2}:\d{2})/);
-          havdalah = timeMatch ? timeMatch[1] : "";
-        } else if (item.category === "parashat") {
-          parasha = item.hebrew || item.title || "";
-        }
-      }
-      
-      return `🕯️ *שבת שלום!* 🕯️
+    const z = getShabbatZmanim(city);
 
-📖 *פרשת ${parasha}*
+    return `🕯️ *שבת שלום!* 🕯️
+
+📖 *${z.parsha}*
 
 📅 *זמני שבת ל${city}:*
-🕯️ הדלקת נרות: ${candleLighting}
-🌙 צאת שבת: ${havdalah}
+🕯️ הדלקת נרות: ${z.candleLightingTime}
+🌙 צאת שבת: ${z.havdalahTime}
 
 שבת שלום ומבורך! ✨
 
 📱 בין השמשות: https://ben-hashmashot.lovable.app`;
-    }
   } catch (error) {
-    console.error('Error fetching Shabbat times for WhatsApp:', error);
+    console.error('Error calculating Shabbat times for WhatsApp:', error);
   }
-  
+
   return `🕯️ שבת שלום! בדוק את זמני השבת באפליקציה: https://ben-hashmashot.lovable.app`;
 };
 
