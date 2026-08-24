@@ -74,62 +74,29 @@
      return () => clearInterval(interval);
    }, [offlineData.shabbat?.candleLighting]);
  
-   const fetchShabbatData = async () => {
-     setLoading(true);
-     try {
-       const city = localStorage.getItem('user-city') || 'Jerusalem';
-       const geoId = getCityGeoId(city);
-       const response = await fetch(
-         `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=h`
-       );
-       const data = await response.json();
- 
-       const candleLighting = data.items.find((item: any) => item.category === 'candles');
-       const havdalah = data.items.find((item: any) => item.category === 'havdalah');
-       const parashat = data.items.find((item: any) => item.category === 'parashat');
- 
-       let shabbatEntryDate = '';
-       if (candleLighting?.date) {
-         const candleDate = new Date(candleLighting.date);
-         const hebrewDateFormatter = new Intl.DateTimeFormat('he-IL', {
-           weekday: 'long',
-           day: 'numeric',
-           month: 'long',
-           year: 'numeric',
-         });
-         shabbatEntryDate = hebrewDateFormatter.format(candleDate);
-       }
- 
-       saveShabbatTimes({
-         candleLighting: candleLighting?.title || '',
-         havdalah: havdalah?.title || '',
-         parashat: parashat?.hebrew || parashat?.title || '',
-         shabbatEntry: shabbatEntryDate,
-         city,
-         tradition,
-         halachot: DEFAULT_HALACHOT,
-         lastUpdated: Date.now(),
-       });
-     } catch (error) {
-       console.error('Error fetching Shabbat data:', error);
-     } finally {
-       setLoading(false);
-     }
-   };
- 
-   const getCityGeoId = (cityName: string) => {
-     const cities: { [key: string]: string } = {
-       Jerusalem: '281184',
-       'Tel Aviv': '293397',
-       Haifa: '294801',
-       Beersheba: '295530',
-       ירושלים: '281184',
-       'תל אביב': '293397',
-       חיפה: '294801',
-       'באר שבע': '295530',
-     };
-     return cities[cityName] || '281184';
-   };
+  const fetchShabbatData = async () => {
+    setLoading(true);
+    try {
+      const city = localStorage.getItem('user-city') || 'Jerusalem';
+      const z = getShabbatZmanim(city);
+
+      saveShabbatTimes({
+        candleLighting: z.candleLightingTime,
+        havdalah: z.havdalahTime,
+        parashat: z.parsha,
+        shabbatEntry: z.shabbatEntryLabel,
+        city,
+        tradition,
+        halachot: DEFAULT_HALACHOT,
+        lastUpdated: Date.now(),
+      });
+    } catch (error) {
+      console.error('Error calculating Shabbat data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
  
    const data = offlineData.shabbat;
    const displayHebrewDate = hebrewDate?.hebrew || '';
