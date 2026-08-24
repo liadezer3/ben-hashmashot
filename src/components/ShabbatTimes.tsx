@@ -14,13 +14,16 @@ import {
 import whatsappIcon from "@/assets/whatsapp-icon.png";
 import gmailIcon from "@/assets/gmail-icon.png";
 import { CalendarAddButton } from "./CalendarAddButton";
+import { getShabbatZmanim } from "@/lib/shabbatZmanim";
 
 interface ShabbatTime {
   candleLighting: string;
+  candleLightingDate: Date | null;
   havdalah: string;
   parashat: string;
   date: string;
   shabbatEntry: string; // כניסת שבת - התאריך המפורמט
+  candleMinutes: number;
   sunrise?: string;
   sunset?: string;
   tzeit?: string;
