@@ -320,7 +320,9 @@ export const ShabbatTimes = ({ onParshaLoaded, onTimesLoaded }: ShabbatTimesProp
               <Sunset className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">הדלקת נרות</p>
+              <p className="text-sm text-muted-foreground">
+                הדלקת נרות{shabbatTimes?.candleMinutes ? ` (${shabbatTimes.candleMinutes} דק' לפני השקיעה)` : ''}
+              </p>
               <p className="text-xl font-semibold">{shabbatTimes?.candleLighting || '--:--'}</p>
             </div>
           </div>
