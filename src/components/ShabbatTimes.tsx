@@ -161,49 +161,9 @@ export const ShabbatTimes = ({ onParshaLoaded, onTimesLoaded }: ShabbatTimesProp
     }
   };
 
-  const getCityGeoId = (cityName: string) => {
-    const cities: { [key: string]: string } = {
-      "Jerusalem": "281184",
-      "ירושלים": "281184",
-      "Tel Aviv": "293397",
-      "תל אביב": "293397",
-      "Haifa": "294801",
-      "חיפה": "294801",
-      "Beersheba": "295530",
-      "באר שבע": "295530",
-      "Netanya": "293100",
-      "נתניה": "293100",
-      "Bnei Brak": "295432",
-      "בני ברק": "295432",
-      "Ramat Gan": "293703",
-      "רמת גן": "293703",
-      "Ashdod": "295629",
-      "אשדוד": "295629",
-      "Petah Tikva": "293703",
-      "פתח תקווה": "293703"
-    };
-    return cities[cityName] || "281184";
-  };
-
   const updateCountdown = () => {
-    if (!shabbatTimes?.candleLighting) return;
-
-    const now = new Date().getTime();
-    const timeMatch = shabbatTimes.candleLighting.match(/(\d{1,2}):(\d{2})/);
-    
-    if (!timeMatch) return;
-
-    const today = new Date();
-    const candleLightingTime = new Date(today);
-    candleLightingTime.setHours(parseInt(timeMatch[1]), parseInt(timeMatch[2]), 0, 0);
-    
-    if (candleLightingTime.getTime() < now) {
-      const daysUntilFriday = (5 - today.getDay() + 7) % 7 || 7;
-      candleLightingTime.setDate(today.getDate() + daysUntilFriday);
-    }
-
-    const distance = candleLightingTime.getTime() - now;
-
+    if (!shabbatTimes?.candleLightingDate) return;
+    const distance = shabbatTimes.candleLightingDate.getTime() - Date.now();
     if (distance > 0) {
       setCountdown({
         days: Math.floor(distance / (1000 * 60 * 60 * 24)),
@@ -211,63 +171,42 @@ export const ShabbatTimes = ({ onParshaLoaded, onTimesLoaded }: ShabbatTimesProp
         minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
         seconds: Math.floor((distance % (1000 * 60)) / 1000)
       });
+    } else {
+      setCountdown(null);
     }
   };
 
+  // Local (offline) calculation according to the accepted Israeli standard
   const fetchShabbatTimes = async () => {
     try {
-      const geoId = getCityGeoId(city);
-      const response = await fetch(
-        `https://www.hebcal.com/shabbat?cfg=json&geonameid=${geoId}&M=on&lg=h`
-      );
-      const data = await response.json();
-      
-      const candleLighting = data.items.find((item: any) => item.category === 'candles');
-      const havdalah = data.items.find((item: any) => item.category === 'havdalah');
-      const parashat = data.items.find((item: any) => item.category === 'parashat');
-      const zmanim = data.items.filter((item: any) => item.category === 'zmanim');
+      const z = getShabbatZmanim(city);
 
-      // Format Shabbat entry date
-      let shabbatEntryDate = '';
-      if (candleLighting?.date) {
-        const candleDate = new Date(candleLighting.date);
-        const hebrewDateFormatter = new Intl.DateTimeFormat('he-IL', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
-        });
-        shabbatEntryDate = hebrewDateFormatter.format(candleDate);
-      }
-
-      const parshaName = parashat?.hebrew || parashat?.title || '';
-      
       setShabbatTimes({
-        candleLighting: candleLighting?.title || '',
-        havdalah: havdalah?.title || '',
-        parashat: parshaName,
-        date: data.date || '',
-        shabbatEntry: shabbatEntryDate,
-        sunrise: zmanim.find((z: any) => z.title.includes('זריחה') || z.title.includes('Sunrise'))?.title,
-        sunset: zmanim.find((z: any) => z.title.includes('שקיעה') || z.title.includes('Sunset'))?.title,
-        tzeit: zmanim.find((z: any) => z.title.includes('צאת') || z.title.includes('Nightfall'))?.title,
-        alot: zmanim.find((z: any) => z.title.includes('עלות') || z.title.includes('Dawn'))?.title,
+        candleLighting: z.candleLightingTime,
+        candleLightingDate: z.candleLightingDate,
+        havdalah: z.havdalahTime,
+        parashat: z.parsha,
+        date: z.shabbatEntryLabel,
+        shabbatEntry: z.shabbatEntryLabel,
+        candleMinutes: z.candleMinutes,
+        sunrise: z.sunriseTime,
+        sunset: z.sunsetTime,
+        tzeit: z.tzeitTime,
+        alot: z.alotTime,
       });
 
-      // Notify parent about the parsha
-      if (parshaName && onParshaLoaded) {
-        onParshaLoaded(parshaName);
+      if (z.parsha && onParshaLoaded) {
+        onParshaLoaded(z.parsha);
       }
 
-      // Notify parent about times for dynamic mode
       if (onTimesLoaded) {
         onTimesLoaded({
-          candleLighting: candleLighting?.title || '',
-          havdalah: havdalah?.title || ''
+          candleLighting: z.candleLightingTime,
+          havdalah: z.havdalahTime,
         });
       }
     } catch (error) {
-      console.error('Error fetching Shabbat times:', error);
+      console.error('Error calculating Shabbat times:', error);
     } finally {
       setLoading(false);
     }
