@@ -78,3 +78,7 @@ verify_jwt = false
 
 [functions.handle-email-suppression]
 verify_jwt = false
+
+[functions.whatsapp-webhook]
+enabled = true
+verify_jwt = false
