@@ -1169,6 +1169,63 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_bot_reminders: {
+        Row: {
+          before_candles_enabled: boolean
+          city: string
+          created_at: string
+          friday_enabled: boolean
+          friday_time: string
+          id: string
+          is_active: boolean
+          label: string | null
+          last_sent_before_candles: string | null
+          last_sent_friday: string | null
+          last_sent_thursday: string | null
+          minutes_before_candles: number
+          phone: string
+          thursday_enabled: boolean
+          thursday_time: string
+          updated_at: string
+        }
+        Insert: {
+          before_candles_enabled?: boolean
+          city?: string
+          created_at?: string
+          friday_enabled?: boolean
+          friday_time?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_sent_before_candles?: string | null
+          last_sent_friday?: string | null
+          last_sent_thursday?: string | null
+          minutes_before_candles?: number
+          phone: string
+          thursday_enabled?: boolean
+          thursday_time?: string
+          updated_at?: string
+        }
+        Update: {
+          before_candles_enabled?: boolean
+          city?: string
+          created_at?: string
+          friday_enabled?: boolean
+          friday_time?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_sent_before_candles?: string | null
+          last_sent_friday?: string | null
+          last_sent_thursday?: string | null
+          minutes_before_candles?: number
+          phone?: string
+          thursday_enabled?: boolean
+          thursday_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       "זמני שבת וחג": {
         Row: {
           City: string | null
