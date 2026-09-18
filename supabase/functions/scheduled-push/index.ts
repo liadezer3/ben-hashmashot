@@ -912,7 +912,25 @@ serve(async (req) => {
 
     console.log('Request body:', JSON.stringify(body));
 
+    // Handle test request for a fixed-recipient WhatsApp bot reminder
+    if (body.test && body.testType === 'bot_reminder') {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Authorization header required for test' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const kind = (body.kind as 'thursday' | 'friday' | 'before_candles') || 'friday';
+      const testResult = await processBotReminders(supabase, 0, -1, kind);
+      return new Response(
+        JSON.stringify({ success: testResult.sent > 0, ...testResult }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Handle test request for Shabbat notification
+
     if (body.test && body.testType === 'shabbat') {
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
@@ -1127,6 +1145,15 @@ serve(async (req) => {
     const { isFriday, isHolidayEve, holidayName } = isFridayOrHolidayEve(currentDayOfWeek, upcomingHolidays, israelTime);
     
     console.log(`Date check - Is Friday: ${isFriday}, Is Holiday Eve: ${isHolidayEve}${holidayName ? ` (${holidayName})` : ''}`);
+
+    // ===== Fixed-recipient WhatsApp bot reminders (independent of user accounts) =====
+    const botReminders = await processBotReminders(
+      supabase,
+      currentHour * 60 + currentMinute,
+      currentDayOfWeek
+    );
+    console.log(`Bot reminders sent: ${botReminders.sent}`);
+
 
     // Get all users with any notification enabled (including per-channel frequency fields)
     const { data: preferences, error: prefError } = await supabase
