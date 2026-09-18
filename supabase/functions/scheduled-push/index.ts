@@ -1174,7 +1174,7 @@ serve(async (req) => {
 
     if (!activePrefs.length) {
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: 'No users with notifications enabled' }),
+        JSON.stringify({ success: true, sent: botReminders.sent, botReminders, message: 'No users with notifications enabled' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -1508,6 +1508,11 @@ serve(async (req) => {
           sms: smsToNotify.length,
           whatsapp: whatsappToNotify.length,
           telegram: telegramToNotify.length,
+        },
+        botReminders: {
+          sent: botReminders.sent,
+          results: botReminders.results,
+
         },
         message: `Sent ${totalSent} notifications`,
       }),
