@@ -673,6 +673,140 @@ function createWhatsAppMessage(shabbatTimes: ShabbatTimes | null, city: string, 
   return `🕯️ שבת שלום! בדוק את זמני השבת: ${APP_URL}`;
 }
 
+// ========== WHATSAPP BOT REMINDERS (fixed recipients, no user account needed) ==========
+interface BotReminderRow {
+  id: string;
+  phone: string;
+  city: string;
+  label: string | null;
+  is_active: boolean;
+  thursday_enabled: boolean;
+  thursday_time: string;
+  friday_enabled: boolean;
+  friday_time: string;
+  before_candles_enabled: boolean;
+  minutes_before_candles: number;
+  last_sent_thursday: string | null;
+  last_sent_friday: string | null;
+  last_sent_before_candles: string | null;
+}
+
+const SEND_WINDOW_MINUTES = 10;
+
+function parseTimeToMinutes(value: string | null): number | null {
+  if (!value) return null;
+  const m = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+function isWithinWindow(targetMinutes: number | null, nowMinutes: number): boolean {
+  if (targetMinutes === null) return false;
+  const diff = nowMinutes - targetMinutes;
+  return diff >= 0 && diff < SEND_WINDOW_MINUTES;
+}
+
+function sentRecently(timestamp: string | null, hours = 20): boolean {
+  if (!timestamp) return false;
+  return Date.now() - new Date(timestamp).getTime() < hours * 60 * 60 * 1000;
+}
+
+function createThursdayBotMessage(shabbat: ShabbatTimes | null, city: string): string {
+  if (!shabbat) return `🕯️ מתכוננים לשבת! זמני השבת באפליקציה: ${APP_URL}`;
+  return `🗓️ *מתכוננים לשבת*\n\n📖 פרשת ${shabbat.parasha}\n📍 ${city}\n🕯️ הדלקת נרות (שישי): ${shabbat.candle_lighting_time}\n🌙 צאת שבת: ${shabbat.havdalah_time}\n\nזמן טוב להתחיל בקניות ובהכנות 🛒\n\n📱 ${APP_URL}`;
+}
+
+function createBeforeCandlesBotMessage(shabbat: ShabbatTimes | null, city: string, minutes: number): string {
+  if (!shabbat) return `⏰ עוד ${minutes} דקות הדלקת נרות. שבת שלום!`;
+  return `⏰ *עוד ${minutes} דקות הדלקת נרות!*\n\n🕯️ שעת ההדלקה ב${city}: ${shabbat.candle_lighting_time}\n🌙 צאת שבת: ${shabbat.havdalah_time}\n📖 פרשת ${shabbat.parasha}\n\nשבת שלום ומבורך ✨`;
+}
+
+async function processBotReminders(
+  supabase: any,
+  nowMinutes: number,
+  dayOfWeek: number,
+  force?: 'thursday' | 'friday' | 'before_candles'
+): Promise<{ sent: number; results: any[] }> {
+  const results: any[] = [];
+  let sent = 0;
+
+  const { data: rows, error } = await supabase
+    .from('whatsapp_bot_reminders')
+    .select('*')
+    .eq('is_active', true);
+
+  if (error) {
+    console.error('Error fetching whatsapp_bot_reminders:', error);
+    return { sent, results };
+  }
+
+  for (const row of (rows || []) as BotReminderRow[]) {
+    const { shabbat } = await getShabbatAndHolidayTimes(row.city || 'Jerusalem');
+
+    const tasks: Array<{ kind: 'thursday' | 'friday' | 'before_candles'; message: string; column: string }> = [];
+
+    // Thursday preparation reminder
+    const thursdayDue = force === 'thursday' ||
+      (row.thursday_enabled && dayOfWeek === 4 &&
+        isWithinWindow(parseTimeToMinutes(row.thursday_time), nowMinutes) &&
+        !sentRecently(row.last_sent_thursday));
+    if (thursdayDue) {
+      tasks.push({
+        kind: 'thursday',
+        message: createThursdayBotMessage(shabbat, row.city),
+        column: 'last_sent_thursday',
+      });
+    }
+
+    // Friday morning reminder
+    const fridayDue = force === 'friday' ||
+      (row.friday_enabled && dayOfWeek === 5 &&
+        isWithinWindow(parseTimeToMinutes(row.friday_time), nowMinutes) &&
+        !sentRecently(row.last_sent_friday));
+    if (fridayDue) {
+      tasks.push({
+        kind: 'friday',
+        message: createWhatsAppMessage(shabbat, row.city, []),
+        column: 'last_sent_friday',
+      });
+    }
+
+    // Shortly before candle lighting
+    let beforeCandlesDue = force === 'before_candles';
+    if (!beforeCandlesDue && row.before_candles_enabled && shabbat?.candle_lighting_date && !sentRecently(row.last_sent_before_candles, 12)) {
+      const candleTs = new Date(shabbat.candle_lighting_date).getTime();
+      if (!isNaN(candleTs)) {
+        const minutesUntil = (candleTs - Date.now()) / 60000;
+        const target = row.minutes_before_candles ?? 30;
+        beforeCandlesDue = minutesUntil > 0 && minutesUntil <= target && minutesUntil > target - SEND_WINDOW_MINUTES;
+      }
+    }
+    if (beforeCandlesDue) {
+      tasks.push({
+        kind: 'before_candles',
+        message: createBeforeCandlesBotMessage(shabbat, row.city, row.minutes_before_candles ?? 30),
+        column: 'last_sent_before_candles',
+      });
+    }
+
+    for (const task of tasks) {
+      const result = await sendWhatsApp(row.phone, task.message);
+      if (result.success) {
+        sent++;
+        await supabase
+          .from('whatsapp_bot_reminders')
+          .update({ [task.column]: new Date().toISOString() })
+          .eq('id', row.id);
+      }
+      results.push({ phone: row.phone, kind: task.kind, success: result.success, error: result.error });
+      console.log(`Bot reminder [${task.kind}] to ${row.phone}: ${result.success ? 'sent' : `failed - ${result.error}`}`);
+    }
+  }
+
+  return { sent, results };
+}
+
+
 function createPushPayload(shabbatTimes: ShabbatTimes | null, city: string, notificationType: 'morning' | 'shabbat', hoursBeforeShabbat: number = 2): string {
   if (notificationType === 'morning') {
     return JSON.stringify({
