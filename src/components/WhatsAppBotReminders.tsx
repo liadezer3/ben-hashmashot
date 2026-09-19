@@ -169,11 +169,12 @@ export const WhatsAppBotReminders = () => {
               value={reminder.city}
               onChange={(e) => update({ city: e.target.value })}
             >
-              {CITIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
+              {SUPPORTED_CITIES.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.hebrewName}
                 </option>
               ))}
+
             </select>
           </div>
         </div>
