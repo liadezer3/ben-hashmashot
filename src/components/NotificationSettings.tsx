@@ -19,6 +19,8 @@ import { NextNotificationDisplay } from "./NextNotificationDisplay";
 import { ChannelFrequencySettings, type ChannelFrequencyValue } from "./ChannelFrequencySettings";
 
 import { getShabbatZmanim } from "@/lib/shabbatZmanim";
+import { WhatsAppBotReminders } from "./WhatsAppBotReminders";
+
 
 const DEFAULT_FREQ: ChannelFrequencyValue = {
   frequency: "weekly",
@@ -991,6 +993,11 @@ export const NotificationSettings = () => {
             {/* Push toggle is handled in the dedicated Push card above */}
           </div>
         </div>
+
+        {/* WhatsApp bot reminders (fixed recipient) */}
+        <WhatsAppBotReminders />
+
+
 
         {/* Save Button */}
         <div className="pt-4">
