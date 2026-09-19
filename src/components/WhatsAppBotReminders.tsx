@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
-import { CITIES } from "@/lib/cities";
+import { SUPPORTED_CITIES } from "@/lib/cities";
 
 interface BotReminder {
   id: string;
