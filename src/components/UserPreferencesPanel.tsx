@@ -18,6 +18,7 @@ import {
   UserPreferencesUpdate,
 } from "@/hooks/useUserPreferences";
 import { CitySelector } from "@/components/CitySelector";
+import { TelegramBotConnection } from "@/components/TelegramBotConnection";
 
 // City coordinates for resolving location data
 const CITY_COORDS: Record<string, { lat: number; lon: number }> = {
@@ -226,6 +227,9 @@ export default function UserPreferencesPanel() {
           />
         </CardContent>
       </Card>
+
+      {/* Telegram Bot Connection */}
+      <TelegramBotConnection />
 
       {/* Zmanim Preset */}
       <Card>
