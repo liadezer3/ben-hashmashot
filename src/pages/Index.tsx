@@ -1,3 +1,4 @@
+import { isGuestMode, getGuestCity, disableGuestMode } from "@/lib/guestMode";
 import { Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -65,8 +66,14 @@ const Index = () => {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
+        if (isGuestMode()) {
+          setUserCity(getGuestCity());
+          setLoading(false);
+          return;
+        }
         navigate("/landing");
       } else {
+        disableGuestMode();
         setUserId(session.user.id);
         // Load user's city from profile
         const { data: profile } = await supabase
@@ -92,7 +99,7 @@ const Index = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
-        navigate("/landing");
+        if (!isGuestMode()) navigate("/landing");
       } else {
         setUserId(session.user.id);
         setLoading(false);

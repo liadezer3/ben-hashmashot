@@ -1,3 +1,4 @@
+import { enableGuestMode } from "@/lib/guestMode";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -185,11 +186,10 @@ const Auth = () => {
               const { error } = await supabase.auth.signInAnonymously();
               setLoading(false);
               if (error) {
-                toast({
-                  title: "שגיאה בכניסה כאורח",
-                  description: error.message,
-                  variant: "destructive",
-                });
+                // Anonymous sign-ins disabled → browser-only guest mode
+                enableGuestMode();
+                toast({ title: "ברוכים הבאים! 🌅", description: "מצב אורח — ההגדרות נשמרות בדפדפן בלבד" });
+                navigate("/");
                 return;
               }
               toast({ title: "ברוכים הבאים! 🌅", description: "נכנסתם כאורחים" });
