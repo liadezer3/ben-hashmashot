@@ -1,3 +1,4 @@
+import { isGuestMode, getGuestCity, disableGuestMode } from "@/lib/guestMode";
 import { Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
