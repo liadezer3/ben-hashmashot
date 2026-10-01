@@ -1,3 +1,4 @@
+import { enableGuestMode } from "@/lib/guestMode";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -59,12 +60,10 @@ const Landing = () => {
       });
       navigate("/");
     } catch (error: any) {
-      // Fallback: if anonymous auth not enabled, send to auth page
-      toast({
-        title: "מעבירים אתכם לכניסה מהירה",
-        description: "אפשר להירשם עם Google בלחיצה אחת.",
-      });
-      navigate("/auth");
+      // Anonymous sign-ins disabled → browser-only guest mode
+      enableGuestMode();
+      toast({ title: "ברוכים הבאים! 🌅", description: "מצב אורח — ההגדרות נשמרות בדפדפן בלבד" });
+      navigate("/");
     } finally {
       setLoading(false);
     }
