@@ -97,6 +97,19 @@ function nextFriday(from = new Date()): Date {
   return d;
 }
 
+/** Hebrew parsha name for a given Saturday HDate (Israeli sedra schedule). */
+function getParshaHe(hd: HDate): string {
+  try {
+    const sedra = new Sedra(hd.getFullYear(), true);
+    const found = sedra.lookup(hd) as any;
+    if (!found || found.chag || !found.parsha) return "";
+    const names: string[] = Array.isArray(found.parsha) ? found.parsha : [found.parsha];
+    return names.map((p) => Locale.gettext(p, "he")).join("-");
+  } catch {
+    return "";
+  }
+}
+
 /** Shabbat entry/exit times for a city, with candle-lighting offset. */
 export function getShabbatTimes(cityName?: string, candleMinutesBefore = 18, havdalahMinutes = 42) {
   const city = resolveCity(cityName);
