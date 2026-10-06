@@ -1,7 +1,7 @@
 // Shared knowledge tools for the two-way bot (Telegram / WhatsApp).
 // All data is read live from the same sources the website uses, so the bot
 // always stays in sync with the app.
-import { HDate, HebrewCalendar, Location, Zmanim, Sedra } from "npm:@hebcal/core@5";
+import { HDate, HebrewCalendar, Locale, Location, Zmanim, Sedra } from "npm:@hebcal/core@5";
 
 export interface CityInfo {
   lat: number;
@@ -97,6 +97,19 @@ function nextFriday(from = new Date()): Date {
   return d;
 }
 
+/** Hebrew parsha name for a given Saturday HDate (Israeli sedra schedule). */
+function getParshaHe(hd: HDate): string {
+  try {
+    const sedra = new Sedra(hd.getFullYear(), true);
+    const found = sedra.lookup(hd) as any;
+    if (!found || found.chag || !found.parsha) return "";
+    const names: string[] = Array.isArray(found.parsha) ? found.parsha : [found.parsha];
+    return names.map((p) => Locale.gettext(p, "he")).join("-");
+  } catch {
+    return "";
+  }
+}
+
 /** Shabbat entry/exit times for a city, with candle-lighting offset. */
 export function getShabbatTimes(cityName?: string, candleMinutesBefore = 18, havdalahMinutes = 42) {
   const city = resolveCity(cityName);
@@ -114,13 +127,7 @@ export function getShabbatTimes(cityName?: string, candleMinutesBefore = 18, hav
   const havdalah = new Date(sunsetSat.getTime() + havdalahMinutes * 60000);
 
   const hd = new HDate(saturday);
-  const sedra = new Sedra(hd.getFullYear(), true);
-  let parsha = "";
-  try {
-    parsha = sedra.getString(hd, "he");
-  } catch {
-    parsha = "";
-  }
+  const parsha = getParshaHe(hd);
 
   return {
     city: city.name,
@@ -169,13 +176,7 @@ export function getParshaAndHolidays() {
   const saturday = nextFriday();
   saturday.setDate(saturday.getDate() + 1);
   const hd = new HDate(saturday);
-  const sedra = new Sedra(hd.getFullYear(), true);
-  let parsha = "";
-  try {
-    parsha = sedra.getString(hd, "he");
-  } catch {
-    parsha = "";
-  }
+  const parsha = getParshaHe(hd);
 
   const end = new Date(now);
   end.setDate(end.getDate() + 90);
