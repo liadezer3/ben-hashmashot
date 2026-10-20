@@ -78,7 +78,7 @@ export const FamilyMembers = () => {
 
     const phoneCheck = optionalPhoneSchema.safeParse(newMember.phone || "");
     if (!phoneCheck.success) {
-      toast.error(PHONE_ERROR);
+      toast({ title: "שגיאה", description: PHONE_ERROR, variant: "destructive" });
       return;
     }
     setSaving(true);
