@@ -921,6 +921,16 @@ serve(async (req) => {
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+      const { data: { user: botUser }, error: botAuthErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (botAuthErr || !botUser) {
+        return new Response(JSON.stringify({ error: 'Invalid token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: botIsAdmin } = await supabase.rpc('has_role', { _user_id: botUser.id, _role: 'admin' });
+      if (botIsAdmin !== true) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       const kind = (body.kind as 'thursday' | 'friday' | 'before_candles') || 'friday';
       const testResult = await processBotReminders(supabase, 0, -1, kind);
       return new Response(

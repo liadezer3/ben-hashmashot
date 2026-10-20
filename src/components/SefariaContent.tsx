@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -236,7 +237,7 @@ const SefariaContent = ({ currentParsha }: SefariaContentProps) => {
                             <p 
                               className="text-sm leading-relaxed text-right"
                               dir="rtl"
-                              dangerouslySetInnerHTML={{ __html: selectedCommentary.text }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedCommentary.text) }}
                             />
                             <Button
                               variant="outline"

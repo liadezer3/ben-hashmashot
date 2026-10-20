@@ -1,3 +1,4 @@
+import { optionalPhoneSchema, PHONE_ERROR } from "@/lib/phone";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -212,11 +213,18 @@ export const NotificationSettings = () => {
       return;
     }
 
+    const phoneCheck = optionalPhoneSchema.safeParse(contactInfo.phone || "");
+    if (!phoneCheck.success) {
+      toast({ title: "שגיאה", description: PHONE_ERROR, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase
       .from('notification_preferences')
       .upsert({
         user_id: user.id,
-        phone: contactInfo.phone,
+        phone: phoneCheck.data,
         email: contactInfo.email,
         email_enabled: settings.email,
         whatsapp_enabled: settings.whatsapp,

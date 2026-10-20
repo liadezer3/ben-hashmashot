@@ -1,3 +1,4 @@
+import { optionalPhoneSchema, PHONE_ERROR } from "@/lib/phone";
 import { useEffect, useState } from "react";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
@@ -75,6 +76,11 @@ export const FamilyMembers = () => {
       return;
     }
 
+    const phoneCheck = optionalPhoneSchema.safeParse(newMember.phone || "");
+    if (!phoneCheck.success) {
+      toast({ title: "שגיאה", description: PHONE_ERROR, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -85,7 +91,7 @@ export const FamilyMembers = () => {
         .insert({
           user_id: user.id,
           name: newMember.name,
-          phone: newMember.phone || null,
+          phone: phoneCheck.data,
           email: newMember.email || null,
           city: newMember.city,
           notify_sms: newMember.notify_sms,
