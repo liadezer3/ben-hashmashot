@@ -1,3 +1,4 @@
+import { phoneSchema } from "@/lib/phone";
 import { enableGuestMode } from "@/lib/guestMode";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +15,7 @@ const signupSchema = z.object({
   email: z.string().email("כתובת אימייל לא תקינה"),
   password: z.string().min(6, "הסיסמה צריכה להכיל לפחות 6 תווים"),
   fullName: z.string().min(2, "נא להזין שם מלא"),
-  phone: z.string().min(9, "נא להזין מספר טלפון תקין"),
+  phone: phoneSchema,
 });
 
 const loginSchema = z.object({

@@ -1,3 +1,4 @@
+import { optionalPhoneSchema, PHONE_ERROR } from "@/lib/phone";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +83,11 @@ const Profile = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneCheck = optionalPhoneSchema.safeParse(formData.phone || "");
+    if (!phoneCheck.success) {
+      toast({ title: "שגיאה", description: PHONE_ERROR, variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
     try {
@@ -89,7 +95,7 @@ const Profile = () => {
         .from("profiles")
         .update({
           full_name: formData.fullName,
-          phone: formData.phone,
+          phone: phoneCheck.data,
           city: formData.city,
         })
         .eq("id", user?.id);

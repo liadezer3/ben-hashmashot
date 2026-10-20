@@ -1,3 +1,4 @@
+import { phoneSchema, PHONE_ERROR } from "@/lib/phone";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,11 +61,16 @@ export const WhatsAppBotReminders = () => {
 
   const save = async () => {
     if (!reminder) return;
+    const phoneCheck = phoneSchema.safeParse(reminder.phone || "");
+    if (!phoneCheck.success) {
+      toast.error(PHONE_ERROR);
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("whatsapp_bot_reminders")
       .update({
-        phone: reminder.phone,
+        phone: phoneCheck.data,
         city: reminder.city,
         is_active: reminder.is_active,
         thursday_enabled: reminder.thursday_enabled,
