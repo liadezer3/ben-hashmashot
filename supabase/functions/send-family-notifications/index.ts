@@ -277,6 +277,20 @@ serve(async (req) => {
       );
     }
 
+    // Automatic bulk sending is restricted: service-role callers or admins only
+    const bearer = authHeader?.replace('Bearer ', '') || '';
+    let allowedBulk = bearer !== '' && bearer === supabaseKey;
+    if (!allowedBulk && userId) {
+      const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
+      allowedBulk = isAdmin === true;
+    }
+    if (!allowedBulk) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Automatic Friday sending - get all family members with auto_send enabled
     const { data: members, error: membersError } = await supabase
       .from('family_members')
