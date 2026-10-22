@@ -147,22 +147,15 @@ const Index = () => {
       />
       <PhaseTransition phase={shabbatMode.phase}>
       <div className={cn("min-h-screen transition-colors duration-500", phaseStyles.bgClass)}>
-            {/* Header with Hamburger Menu */}
-            <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 px-4 py-3">
-              <div className="container mx-auto flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-xl shadow-md">
-                    🕯️
-                  </div>
-                  <span className="font-bold text-lg text-amber-900 dark:text-amber-100">בין השמשות</span>
-                </div>
-                <HamburgerMenu 
-                  userCity={userCity} 
-                  hebrewDate={hebrewDate}
-                  isGuest={isGuestMode()}
-                />
-              </div>
-            </header>
+            {/* Original Header + Hamburger Menu */}
+            <Header />
+            <div className="fixed top-4 right-4 z-50">
+              <HamburgerMenu 
+                userCity={userCity} 
+                hebrewDate={hebrewDate}
+                isGuest={isGuestMode()}
+              />
+            </div>
       
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Phase indicator */}
