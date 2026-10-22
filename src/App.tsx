@@ -17,9 +17,12 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Landing from "./pages/Landing";
 import Unsubscribe from "./pages/Unsubscribe";
+import Help from "./pages/Help";
+import About from "./pages/About";
 import { ContactBar } from "./components/ContactBar";
 import { ViralShareButton } from "./components/ViralShareButton";
 import { VoiceCommandBar } from "./components/VoiceCommandBar";
+import { PWAInstallBanner } from "./components/PWAInstallBanner";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -45,6 +48,8 @@ const App = () => (
             <Route path="/invite/:code" element={<InvitePage />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/about" element={<About />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/sms-shabbat" element={<Landing />} />
             <Route path="/whatsapp-shabbat" element={<Landing />} />
@@ -57,6 +62,7 @@ const App = () => (
           <ContactBar position="bottom" />
           <ViralShareButton />
           <VoiceCommandBar />
+          <PWAInstallBanner />
         </BrowserRouter>
       </ObservanceProvider>
     </TooltipProvider>
