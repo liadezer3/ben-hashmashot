@@ -24,6 +24,7 @@ import { ContactBar } from "./components/ContactBar";
 import { ViralShareButton } from "./components/ViralShareButton";
 import { VoiceCommandBar } from "./components/VoiceCommandBar";
 import { PWAInstallBanner } from "./components/PWAInstallBanner";
+import CityShabbatTimes from "./pages/CityShabbatTimes";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/help" element={<Help />} />
             <Route path="/about" element={<About />} />
             <Route path="/ai-disclosure" element={<AIDisclosure />} />
+            <Route path="/shabbat-times/:citySlug" element={<CityShabbatTimes />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/sms-shabbat" element={<Landing />} />
             <Route path="/whatsapp-shabbat" element={<Landing />} />
