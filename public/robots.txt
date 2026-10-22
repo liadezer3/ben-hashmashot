@@ -1,3 +1,6 @@
+# בין השמשות - Robots.txt
+# https://ben-hashmashot.com
+
 User-agent: Googlebot
 Allow: /
 
@@ -12,3 +15,13 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap location
+Sitemap: https://ben-hashmashot.com/sitemap.xml
+
+# Block admin and auth pages from indexing
+Disallow: /admin
+Disallow: /auth
+Disallow: /profile
+Disallow: /settings
+Disallow: /invite/
