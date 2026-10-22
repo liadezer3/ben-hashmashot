@@ -15,7 +15,7 @@ const Landing = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "השבת לא תפתיע אותך יותר | בין השמשות - תזכורות חכמות לכניסת השבת";
+    document.title = "בין השמשות – זמני שבת וחג, התראות ותיעוד רגעי השבת";
 
     const setMeta = (name: string, content: string, attr: "name" | "property" = "name") => {
       let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
@@ -29,7 +29,7 @@ const Landing = () => {
 
     setMeta(
       "description",
-      "תזכורות חכמות לכניסת השבת בדיוק לפי המיקום שלך. בלי הרשמה, בלי סיסמאות. וואטסאפ, טלגרם או פוש לנייד - קליק אחד ואתם מסודרים."
+      "אתר בין השמשות מספק זמני כניסת ויציאת שבת וחג מדויקים לפי מיקום, התראות מותאמות אישית, מפת בתי כנסת ותיעוד רגעים קהילתיים של שבת וחג."
     );
     setMeta("keywords", "תזכורת כניסת שבת, התראות שבת, זמני שבת, וואטסאפ שבת, טלגרם שבת, הדלקת נרות");
     setMeta("og:title", "השבת לא תפתיע אותך יותר", "property");
@@ -108,11 +108,14 @@ const Landing = () => {
           />
 
           <div className="space-y-6">
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
+            <h1 className="text-base md:text-lg font-semibold text-primary tracking-wide">
+              בין השמשות – זמני שבת, התראות וקהילה
+            </h1>
+            <p className="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
               השבת
               <br />
               <span className="text-primary">לא תפתיע אותך יותר.</span>
-            </h1>
+            </p>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               תזכורות חכמות לכניסת השבת בדיוק לפי המיקום שלך.
@@ -241,6 +244,16 @@ const Landing = () => {
           <br />
           המטרה שלנו היא רק לעזור לך להיכנס לשבת עם חיוך. 🕯️
         </p>
+      </section>
+
+      {/* ABOUT */}
+      <section aria-labelledby="about-heading" className="border-t border-border bg-muted/30">
+        <div className="container mx-auto px-4 py-12 max-w-3xl text-center" dir="rtl">
+          <h3 id="about-heading" className="text-xl font-bold mb-4">אודות בין השמשות</h3>
+          <p className="text-muted-foreground leading-relaxed">
+            אתר <strong className="text-foreground">בין השמשות</strong> הוא מיזם דיגיטלי המוקדש לחיבור לזמני השבת והחג ולתיעוד הרגעים המיוחדים שלהם. באתר תוכלו למצוא זמני כניסת ויציאת שבת וחג מפורטים ומדויקים לפי ערים ואיזורים, לקבל התראות בזמן אמת, לאתר בתי כנסת וקהילות בסביבתכם, ולשתף רגעים מרוממים מכל סוף שבוע.
+          </p>
+        </div>
       </section>
     </div>
   );
