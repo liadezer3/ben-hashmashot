@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { ShabbatTimes } from "@/components/ShabbatTimes";
 import { Header } from "@/components/Header";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
+import { AIDisclosureFooter } from "@/components/AIDisclosureFooter";
 import ParshaContent from "@/components/ParshaContent";
 import { ActiveChannelsPanel } from "@/components/ActiveChannelsPanel";
 import CandleLightingTracker from "@/components/CandleLightingTracker";
@@ -54,6 +56,7 @@ const Index = () => {
   const [currentParsha, setCurrentParsha] = useState<string>("");
   const [candleLighting, setCandleLighting] = useState<string>("");
   const [havdalah, setHavdalah] = useState<string>("");
+  const [hebrewDate, setHebrewDate] = useState<string>("");
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Dynamic mode based on time
@@ -144,7 +147,22 @@ const Index = () => {
       />
       <PhaseTransition phase={shabbatMode.phase}>
       <div className={cn("min-h-screen transition-colors duration-500", phaseStyles.bgClass)}>
-      <Header />
+            {/* Header with Hamburger Menu */}
+            <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+              <div className="container mx-auto flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-xl shadow-md">
+                    🕯️
+                  </div>
+                  <span className="font-bold text-lg text-amber-900 dark:text-amber-100">בין השמשות</span>
+                </div>
+                <HamburgerMenu 
+                  userCity={userCity} 
+                  hebrewDate={hebrewDate}
+                  isGuest={isGuestMode()}
+                />
+              </div>
+            </header>
       
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Phase indicator */}
@@ -253,17 +271,34 @@ const Index = () => {
       </main>
 
       <footer className="border-t border-border mt-16 py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground space-y-2">
-          <p>{t("footer.calculatedBy")}</p>
-          <a
-            href="mailto:liadezer3@gmail.com"
-            className="inline-flex items-center gap-1 hover:text-primary transition-colors"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            liadezer3@gmail.com
-          </a>
-        </div>
-      </footer>
+              <div className="container mx-auto px-4 space-y-4">
+                {/* AI Disclosure */}
+                <AIDisclosureFooter />
+          
+                {/* Contact */}
+                <div className="text-center text-sm text-muted-foreground space-y-2">
+                  <p>{t("footer.calculatedBy")}</p>
+                  <a
+                    href="mailto:liadezer3@gmail.com"
+                    className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    liadezer3@gmail.com
+                  </a>
+                </div>
+
+                {/* Footer Links */}
+                <div className="text-center text-sm text-muted-foreground flex justify-center gap-4 flex-wrap">
+                  <Link to="/help" className="hover:text-primary transition-colors">עזרה</Link>
+                  <span>•</span>
+                  <Link to="/about" className="hover:text-primary transition-colors">אודות</Link>
+                  <span>•</span>
+                  <Link to="/privacy" className="hover:text-primary transition-colors">פרטיות</Link>
+                  <span>•</span>
+                  <Link to="/terms" className="hover:text-primary transition-colors">תנאים</Link>
+                </div>
+              </div>
+            </footer>
     </div>
     </PhaseTransition>
     </>

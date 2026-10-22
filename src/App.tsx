@@ -19,6 +19,7 @@ import Landing from "./pages/Landing";
 import Unsubscribe from "./pages/Unsubscribe";
 import Help from "./pages/Help";
 import About from "./pages/About";
+import AIDisclosure from "./pages/AIDisclosure";
 import { ContactBar } from "./components/ContactBar";
 import { ViralShareButton } from "./components/ViralShareButton";
 import { VoiceCommandBar } from "./components/VoiceCommandBar";
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/help" element={<Help />} />
             <Route path="/about" element={<About />} />
+            <Route path="/ai-disclosure" element={<AIDisclosure />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/sms-shabbat" element={<Landing />} />
             <Route path="/whatsapp-shabbat" element={<Landing />} />
