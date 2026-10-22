@@ -184,7 +184,7 @@ const Auth = () => {
             disabled={loading}
             onClick={async () => {
               setLoading(true);
-              const { error } = await supabase.auth.signInAnonymously();
+              const error = new Error("guest-browser-mode"); // guests use browser-only mode (server blocks guest sessions)
               setLoading(false);
               if (error) {
                 // Anonymous sign-ins disabled → browser-only guest mode

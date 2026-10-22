@@ -52,7 +52,7 @@ const Landing = () => {
   const handleGuestStart = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInAnonymously();
+      const error = new Error("guest-browser-mode"); // guests use browser-only mode (server blocks guest sessions)
       if (error) throw error;
       toast({
         title: "ברוכים הבאים! 🌅",
