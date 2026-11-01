@@ -1,7 +1,7 @@
 import { isGuestMode, getGuestCity, disableGuestMode } from "@/lib/guestMode";
 import { Mail } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link } from "@/lib/router-compat";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { ShabbatTimes } from "@/components/ShabbatTimes";

@@ -1,0 +1,15 @@
+{
+  "customizations": [
+    { "token": "--warm / bg-warm / text-warm", "source": "src/index.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "--gradient-shabbat / bg-gradient-shabbat", "source": "src/index.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "--gradient-card / bg-gradient-card", "source": "src/index.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "--gradient-warm / bg-gradient-warm", "source": "src/index.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "--shadow-soft / shadow-soft", "source": "src/index.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "--shadow-card / shadow-card", "source": "src/index.css + tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "warm HSL palette (light + dark)", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "--radius 0.75rem", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "sidebar palette", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "animate-slide-up keyframes", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" },
+    { "token": "container (centered, 2rem padding, 1400px)", "source": "tailwind.config.ts", "reappliedIn": "src/styles.css" }
+  ]
+}

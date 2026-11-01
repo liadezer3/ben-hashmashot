@@ -5,7 +5,7 @@
  import { useOfflineStorage, HALACHIC_TRADITIONS, HalachicTradition } from '@/hooks/useOfflineStorage';
  import { useHebrewDate } from '@/hooks/useHebrewDate';
  import { cn } from '@/lib/utils';
- import { Link } from 'react-router-dom';
+ import { Link } from '@/lib/router-compat';
  import { getShabbatZmanim } from '@/lib/shabbatZmanim';
  
  // Default halachot for Shabbat

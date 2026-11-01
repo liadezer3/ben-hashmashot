@@ -1,109 +1,77 @@
 // Service Worker for Web Push Notifications and Offline Support
 
-const CACHE_NAME = 'ben-hashmashot-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/widget',
-  '/icon-512.png',
-  '/manifest.json',
-];
+// v2: the site is now server-rendered. Pages (HTML) are always fetched from the
+// network first so visitors never get a stale copy; the last good copy is kept
+// only as an offline fallback. Old v1 caches (which held the previous site) are removed.
+const CACHE_NAME = 'ben-hashmashot-v2';
+const STATIC_ASSETS = ['/icon-512.png', '/manifest.json'];
 
-// Install event - cache static assets
 self.addEventListener('install', function(event) {
-  console.log('[Service Worker] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(function(cache) {
-        console.log('[Service Worker] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
-      })
-      .then(function() {
-        self.skipWaiting();
-      })
+      .then(function(cache) { return cache.addAll(STATIC_ASSETS); })
+      .catch(function() {})
+      .then(function() { return self.skipWaiting(); })
   );
 });
 
-// Activate event - clean old caches
 self.addEventListener('activate', function(event) {
-  console.log('[Service Worker] Activating...');
   event.waitUntil(
-    caches.keys().then(function(cacheNames) {
+    caches.keys().then(function(names) {
       return Promise.all(
-        cacheNames
-          .filter(function(cacheName) {
-            return cacheName !== CACHE_NAME;
-          })
-          .map(function(cacheName) {
-            console.log('[Service Worker] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          })
+        names
+          .filter(function(name) { return name.indexOf('ben-hashmashot-') === 0 && name !== CACHE_NAME; })
+          .map(function(name) { return caches.delete(name); })
       );
-    }).then(function() {
-      return clients.claim();
-    })
+    }).then(function() { return self.clients.claim(); })
   );
 });
 
-// Fetch event - serve from cache with network fallback
 self.addEventListener('fetch', function(event) {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // Skip API calls and external requests
+  if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin || 
+  if (url.origin !== self.location.origin ||
       url.pathname.startsWith('/api') ||
-      url.hostname.includes('supabase') ||
-      url.hostname.includes('hebcal')) {
+      url.pathname.startsWith('/_serverFn') ||
+      url.pathname.startsWith('/~oauth')) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then(function(cachedResponse) {
-        // Return cached response if found
-        if (cachedResponse) {
-          // Fetch in background to update cache
-          fetch(event.request)
-            .then(function(response) {
-              if (response.ok) {
-                caches.open(CACHE_NAME)
-                  .then(function(cache) {
-                    cache.put(event.request, response);
-                  });
-              }
-            })
-            .catch(function() {
-              // Ignore network errors when updating cache
-            });
-          return cachedResponse;
-        }
-
-        // Otherwise fetch from network
-        return fetch(event.request)
-          .then(function(response) {
-            // Cache successful responses
-            if (response.ok) {
-              const responseClone = response.clone();
-              caches.open(CACHE_NAME)
-                .then(function(cache) {
-                  cache.put(event.request, responseClone);
-                });
-            }
-            return response;
-          })
-          .catch(function() {
-            // Return offline page for navigation requests
-            if (event.request.mode === 'navigate') {
-              return caches.match('/');
-            }
-            return new Response('Offline', { status: 503 });
+  // Pages: network first, cached copy only when offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(function(response) {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
+          }
+          return response;
+        })
+        .catch(function() {
+          return caches.match(event.request).then(function(cached) {
+            return cached || caches.match('/') || new Response('Offline', { status: 503 });
           });
+        })
+    );
+    return;
+  }
+
+  // Hashed build assets and icons: cache first, then network.
+  if (url.pathname.startsWith('/assets/') || /\.(png|jpg|jpeg|svg|ico|webp|woff2?)$/.test(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then(function(cached) {
+        if (cached) return cached;
+        return fetch(event.request).then(function(response) {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, copy); });
+          }
+          return response;
+        });
       })
-  );
+    );
+  }
 });
 
 // Push notification event
