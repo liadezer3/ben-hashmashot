@@ -1,6 +1,6 @@
 import { User, Shield, Mail } from "lucide-react";
 import { Button } from "./ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import logo from "@/assets/logo.jpg";

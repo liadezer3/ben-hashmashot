@@ -24,6 +24,7 @@ i18n
 
 // Set document direction & lang based on language
 const applyDir = (lng: string) => {
+  if (typeof document === "undefined") return;
   const dir = lng === "he" ? "rtl" : "ltr";
   document.documentElement.setAttribute("dir", dir);
   document.documentElement.setAttribute("lang", lng);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { Link, useParams, Navigate } from "react-router-dom";
+import { Link, useParams, Navigate } from "@/lib/router-compat";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Flame, Moon, BookOpen, Bell } from "lucide-react";
