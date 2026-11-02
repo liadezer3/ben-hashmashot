@@ -119,6 +119,7 @@ const Settings = () => {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="חזרה לדף הבית"
             onClick={() => navigate('/')}
           >
             <ArrowRight className="w-5 h-5" />
