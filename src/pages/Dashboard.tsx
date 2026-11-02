@@ -35,10 +35,10 @@ const Dashboard = () => {
       <Header />
       <main className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center gap-4 mb-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" aria-label="חזרה לדף הבית" onClick={() => navigate("/")}>
             <ArrowRight className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-bold">הדשבורד שלי</h1>
+          <h2 className="text-2xl font-bold">הדשבורד שלי</h2>
         </div>
 
         <SmartReminders userId={userId} />
