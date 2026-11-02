@@ -49,7 +49,7 @@ const ShabbatTaskList = ({ userId }: { userId: string }) => {
         // Initialize with default tasks
         await initializeDefaultTasks();
       } else {
-        setTasks(data);
+        setTasks(data as any);
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -77,7 +77,7 @@ const ShabbatTaskList = ({ userId }: { userId: string }) => {
       return;
     }
 
-    setTasks(data);
+    setTasks(data as any);
   };
 
   const toggleTask = async (taskId: string, currentState: boolean) => {
@@ -113,7 +113,7 @@ const ShabbatTaskList = ({ userId }: { userId: string }) => {
 
       if (error) throw error;
 
-      setTasks(prev => [...prev, data]);
+      setTasks(prev => [...prev, data as any]);
       setNewTask("");
       toast({ title: "המשימה נוספה בהצלחה" });
     } catch (error) {
