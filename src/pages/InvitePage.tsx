@@ -83,9 +83,9 @@ const InvitePage = () => {
       p_invite_code: code as string,
       p_guest_name: guestName.trim(),
       p_status: status,
-      p_guest_contact: guestContact || null,
-      p_dish: dish || null,
-      p_notes: notes || null,
+      p_guest_contact: guestContact || undefined,
+      p_dish: dish || undefined,
+      p_notes: notes || undefined,
     });
 
     if (error) {

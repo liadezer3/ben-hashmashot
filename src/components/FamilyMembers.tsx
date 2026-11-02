@@ -58,7 +58,7 @@ export const FamilyMembers = () => {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setMembers(data || []);
+      setMembers((data || []) as any);
     } catch (error) {
       console.error("Error loading family members:", error);
     } finally {
@@ -159,7 +159,7 @@ export const FamilyMembers = () => {
     try {
       const { error } = await supabase
         .from("family_members")
-        .update({ [field]: value })
+        .update({ [field]: value } as any)
         .eq("id", id);
 
       if (error) throw error;

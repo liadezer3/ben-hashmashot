@@ -69,7 +69,7 @@ export const SavedLocations = () => {
 
       if (error) throw error;
 
-      setLocations(data || []);
+      setLocations((data || []) as SavedLocation[]);
     } catch (error) {
       console.error("Error loading locations:", error);
     } finally {

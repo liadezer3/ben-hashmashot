@@ -157,7 +157,7 @@ export function SidebarMenu({ userCity = "ירושלים", hebrewDate = "", isGu
                         )}>
                           {item.label}
                         </span>
-                        {item.hasAI && (
+                        {(item as { hasAI?: boolean }).hasAI && (
                           <span className="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">
                             AI
                           </span>
