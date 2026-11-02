@@ -98,7 +98,7 @@ const Profile = () => {
           phone: phoneCheck.data,
           city: formData.city,
         })
-        .eq("id", user?.id);
+        .eq("id", user?.id ?? "");
 
       if (error) throw error;
 

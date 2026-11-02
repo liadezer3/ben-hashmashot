@@ -93,7 +93,7 @@ export const SharedTaskList = ({ groupId, groupName }: SharedTaskListProps) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setTasks(data || []);
+      setTasks((data || []) as SharedTask[]);
     } catch (error) {
       console.error("Error loading tasks:", error);
     } finally {

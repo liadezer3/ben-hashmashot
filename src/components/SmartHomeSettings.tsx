@@ -324,10 +324,10 @@ const SmartHomeSettings = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from('smart_home_settings').upsert({
+      await supabase.from('smart_home_settings').upsert(({
         user_id: user.id,
         [field]: value,
-      }, { onConflict: 'user_id' });
+      }) as any, { onConflict: 'user_id' });
     } catch (error) {
       console.error(`Error saving ${field} to cloud:`, error);
     }
