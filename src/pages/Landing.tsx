@@ -15,7 +15,7 @@ const Landing = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = "בין השמשות – זמני שבת וחג, התראות ותיעוד רגעי השבת";
+    document.title = "בין השמשות – זמני שבת, התראות וקהילה";
 
     const setMeta = (name: string, content: string, attr: "name" | "property" = "name") => {
       let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
@@ -143,7 +143,7 @@ const Landing = () => {
               <span>זמין ב:</span>
               <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
                 <div className="flex items-center gap-1.5">
-                  <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5" />
+                  <img src={whatsappIcon} alt="אייקון וואטסאפ" className="w-5 h-5" />
                   <span>וואטסאפ</span>
                 </div>
                 <span className="opacity-40">·</span>

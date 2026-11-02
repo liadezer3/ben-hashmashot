@@ -86,6 +86,7 @@ export const Header = () => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="הפרופיל שלי"
                   onClick={() => navigate("/profile")}
                   className="text-primary-foreground hover:bg-primary-foreground/10"
                 >

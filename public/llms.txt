@@ -1,0 +1,18 @@
+# בין השמשות (Ben Hashmashot)
+
+> זמני כניסת ויציאת שבת וחג מדויקים לפי עיר בישראל (לפי הלוח המקובל: הדלקת נרות לפני השקיעה לפי מנהג העיר, צאת שבת לפי צאת הכוכבים), תזכורות אוטומטיות בוואטסאפ, טלגרם, מייל ופוש, ותיעוד רגעי השבת של המשפחה והקהילה.
+
+## Pages
+
+- [דף הבית](https://ben-hashmashot.com/landing): מה האתר עושה ואיך מפעילים תזכורות.
+- [אודות](https://ben-hashmashot.com/about): על המיזם.
+- [עזרה](https://ben-hashmashot.com/help): שאלות נפוצות והדרכה.
+- [זמני שבת בירושלים](https://ben-hashmashot.com/shabbat-times/jerusalem): כניסה, יציאה ופרשת השבוע.
+- [זמני שבת בתל אביב](https://ben-hashmashot.com/shabbat-times/tel-aviv): כניסה, יציאה ופרשת השבוע.
+- [זמני שבת במעלה אדומים](https://ben-hashmashot.com/shabbat-times/maale-adumim): כניסה, יציאה ופרשת השבוע.
+
+## Optional
+
+- [מדיניות פרטיות](https://ben-hashmashot.com/privacy)
+- [תנאי שימוש](https://ben-hashmashot.com/terms)
+- [שימוש בבינה מלאכותית](https://ben-hashmashot.com/ai-disclosure)

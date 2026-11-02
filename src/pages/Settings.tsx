@@ -119,11 +119,12 @@ const Settings = () => {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="חזרה לדף הבית"
             onClick={() => navigate('/')}
           >
             <ArrowRight className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-bold">הגדרות ותכונות</h1>
+          <h2 className="text-2xl font-bold">הגדרות ותכונות</h2>
         </div>
 
         <Tabs
