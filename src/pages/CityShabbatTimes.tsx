@@ -79,9 +79,22 @@ const CityShabbatTimes = () => {
           <p className="text-lg leading-relaxed text-muted-foreground">
             מחפשים את זמני כניסת ויציאת שבת ב{city.he}? באתר בין השמשות תוכלו להתעדכן בזמני השבת המדויקים ביותר עבור {city.he}, לקבל התראות מותאמות אישית לפני כניסת שבת, ולאתר בתי כנסת ואירועים קהילתיים בסביבתכם.
           </p>
-          <Button asChild size="lg" className="rounded-full gap-2">
-            <Link to="/landing"><Bell className="w-5 h-5" />קבלו התראה לפני שבת</Link>
-          </Button>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button asChild size="lg" className="rounded-full gap-2">
+              <Link to="/landing"><Bell className="w-5 h-5" />קבלו התראה לפני שבת</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="rounded-full gap-2">
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `🕯️ זמני שבת ב${city.he}${zmanim?.parsha ? ` – ${zmanim.parsha}` : ""}\nכניסת שבת: ${zmanim?.candleLightingTime ?? ""}\nיציאת שבת: ${zmanim?.havdalahTime ?? ""}\n\nלהתראות לפני שבת: ${SITE}/shabbat-times/${city.slug}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                שתפו בוואטסאפ
+              </a>
+            </Button>
+          </div>
         </section>
 
         <nav aria-label="ערים נוספות" className="border-t border-border pt-8">
