@@ -16,16 +16,20 @@ import { Route as AiDisclosureRouteImport } from './routes/ai-disclosure'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CandleLightingReminderRouteImport } from './routes/candle-lighting-reminder'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as FridayTimelineRouteImport } from './routes/friday-timeline'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ShabbatSheetRouteImport } from './routes/shabbat-sheet'
 import { Route as SmsShabbatRouteImport } from './routes/sms-shabbat'
+import { Route as TableTriviaRouteImport } from './routes/table-trivia'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as WhatsappShabbatRouteImport } from './routes/whatsapp-shabbat'
 import { Route as WidgetRouteImport } from './routes/widget'
+import { Route as WorldShabbatTimesRouteImport } from './routes/world-shabbat-times'
 import { Route as InviteCodeRouteImport } from './routes/invite/$code'
 import { Route as ShabbatTimesCitySlugRouteImport } from './routes/shabbat-times/$citySlug'
 
@@ -64,6 +68,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FridayTimelineRoute = FridayTimelineRouteImport.update({
+  id: '/friday-timeline',
+  path: '/friday-timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
@@ -89,9 +98,19 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShabbatSheetRoute = ShabbatSheetRouteImport.update({
+  id: '/shabbat-sheet',
+  path: '/shabbat-sheet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SmsShabbatRoute = SmsShabbatRouteImport.update({
   id: '/sms-shabbat',
   path: '/sms-shabbat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TableTriviaRoute = TableTriviaRouteImport.update({
+  id: '/table-trivia',
+  path: '/table-trivia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -114,6 +133,11 @@ const WidgetRoute = WidgetRouteImport.update({
   path: '/widget',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorldShabbatTimesRoute = WorldShabbatTimesRouteImport.update({
+  id: '/world-shabbat-times',
+  path: '/world-shabbat-times',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InviteCodeRoute = InviteCodeRouteImport.update({
   id: '/invite/$code',
   path: '/invite/$code',
@@ -133,16 +157,20 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/candle-lighting-reminder': typeof CandleLightingReminderRoute
   '/dashboard': typeof DashboardRoute
+  '/friday-timeline': typeof FridayTimelineRoute
   '/help': typeof HelpRoute
   '/landing': typeof LandingRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/shabbat-sheet': typeof ShabbatSheetRoute
   '/sms-shabbat': typeof SmsShabbatRoute
+  '/table-trivia': typeof TableTriviaRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/whatsapp-shabbat': typeof WhatsappShabbatRoute
   '/widget': typeof WidgetRoute
+  '/world-shabbat-times': typeof WorldShabbatTimesRoute
   '/invite/$code': typeof InviteCodeRoute
   '/shabbat-times/$citySlug': typeof ShabbatTimesCitySlugRoute
 }
@@ -154,16 +182,20 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/candle-lighting-reminder': typeof CandleLightingReminderRoute
   '/dashboard': typeof DashboardRoute
+  '/friday-timeline': typeof FridayTimelineRoute
   '/help': typeof HelpRoute
   '/landing': typeof LandingRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/shabbat-sheet': typeof ShabbatSheetRoute
   '/sms-shabbat': typeof SmsShabbatRoute
+  '/table-trivia': typeof TableTriviaRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/whatsapp-shabbat': typeof WhatsappShabbatRoute
   '/widget': typeof WidgetRoute
+  '/world-shabbat-times': typeof WorldShabbatTimesRoute
   '/invite/$code': typeof InviteCodeRoute
   '/shabbat-times/$citySlug': typeof ShabbatTimesCitySlugRoute
 }
@@ -176,16 +208,20 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/candle-lighting-reminder': typeof CandleLightingReminderRoute
   '/dashboard': typeof DashboardRoute
+  '/friday-timeline': typeof FridayTimelineRoute
   '/help': typeof HelpRoute
   '/landing': typeof LandingRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/shabbat-sheet': typeof ShabbatSheetRoute
   '/sms-shabbat': typeof SmsShabbatRoute
+  '/table-trivia': typeof TableTriviaRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/whatsapp-shabbat': typeof WhatsappShabbatRoute
   '/widget': typeof WidgetRoute
+  '/world-shabbat-times': typeof WorldShabbatTimesRoute
   '/invite/$code': typeof InviteCodeRoute
   '/shabbat-times/$citySlug': typeof ShabbatTimesCitySlugRoute
 }
@@ -199,16 +235,20 @@ export interface FileRouteTypes {
     | '/auth'
     | '/candle-lighting-reminder'
     | '/dashboard'
+    | '/friday-timeline'
     | '/help'
     | '/landing'
     | '/privacy'
     | '/profile'
     | '/settings'
+    | '/shabbat-sheet'
     | '/sms-shabbat'
+    | '/table-trivia'
     | '/terms'
     | '/unsubscribe'
     | '/whatsapp-shabbat'
     | '/widget'
+    | '/world-shabbat-times'
     | '/invite/$code'
     | '/shabbat-times/$citySlug'
   fileRoutesByTo: FileRoutesByTo
@@ -220,16 +260,20 @@ export interface FileRouteTypes {
     | '/auth'
     | '/candle-lighting-reminder'
     | '/dashboard'
+    | '/friday-timeline'
     | '/help'
     | '/landing'
     | '/privacy'
     | '/profile'
     | '/settings'
+    | '/shabbat-sheet'
     | '/sms-shabbat'
+    | '/table-trivia'
     | '/terms'
     | '/unsubscribe'
     | '/whatsapp-shabbat'
     | '/widget'
+    | '/world-shabbat-times'
     | '/invite/$code'
     | '/shabbat-times/$citySlug'
   id:
@@ -241,16 +285,20 @@ export interface FileRouteTypes {
     | '/auth'
     | '/candle-lighting-reminder'
     | '/dashboard'
+    | '/friday-timeline'
     | '/help'
     | '/landing'
     | '/privacy'
     | '/profile'
     | '/settings'
+    | '/shabbat-sheet'
     | '/sms-shabbat'
+    | '/table-trivia'
     | '/terms'
     | '/unsubscribe'
     | '/whatsapp-shabbat'
     | '/widget'
+    | '/world-shabbat-times'
     | '/invite/$code'
     | '/shabbat-times/$citySlug'
   fileRoutesById: FileRoutesById
@@ -263,16 +311,20 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CandleLightingReminderRoute: typeof CandleLightingReminderRoute
   DashboardRoute: typeof DashboardRoute
+  FridayTimelineRoute: typeof FridayTimelineRoute
   HelpRoute: typeof HelpRoute
   LandingRoute: typeof LandingRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
+  ShabbatSheetRoute: typeof ShabbatSheetRoute
   SmsShabbatRoute: typeof SmsShabbatRoute
+  TableTriviaRoute: typeof TableTriviaRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   WhatsappShabbatRoute: typeof WhatsappShabbatRoute
   WidgetRoute: typeof WidgetRoute
+  WorldShabbatTimesRoute: typeof WorldShabbatTimesRoute
   InviteCodeRoute: typeof InviteCodeRoute
   ShabbatTimesCitySlugRoute: typeof ShabbatTimesCitySlugRoute
 }
@@ -328,6 +380,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/friday-timeline': {
+      id: '/friday-timeline'
+      path: '/friday-timeline'
+      fullPath: '/friday-timeline'
+      preLoaderRoute: typeof FridayTimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/help': {
       id: '/help'
       path: '/help'
@@ -363,11 +422,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shabbat-sheet': {
+      id: '/shabbat-sheet'
+      path: '/shabbat-sheet'
+      fullPath: '/shabbat-sheet'
+      preLoaderRoute: typeof ShabbatSheetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sms-shabbat': {
       id: '/sms-shabbat'
       path: '/sms-shabbat'
       fullPath: '/sms-shabbat'
       preLoaderRoute: typeof SmsShabbatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/table-trivia': {
+      id: '/table-trivia'
+      path: '/table-trivia'
+      fullPath: '/table-trivia'
+      preLoaderRoute: typeof TableTriviaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -398,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WidgetRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/world-shabbat-times': {
+      id: '/world-shabbat-times'
+      path: '/world-shabbat-times'
+      fullPath: '/world-shabbat-times'
+      preLoaderRoute: typeof WorldShabbatTimesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invite/$code': {
       id: '/invite/$code'
       path: '/invite/$code'
@@ -423,16 +503,20 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CandleLightingReminderRoute: CandleLightingReminderRoute,
   DashboardRoute: DashboardRoute,
+  FridayTimelineRoute: FridayTimelineRoute,
   HelpRoute: HelpRoute,
   LandingRoute: LandingRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
+  ShabbatSheetRoute: ShabbatSheetRoute,
   SmsShabbatRoute: SmsShabbatRoute,
+  TableTriviaRoute: TableTriviaRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   WhatsappShabbatRoute: WhatsappShabbatRoute,
   WidgetRoute: WidgetRoute,
+  WorldShabbatTimesRoute: WorldShabbatTimesRoute,
   InviteCodeRoute: InviteCodeRoute,
   ShabbatTimesCitySlugRoute: ShabbatTimesCitySlugRoute,
 }
