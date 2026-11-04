@@ -183,3 +183,10 @@
     cursor: pointer;
   }
 }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body * { visibility: hidden; }
+  #shabbat-sheet, #shabbat-sheet * { visibility: visible; }
+  #shabbat-sheet { position: absolute; inset: 0; box-shadow: none; }
+}
