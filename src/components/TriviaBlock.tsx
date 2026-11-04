@@ -37,7 +37,7 @@ export function TriviaBlock({ offset = 0, printMode = false }: { offset?: number
         <h2 className="text-xl font-semibold">שאלות פתיחה לשיחה</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {cards.map((c) => (
-            <div key={c} className="rounded-xl bg-secondary p-4 text-secondary-foreground text-sm leading-relaxed">
+            <div key={c} className="rounded-xl bg-muted p-4 text-foreground text-sm leading-relaxed">
               {c}
             </div>
           ))}
