@@ -108,4 +108,20 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://ben-hashmashot.com/shabbat-sheet</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://ben-hashmashot.com/friday-timeline</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://ben-hashmashot.com/table-trivia</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://ben-hashmashot.com/world-shabbat-times</loc>
+    <changefreq>weekly</changefreq>
+  </url>
 </urlset>

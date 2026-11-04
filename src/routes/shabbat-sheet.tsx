@@ -67,11 +67,11 @@ function ShabbatSheet() {
           {z?.parsha && <p className="text-lg text-primary">{z.holiday ?? z.parsha}</p>}
         </header>
         <div className="grid grid-cols-2 gap-4 text-center">
-          <div className="rounded-xl bg-secondary p-4">
+          <div className="rounded-xl bg-muted p-4">
             <div className="text-sm text-muted-foreground">הדלקת נרות · {cityHe(city)}</div>
             <div className="text-4xl font-bold text-primary">{z?.candleLightingTime ?? "--:--"}</div>
           </div>
-          <div className="rounded-xl bg-secondary p-4">
+          <div className="rounded-xl bg-muted p-4">
             <div className="text-sm text-muted-foreground">צאת השבת</div>
             <div className="text-4xl font-bold">{z?.havdalahTime ?? "--:--"}</div>
           </div>

@@ -43,7 +43,11 @@ import {
   Mic,
   Image as ImageIcon,
   ChevronLeft,
-  Smartphone
+  Smartphone,
+  Printer,
+  Clock,
+  Sparkles,
+  Globe
 } from "lucide-react";
 
 const Index = () => {
@@ -210,31 +214,50 @@ const Index = () => {
 
         {/* Full daily halachic times - religious/traditional users */}
         {showReligiousContent && shabbatMode.phase !== 'shabbat' && (
-          <DailyHalachicTimes city={userCity} />
+          <details className="group rounded-2xl border border-border bg-card">
+            <summary className="cursor-pointer list-none p-4 font-semibold flex items-center justify-between">
+              זמני היום ההלכתיים
+              <ChevronLeft className="h-4 w-4 transition-transform group-open:-rotate-90" />
+            </summary>
+            <div className="p-4 pt-0"><DailyHalachicTimes city={userCity} /></div>
+          </details>
         )}
 
-        {/* Active notification channels with quick toggles + test all */}
-        <ActiveChannelsPanel />
+        {/* Four main actions */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { to: "/shabbat-sheet", icon: Printer, label: "דף שבת למקרר" },
+            { to: "/friday-timeline", icon: Clock, label: "ציר זמן ליום שישי" },
+            { to: "/table-trivia", icon: Sparkles, label: "חידון לשולחן" },
+            { to: "/world-shabbat-times", icon: Globe, label: "זמני שבת בעולם" },
+          ].map((a) => (
+            <Link key={a.to} to={a.to} className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md">
+              <a.icon className="h-7 w-7 text-primary" />
+              <span className="text-sm font-medium text-center">{a.label}</span>
+            </Link>
+          ))}
+        </div>
 
-        {/* Enhanced Family Hub: Sharing, Shopping, Guest Reminders */}
-        <EnhancedFamilyHub
-          userId={userId}
-          candleLighting={candleLighting}
-          havdalah={havdalah}
-        />
-
-        {/* Candle Lighting Tracker */}
-        {showReligiousContent && (
-          <CandleLightingTracker userId={userId} />
-        )}
+        {/* Secondary panels, folded away to keep the screen calm */}
+        <details className="group rounded-2xl border border-border bg-card">
+          <summary className="cursor-pointer list-none p-4 font-semibold flex items-center justify-between">
+            משפחה, התראות ומעקב
+            <ChevronLeft className="h-4 w-4 transition-transform group-open:-rotate-90" />
+          </summary>
+          <div className="space-y-6 p-4 pt-0">
+            <ActiveChannelsPanel />
+            <EnhancedFamilyHub userId={userId} candleLighting={candleLighting} havdalah={havdalah} />
+            {showReligiousContent && <CandleLightingTracker userId={userId} />}
+          </div>
+        </details>
 
         {/* Quick Links to Other Features */}
-        <Card className="p-4">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Settings className="w-5 h-5 text-primary" />
-            תכונות נוספות
-          </h3>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <details className="group rounded-2xl border border-border bg-card p-4">
+          <summary className="cursor-pointer list-none font-semibold flex items-center justify-between">
+            <span className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" />הגדרות ותכונות נוספות</span>
+            <ChevronLeft className="h-4 w-4 transition-transform group-open:-rotate-90" />
+          </summary>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-4">
             {quickLinks.map((link) => (
               <Link
                 key={link.label}
@@ -260,7 +283,7 @@ const Index = () => {
             {t("features.allSettings")}
             <ChevronLeft className="w-4 h-4" />
           </Button>
-        </Card>
+        </details>
       </main>
 
       <footer className="border-t border-border mt-16 py-6">
