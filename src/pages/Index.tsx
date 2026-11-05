@@ -19,6 +19,7 @@ import { useAutoTheme } from "@/hooks/useAutoTheme";
 import { useObservance } from "@/contexts/ObservanceContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { KosherShabbatMode } from "@/components/KosherShabbatMode";
@@ -62,6 +63,7 @@ const Index = () => {
   const [havdalah, setHavdalah] = useState<string>("");
   const [hebrewDate, setHebrewDate] = useState<string>("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<"departure" | "concierge" | null>(null);
 
   // Dynamic mode based on time
   const shabbatMode = useShabbatMode(candleLighting, havdalah);
@@ -158,6 +160,7 @@ const Index = () => {
                 userCity={userCity} 
                 hebrewDate={hebrewDate}
                 isGuest={isGuestMode()}
+                onSelectTool={setSelectedTool}
               />
             </div>
       
@@ -317,6 +320,21 @@ const Index = () => {
             </footer>
     </div>
     </PhaseTransition>
+    <Dialog open={selectedTool !== null} onOpenChange={(open) => { if (!open) setSelectedTool(null); }}>
+      <DialogContent dir="rtl" aria-describedby={undefined} className="max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-right pr-6">
+            {selectedTool === "departure" ? "חלון יציאה" : "קונסיירז' ערב שבת"}
+          </DialogTitle>
+        </DialogHeader>
+        {selectedTool === "departure" && (
+          <SmartDepartureCard city={userCity} candleLighting={candleLighting} />
+        )}
+        {selectedTool === "concierge" && (
+          <FridayConcierge city={userCity} candleLighting={candleLighting} havdalah={havdalah} parsha={currentParsha} />
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 };
