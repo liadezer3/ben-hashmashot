@@ -134,15 +134,16 @@ export function SidebarMenu({ userCity = "ירושלים", hebrewDate = "", isGu
                 const isActive = !("tool" in item) && (location.pathname === item.href || 
                   (item.href !== "/" && location.pathname.startsWith(item.href.split("?")[0])));
 
-                if ("tool" in item) {
+                const tool = "tool" in item ? item.tool : undefined;
+                if (tool) {
                   return (
                     <Button
-                      key={item.tool}
+                      key={tool}
                       variant="ghost"
                       className="w-full h-auto justify-start gap-3 px-3 py-3 text-start whitespace-normal"
                       onClick={() => {
                         onClose?.();
-                        onSelectTool?.(item.tool);
+                        onSelectTool?.(tool);
                       }}
                     >
                       <item.icon className="w-5 h-5 shrink-0 text-muted-foreground" />
