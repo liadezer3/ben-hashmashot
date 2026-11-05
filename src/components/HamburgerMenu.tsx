@@ -34,6 +34,7 @@ interface SidebarMenuProps {
   hebrewDate?: string;
   isGuest?: boolean;
   onClose?: () => void;
+  onSelectTool?: (tool: "departure" | "concierge") => void;
 }
 
 const MENU_SECTIONS = [
@@ -67,8 +68,8 @@ const MENU_SECTIONS = [
       { icon: UtensilsCrossed, label: "מתכונים לשבת", href: "/settings?tab=recipes", desc: "מתכונים עם AI", hasAI: true },
       { icon: BookOpen, label: "דבר תורה", href: "/settings?tab=torah", desc: null, hasAI: true },
       { icon: Clock, label: "זמני היום", href: "/settings?tab=times", desc: null },
-      { icon: Car, label: "חלון יציאה", href: "/", desc: "המלצה חכמה", hasAI: true },
-      { icon: Bot, label: "קונסיירז' ערב שבת", href: "/", desc: null, hasAI: true },
+      { icon: Car, label: "חלון יציאה", tool: "departure" as const, href: "/", desc: "המלצה חכמה", hasAI: true },
+      { icon: Bot, label: "קונסיירז' ערב שבת", tool: "concierge" as const, href: "/", desc: null, hasAI: true },
     ],
   },
   {
@@ -82,7 +83,7 @@ const MENU_SECTIONS = [
   },
 ];
 
-export function SidebarMenu({ userCity = "ירושלים", hebrewDate = "", isGuest = true, onClose }: SidebarMenuProps) {
+export function SidebarMenu({ userCity = "ירושלים", hebrewDate = "", isGuest = true, onClose, onSelectTool }: SidebarMenuProps) {
   const location = useLocation();
   const { toast } = useToast();
 
@@ -130,8 +131,29 @@ export function SidebarMenu({ userCity = "ירושלים", hebrewDate = "", isGu
             </div>
             <div className="space-y-1">
               {section.items.map((item) => {
-                const isActive = location.pathname === item.href || 
-                  (item.href !== "/" && location.pathname.startsWith(item.href.split("?")[0]));
+                const isActive = !("tool" in item) && (location.pathname === item.href || 
+                  (item.href !== "/" && location.pathname.startsWith(item.href.split("?")[0])));
+
+                if ("tool" in item) {
+                  return (
+                    <Button
+                      key={item.tool}
+                      variant="ghost"
+                      className="w-full h-auto justify-start gap-3 px-3 py-3 text-start whitespace-normal"
+                      onClick={() => {
+                        onClose?.();
+                        onSelectTool?.(item.tool);
+                      }}
+                    >
+                      <item.icon className="w-5 h-5 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 min-w-0">
+                        <span className="block font-medium text-sm">{item.label}</span>
+                        {item.desc && <span className="block text-xs text-muted-foreground">{item.desc}</span>}
+                      </span>
+                      <Sparkles className="w-4 h-4 shrink-0 text-primary" />
+                    </Button>
+                  );
+                }
                 
                 return (
                   <Link
@@ -199,9 +221,10 @@ interface HamburgerMenuProps {
   userCity?: string;
   hebrewDate?: string;
   isGuest?: boolean;
+  onSelectTool?: SidebarMenuProps["onSelectTool"];
 }
 
-export function HamburgerMenu({ userCity, hebrewDate, isGuest }: HamburgerMenuProps) {
+export function HamburgerMenu({ userCity, hebrewDate, isGuest, onSelectTool }: HamburgerMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -247,6 +270,7 @@ export function HamburgerMenu({ userCity, hebrewDate, isGuest }: HamburgerMenuPr
           hebrewDate={hebrewDate}
           isGuest={isGuest}
           onClose={() => setIsOpen(false)}
+          onSelectTool={onSelectTool}
         />
       </aside>
     </>
