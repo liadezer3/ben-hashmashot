@@ -137,22 +137,24 @@ export function SidebarMenu({ userCity = "ירושלים", hebrewDate = "", isGu
                 const tool = "tool" in item ? item.tool : undefined;
                 if (tool) {
                   return (
-                    <Button
+                    <button
                       key={tool}
-                      variant="ghost"
-                      className="w-full h-auto justify-start gap-3 px-3 py-3 text-start whitespace-normal"
+                      type="button"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all hover:bg-amber-50 text-gray-700 text-right"
                       onClick={() => {
                         onClose?.();
                         onSelectTool?.(tool);
                       }}
                     >
-                      <item.icon className="w-5 h-5 shrink-0 text-muted-foreground" />
-                      <span className="flex-1 min-w-0">
-                        <span className="block font-medium text-sm">{item.label}</span>
-                        {item.desc && <span className="block text-xs text-muted-foreground">{item.desc}</span>}
-                      </span>
-                      <Sparkles className="w-4 h-4 shrink-0 text-primary" />
-                    </Button>
+                      <item.icon className="w-5 h-5 flex-shrink-0 text-gray-400" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{item.label}</span>
+                          <span className="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">AI</span>
+                        </div>
+                        {item.desc && <span className="text-xs text-gray-400">{item.desc}</span>}
+                      </div>
+                    </button>
                   );
                 }
                 

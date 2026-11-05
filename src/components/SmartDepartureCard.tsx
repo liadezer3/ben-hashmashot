@@ -23,14 +23,19 @@ export const SmartDepartureCard = ({ city, candleLighting }: SmartDepartureCardP
       const { data, error } = await supabase.functions.invoke("time-optimizer", {
         body: { city, candleLighting },
       });
-      if (error) throw error;
+      if (error) {
+        const status = (error as any)?.context?.status;
+        if (status === 402) throw new Error("שירות ההמלצות החכמות אינו זמין כרגע (נגמרו קרדיטי ה-AI). נסו שוב מאוחר יותר.");
+        if (status === 429) throw new Error("יותר מדי בקשות, נסו שוב בעוד רגע.");
+        throw error;
+      }
       setRecommendation(data?.recommendation || "");
       setWeather(data?.weather || null);
     } catch (err: any) {
       console.error("time-optimizer error", err);
       toast({
         title: "שגיאה",
-        description: "לא הצלחנו לחשב חלון זמן אופטימלי כרגע.",
+        description: err?.message?.match(/[א-ת]/) ? err.message : "לא הצלחנו לחשב חלון זמן אופטימלי כרגע.",
         variant: "destructive",
       });
     } finally {
